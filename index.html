@@ -402,6 +402,10 @@
       <div id="searchResults" class="search-results" hidden></div>
     </div>
 
+    <button class="icon-btn" id="refreshDataBtn" aria-label="Atualizar dados" title="Buscar dados mais recentes de todos os líderes">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+    </button>
+
     <button class="icon-btn" id="settingsBtn" aria-label="Ajustar metas" title="Ajustar metas semanais">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
@@ -757,59 +761,150 @@
     return sameMonth ? (monday.getDate()+"–"+f(sunday)) : (f(monday)+" – "+f(sunday));
   }
 
-  var SHEETS_URL = "https://script.google.com/macros/s/AKfycbxl-VqTbrwGOnPaBMpBWmZ_RFAhMHle37-utpkohzW7hU2Y-8-c6h4v03tk6EF4LpoF/exec";
+  var SUPABASE_URL = "https://wklgqghxsddkhrmplpgu.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_nLV82e6T4_7F-cEOOaaF4g_WzXe9QlM";
+
+  function sbHeaders(extra){
+    var h = { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" };
+    if(extra){ for(var k in extra){ h[k] = extra[k]; } }
+    return h;
+  }
+  function sbUrl(path){ return SUPABASE_URL + "/rest/v1/" + path; }
+  function genId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 
   var syncTimer = null;
   function scheduleSync(){
-    if(!SHEETS_URL) return;
     clearTimeout(syncTimer);
-    syncTimer = setTimeout(doSyncToSheet, 1200);
+    syncTimer = setTimeout(pushCurrentEntry, 900);
   }
 
-  function findIndicatorValue(items, label){
-    var cl = CHECKLISTS.indicadoresResultado;
-    var idx = -1;
-    for(var i=0;i<cl.flat.length;i++){ if(cl.flat[i].t===label){ idx=i; break; } }
-    if(idx===-1) return null;
-    var answers = (items.indicadoresResultado && items.indicadoresResultado.answers) || [];
-    var v = answers[idx];
-    return (v===undefined||v===null||v==="") ? null : v;
+  var pipelineSyncTimer = null;
+  function schedulePipelineSync(){
+    clearTimeout(pipelineSyncTimer);
+    pipelineSyncTimer = setTimeout(function(){ pushPipeline(currentTeam, currentAdvisor); }, 900);
   }
 
-  function doSyncToSheet(){
-    if(!SHEETS_URL || !currentTeam || !currentAdvisor) return;
+  function pushCurrentEntry(){
+    if(!currentTeam || !currentAdvisor) return;
     var weekKey = weekKeyFor(currentMonday);
     var entry = entryFor(weekKey, currentTeam, currentAdvisor, false);
     var items = (entry && entry.items) || {};
-    var r1 = itemRatio(ITEM_DEFS[0], items);
-    var r2 = itemRatio(ITEM_DEFS[1], items);
-    var payload = {
-      equipe: currentTeam,
-      nome: currentAdvisor,
-      weekKey: weekKey,
-      pct1a1: Math.round(r1.ratio*100),
-      pctIndicadores: Math.round(r2.ratio*100),
-      quadrante: getQuadrant(currentTeam, currentAdvisor),
-      captacao: findIndicatorValue(items, "Captação líquida na semana"),
-      receita: findIndicatorValue(items, "Receita na semana"),
-      modeloServir: findIndicatorValue(items, "Modelo de servir"),
-      ata: (items.reuniao11 && items.reuniao11.ata) || ""
-    };
+    var notes = (entry && entry.notes) || "";
     setSyncFlag("syncing", "Sincronizando…");
-    try{
-      fetch(SHEETS_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      }).then(function(){
-        setSyncFlag("synced", "Sincronizado");
-      }).catch(function(){
-        setSyncFlag("error", "Falha ao sincronizar");
-      });
-    }catch(e){
+    fetch(sbUrl("weekly_entries?on_conflict=equipe,nome,week_key"), {
+      method: "POST",
+      headers: sbHeaders({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
+      body: JSON.stringify([{ equipe: currentTeam, nome: currentAdvisor, week_key: weekKey, items: items, notes: notes, updated_at: new Date().toISOString() }])
+    }).then(function(r){
+      if(!r.ok) throw new Error("http " + r.status);
+      setSyncFlag("synced", "Sincronizado");
+    }).catch(function(){
       setSyncFlag("error", "Falha ao sincronizar");
-    }
+    });
+  }
+
+  function pushAdvisorMeta(equipe, nome){
+    var sched = getSchedule(equipe, nome);
+    var quad = getQuadrant(equipe, nome);
+    setSyncFlag("syncing", "Sincronizando…");
+    fetch(sbUrl("advisor_meta?on_conflict=equipe,nome"), {
+      method: "POST",
+      headers: sbHeaders({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
+      body: JSON.stringify([{ equipe: equipe, nome: nome, quadrant: quad || null, schedule_day: sched.day || null, schedule_time: sched.time || null, updated_at: new Date().toISOString() }])
+    }).then(function(r){
+      if(!r.ok) throw new Error("http " + r.status);
+      setSyncFlag("synced", "Sincronizado");
+    }).catch(function(){
+      setSyncFlag("error", "Falha ao sincronizar");
+    });
+  }
+
+  function pushPipeline(equipe, nome){
+    var list = getPipeline(equipe, nome);
+    var rows = list.map(function(d){
+      if(!d.id) d.id = genId();
+      return {
+        deal_id: equipe + "|" + nome + "|" + d.id,
+        equipe: equipe, nome: nome,
+        cliente: d.cliente || "", tipo: d.tipo || "", tipo_outro: d.tipoOutro || "",
+        valor: (d.valor===""||d.valor===undefined||d.valor===null) ? null : Number(d.valor),
+        estagio: d.estagio || "", previsao: d.previsao || "",
+        updated_at: new Date().toISOString()
+      };
+    });
+    setPipeline(equipe, nome, list); // persist ids assigned above
+    setSyncFlag("syncing", "Sincronizando…");
+    fetch(sbUrl("pipeline_deals?equipe=eq." + encodeURIComponent(equipe) + "&nome=eq." + encodeURIComponent(nome)), {
+      method: "DELETE",
+      headers: sbHeaders({ "Prefer": "return=minimal" })
+    }).then(function(){
+      if(!rows.length) { setSyncFlag("synced", "Sincronizado"); return; }
+      return fetch(sbUrl("pipeline_deals"), {
+        method: "POST",
+        headers: sbHeaders({ "Prefer": "return=minimal" }),
+        body: JSON.stringify(rows)
+      }).then(function(r){
+        if(!r.ok) throw new Error("http " + r.status);
+        setSyncFlag("synced", "Sincronizado");
+      });
+    }).catch(function(){
+      setSyncFlag("error", "Falha ao sincronizar");
+    });
+  }
+
+  function pullAllFromSupabase(silent){
+    if(!silent) setSyncFlag("syncing", "Carregando dados…");
+    return Promise.all([
+      fetch(sbUrl("weekly_entries?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }),
+      fetch(sbUrl("advisor_meta?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }),
+      fetch(sbUrl("pipeline_deals?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); })
+    ]).then(function(results){
+      var entries = results[0] || [], metas = results[1] || [], deals = results[2] || [];
+      var weeks = {};
+      entries.forEach(function(row){
+        weeks[row.week_key] = weeks[row.week_key] || {};
+        weeks[row.week_key][row.equipe] = weeks[row.week_key][row.equipe] || {};
+        weeks[row.week_key][row.equipe][row.nome] = { items: row.items || {}, notes: row.notes || "" };
+      });
+      var quadrant = {}, schedule = {};
+      metas.forEach(function(row){
+        var key = row.equipe + "|" + row.nome;
+        if(row.quadrant) quadrant[key] = row.quadrant;
+        if(row.schedule_day || row.schedule_time) schedule[key] = { day: row.schedule_day || "", time: row.schedule_time || "" };
+      });
+      var pipeline = {};
+      deals.forEach(function(row){
+        var key = row.equipe + "|" + row.nome;
+        pipeline[key] = pipeline[key] || [];
+        var localId = String(row.deal_id).split("|").slice(2).join("|") || genId();
+        pipeline[key].push({ id: localId, cliente: row.cliente || "", tipo: row.tipo || "", tipoOutro: row.tipo_outro || "", valor: row.valor===null?"":row.valor, estagio: row.estagio || "", previsao: row.previsao || "" });
+      });
+      // Se há uma edição local recém-feita ainda não enviada (dentro da janela de debounce),
+      // preserva ela em vez de deixar o pull sobrescrever com o estado antigo do servidor.
+      if(syncTimer && currentTeam && currentAdvisor){
+        var wk = weekKeyFor(currentMonday);
+        var localEntry = (store.weeks[wk] && store.weeks[wk][currentTeam] && store.weeks[wk][currentTeam][currentAdvisor]) || null;
+        if(localEntry){
+          weeks[wk] = weeks[wk] || {};
+          weeks[wk][currentTeam] = weeks[wk][currentTeam] || {};
+          weeks[wk][currentTeam][currentAdvisor] = localEntry;
+        }
+      }
+      if(pipelineSyncTimer && currentTeam && currentAdvisor){
+        var pkey = currentTeam+"|"+currentAdvisor;
+        if(store.pipeline[pkey]) pipeline[pkey] = store.pipeline[pkey];
+      }
+
+      store.weeks = weeks;
+      store.quadrant = quadrant;
+      store.schedule = schedule;
+      store.pipeline = pipeline;
+      persist();
+      renderAll();
+      if(!silent) setSyncFlag("synced", "Dados atualizados");
+    }).catch(function(){
+      if(!silent) setSyncFlag("error", "Não foi possível carregar os dados");
+    });
   }
 
   var syncFlagTimer = null;
@@ -1121,7 +1216,7 @@
         setQuadrant(currentTeam, currentAdvisor, id===current ? "" : id);
         renderQuadrant();
         flashSave();
-        scheduleSync();
+        pushAdvisorMeta(currentTeam, currentAdvisor);
       });
     });
   }
@@ -1177,6 +1272,7 @@
           list2[idx][field] = el.value;
           setPipeline(currentTeam, currentAdvisor, list2);
           flashSave();
+          schedulePipelineSync();
           if(field==="tipo"){ renderPipeline(); }
         });
       });
@@ -1186,6 +1282,7 @@
         setPipeline(currentTeam, currentAdvisor, list2);
         renderPipeline();
         flashSave();
+        pushPipeline(currentTeam, currentAdvisor);
       });
     });
   }
@@ -1402,11 +1499,13 @@
       entry.notes = $("generalNotes").value;
       persist();
       flashSave();
+      scheduleSync();
     });
 
     function saveSchedule(){
       setSchedule(equipe, nome, $("scheduleDay").value, $("scheduleTime").value);
       flashSave();
+      pushAdvisorMeta(equipe, nome);
     }
     $("scheduleDay").addEventListener("change", saveSchedule);
     $("scheduleTime").addEventListener("change", saveSchedule);
@@ -1591,9 +1690,10 @@
 
   $("addDealBtn").addEventListener("click", function(){
     var list = getPipeline(currentTeam, currentAdvisor);
-    list.push({ cliente:"", tipo:TYPE_OPTIONS[0], valor:"", estagio:STAGE_OPTIONS[0], previsao:"" });
+    list.push({ id: genId(), cliente:"", tipo:TYPE_OPTIONS[0], valor:"", estagio:STAGE_OPTIONS[0], previsao:"" });
     setPipeline(currentTeam, currentAdvisor, list);
     renderPipeline();
+    pushPipeline(currentTeam, currentAdvisor);
   });
 
   TEAMS.forEach(function(t){
@@ -1680,5 +1780,13 @@
     }catch(e){}
     renderAll();
   })();
+
+  pullAllFromSupabase(true);
+  setInterval(function(){ pullAllFromSupabase(true); }, 25000);
+
+  var refreshBtn = $("refreshDataBtn");
+  if(refreshBtn){
+    refreshBtn.addEventListener("click", function(){ pullAllFromSupabase(false); });
+  }
 })();
 </script>
