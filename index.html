@@ -200,6 +200,15 @@
     font-size:12px;color:var(--ink-900);font-family:var(--font-mono);
   }
   .save-flag{font-size:11px;color:var(--success);opacity:0;transition:opacity .2s;white-space:nowrap;}
+  .sync-flag{font-size:11px;display:flex;align-items:center;gap:4px;white-space:nowrap;opacity:0;transition:opacity .2s;}
+  .sync-flag.show{opacity:1;}
+  .sync-flag .dot{width:6px;height:6px;border-radius:50%;flex:none;}
+  .sync-flag.syncing .dot{background:var(--pending);}
+  .sync-flag.syncing{color:var(--ink-500);}
+  .sync-flag.synced .dot{background:var(--success);}
+  .sync-flag.synced{color:var(--success);}
+  .sync-flag.error .dot{background:var(--critical);}
+  .sync-flag.error{color:var(--critical);}
   .save-flag.show{opacity:1;}
 
   .items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;}
@@ -469,6 +478,7 @@
         </div>
       </div>
       <span class="save-flag" id="advisorSaveFlag">Salvo</span>
+      <span class="sync-flag" id="syncFlag"></span>
     </div>
     <div class="quadrant-section">
       <div class="quadrant-head">
@@ -785,14 +795,33 @@
       modeloServir: findIndicatorValue(items, "Modelo de servir"),
       ata: (items.reuniao11 && items.reuniao11.ata) || ""
     };
+    setSyncFlag("syncing", "Sincronizando…");
     try{
       fetch(SHEETS_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
+      }).then(function(){
+        setSyncFlag("synced", "Sincronizado");
+      }).catch(function(){
+        setSyncFlag("error", "Falha ao sincronizar");
       });
-    }catch(e){}
+    }catch(e){
+      setSyncFlag("error", "Falha ao sincronizar");
+    }
+  }
+
+  var syncFlagTimer = null;
+  function setSyncFlag(state, label){
+    var el = $("syncFlag");
+    if(!el) return;
+    el.className = "sync-flag show " + state;
+    el.innerHTML = '<span class="dot"></span>' + label;
+    clearTimeout(syncFlagTimer);
+    if(state === "synced"){
+      syncFlagTimer = setTimeout(function(){ el.classList.remove("show"); }, 2500);
+    }
   }
 
   var currentMonday = startOfWeek(new Date());
