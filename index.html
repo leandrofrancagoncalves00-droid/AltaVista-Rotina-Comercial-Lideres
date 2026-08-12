@@ -1,0 +1,1604 @@
+<title>Rotina Comercial · Painel Semanal</title>
+<style>
+  :root{
+    --bg:#0f1e3d;
+    --on-bg:#eef2f7;
+    --on-bg-muted:#a7b8d6;
+    --surface:#ffffff;
+    --surface-2:#e3e9e7;
+    --border:#d2dad7;
+    --ink-900:#121a22;
+    --ink-700:#3c4a52;
+    --ink-500:#6b7a80;
+    --accent:#2454c7;
+    --accent-ink:#14306e;
+    --accent-soft:#e3ecfc;
+    --success:#1e8e5a;
+    --success-soft:#e1f3e9;
+    --warning:#a8770a;
+    --warning-soft:#fbf1da;
+    --critical:#c4432e;
+    --critical-soft:#fbe7e2;
+    --pending:#8b98a0;
+    --pending-soft:#eceff0;
+    --shadow:0 1px 2px rgba(18,26,34,.06),0 4px 14px rgba(18,26,34,.06);
+    --radius:12px;
+    --radius-sm:8px;
+    --font-display:"Segoe UI Semibold","Segoe UI",system-ui,-apple-system,sans-serif;
+    --font-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --font-mono:ui-monospace,"Cascadia Code","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#10151a; --on-bg:#edf1f4; --on-bg-muted:#8b98a0; --surface:#171e25; --surface-2:#1e2730; --border:#2b3640;
+      --ink-900:#edf1f4; --ink-700:#c3ccd2; --ink-500:#8b98a0;
+      --accent:#6c95ff; --accent-ink:#dce6ff; --accent-soft:#1c2b4d;
+      --success:#3fbe84; --success-soft:#16332a;
+      --warning:#e0ac3a; --warning-soft:#3a2e14;
+      --critical:#e2694e; --critical-soft:#3b2019;
+      --pending:#7c8890; --pending-soft:#232b31;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#10151a; --on-bg:#edf1f4; --on-bg-muted:#8b98a0; --surface:#171e25; --surface-2:#1e2730; --border:#2b3640;
+    --ink-900:#edf1f4; --ink-700:#c3ccd2; --ink-500:#8b98a0;
+    --accent:#6c95ff; --accent-ink:#dce6ff; --accent-soft:#1c2b4d;
+    --success:#3fbe84; --success-soft:#16332a;
+    --warning:#e0ac3a; --warning-soft:#3a2e14;
+    --critical:#e2694e; --critical-soft:#3b2019;
+    --pending:#7c8890; --pending-soft:#232b31;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#0f1e3d; --on-bg:#eef2f7; --on-bg-muted:#a7b8d6; --surface:#ffffff; --surface-2:#e3e9e7; --border:#d2dad7;
+    --ink-900:#121a22; --ink-700:#3c4a52; --ink-500:#6b7a80;
+    --accent:#2454c7; --accent-ink:#14306e; --accent-soft:#e3ecfc;
+    --success:#1e8e5a; --success-soft:#e1f3e9;
+    --warning:#a8770a; --warning-soft:#fbf1da;
+    --critical:#c4432e; --critical-soft:#fbe7e2;
+    --pending:#8b98a0; --pending-soft:#eceff0;
+    --shadow:0 1px 2px rgba(18,26,34,.06),0 4px 14px rgba(18,26,34,.06);
+  }
+
+  *{box-sizing:border-box;}
+  h1,h2,h3,p{margin:0;}
+  body{background:transparent;}
+  button,input,textarea{font-family:inherit;color:inherit;}
+  ::selection{background:var(--accent-soft);}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important;transition-duration:.01ms !important;} }
+
+  .app{
+    font-family:var(--font-body);
+    color:var(--ink-700);
+    background:var(--bg);
+    min-height:100vh;
+    max-width:1180px;
+    margin:0 auto;
+    padding:20px 20px 56px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  .tabular{font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;
+    padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);
+  }
+  .brand{display:flex;flex-direction:column;gap:2px;min-width:220px;}
+  .brand .eyebrow{font-family:var(--font-display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);font-weight:700;}
+  .brand h1{font-size:21px;font-weight:700;color:var(--ink-900);letter-spacing:-.01em;}
+  .brand .sub{font-size:12.5px;color:var(--ink-500);}
+
+  .week-nav{display:flex;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:5px 6px 5px 14px;}
+  .week-nav button{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .week-nav button:hover{background:var(--accent-soft);border-color:var(--accent);}
+  .week-nav .label{font-family:var(--font-mono);font-size:13px;color:var(--ink-900);white-space:nowrap;}
+  .week-nav .label small{display:block;font-family:var(--font-body);font-size:10.5px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.08em;margin-top:1px;}
+  .week-nav .today-btn{border-radius:999px;padding:0 10px;width:auto;font-size:11.5px;font-weight:600;color:var(--accent-ink);}
+
+  .team-select{
+    padding:8px 30px 8px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);
+    font-size:12.5px;font-weight:600;color:var(--ink-700);cursor:pointer;max-width:200px;
+    -webkit-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7a80' stroke-width='2.2' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 10px center;background-size:13px;
+  }
+  .search-wrap{position:relative;min-width:220px;flex:1 1 220px;max-width:280px;}
+  .search-wrap input{width:100%;padding:8px 12px 8px 32px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);font-size:13px;}
+  .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ink-500);}
+  .search-results{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow);max-height:260px;overflow-y:auto;}
+  .search-results button{display:flex;width:100%;justify-content:space-between;gap:8px;text-align:left;padding:9px 12px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--ink-900);border-bottom:1px solid var(--border);}
+  .search-results button:last-child{border-bottom:none;}
+  .search-results button:hover{background:var(--accent-soft);}
+  .search-results .tag{color:var(--ink-500);font-size:11.5px;}
+  .search-empty{padding:10px 12px;font-size:12.5px;color:var(--ink-500);}
+
+  .icon-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-700);}
+  .icon-btn:hover{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft);}
+
+  /* ---------- Scoreboard ---------- */
+  .scoreboard{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);cursor:pointer;text-align:left;width:100%;transition:transform .12s,border-color .12s;}
+  .stat:hover{border-color:var(--accent);transform:translateY(-1px);}
+  .stat .n{font-family:var(--font-mono);font-size:26px;font-weight:600;color:var(--ink-900);line-height:1;}
+  .stat .l{font-size:11.5px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.06em;}
+  .stat.total{border-left:3px solid var(--accent);}
+  .stat.ok{border-left:3px solid var(--success);}
+  .stat.warn{border-left:3px solid var(--warning);}
+  .stat.crit{border-left:3px solid var(--critical);}
+  .stat.pend{border-left:3px solid var(--pending);}
+
+  /* ---------- Overview grid ---------- */
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:2px;}
+  .section-head h2{font-family:var(--font-display);font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--on-bg-muted);}
+  .section-head .hint{font-size:12px;color:var(--on-bg-muted);}
+
+  .teams-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;}
+  .team-card{text-align:left;cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow);transition:border-color .12s,transform .12s;}
+  .team-card:hover{border-color:var(--accent);transform:translateY(-1px);}
+  .team-card .row1{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+  .team-card .name{font-weight:700;color:var(--ink-900);font-size:14.5px;letter-spacing:-.01em;}
+  .team-card .count{font-size:11.5px;color:var(--ink-500);}
+  .team-card .pct{font-family:var(--font-mono);font-size:22px;font-weight:600;}
+  .team-card .bar{height:7px;border-radius:999px;background:var(--pending-soft);overflow:hidden;display:flex;}
+  .team-card .bar span{height:100%;}
+  .team-card .legend{display:flex;gap:10px;font-size:11px;color:var(--ink-500);}
+  .team-card .legend b{font-family:var(--font-mono);color:var(--ink-700);}
+
+  /* ---------- Team detail (advisor list) ---------- */
+  .team-detail{display:flex;flex-direction:column;gap:12px;}
+  .back-row{display:flex;align-items:center;gap:10px;}
+  .back-btn{display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 12px 6px 8px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink-700);}
+  .back-btn:hover{border-color:var(--accent);color:var(--accent-ink);}
+  .team-detail h2.title{font-family:var(--font-display);font-size:19px;color:var(--on-bg);}
+  .team-summary{font-size:12.5px;color:var(--on-bg-muted);}
+
+  .advisor-list{display:flex;flex-direction:column;gap:7px;}
+  .advisor-row{
+    width:100%;display:grid;grid-template-columns:16px 1fr 90px 130px 16px;align-items:center;gap:12px;
+    padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+    cursor:pointer;text-align:left;box-shadow:var(--shadow);
+  }
+  .advisor-row:hover{border-color:var(--accent);}
+  .status-dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .status-dot.ok{background:var(--success);}
+  .status-dot.warn{background:var(--warning);}
+  .status-dot.crit{background:var(--critical);}
+  .status-dot.pend{background:var(--pending);}
+  .advisor-name-wrap{display:flex;flex-direction:column;gap:1px;min-width:0;}
+  .advisor-name-line{display:flex;align-items:center;gap:6px;}
+  .advisor-name{font-weight:600;color:var(--ink-900);font-size:13.5px;}
+  .advisor-sched{font-size:10.5px;color:var(--ink-500);font-family:var(--font-mono);}
+  .advisor-pct{font-family:var(--font-mono);font-size:14px;text-align:right;}
+  .advisor-chips{display:flex;gap:4px;justify-content:flex-end;}
+  .chip{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:var(--pending-soft);color:var(--pending);}
+  .chip.ok{background:var(--success-soft);color:var(--success);}
+  .chip.warn{background:var(--warning-soft);color:var(--warning);}
+  .chip svg{width:13px;height:13px;}
+  .row-arrow{color:var(--ink-500);}
+
+  /* ---------- Advisor page ---------- */
+  .advisor-page{display:flex;flex-direction:column;gap:16px;}
+  .advisor-head{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:18px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;
+  }
+  .advisor-head .who h2{font-family:var(--font-display);font-size:19px;color:var(--ink-900);}
+  .advisor-head .who .team-tag{font-size:12px;color:var(--ink-500);margin-top:2px;}
+  .advisor-head .stat-pill{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);}
+  .advisor-head .stat-pill .pct{font-family:var(--font-mono);font-size:19px;font-weight:700;}
+  .advisor-head .stat-pill .wk{font-size:11.5px;color:var(--ink-500);}
+  .schedule-pill{display:flex;align-items:center;gap:9px;padding:8px 14px;border-radius:999px;background:var(--accent-soft);border:1px solid var(--border);color:var(--accent-ink);}
+  .schedule-pill label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent-ink);margin-bottom:3px;}
+  .schedule-pill .row{display:flex;gap:6px;}
+  .schedule-pill select,.schedule-pill input[type=time]{
+    border:1px solid var(--border);border-radius:6px;background:var(--surface);padding:4px 6px;
+    font-size:12px;color:var(--ink-900);font-family:var(--font-mono);
+  }
+  .save-flag{font-size:11px;color:var(--success);opacity:0;transition:opacity .2s;white-space:nowrap;}
+  .save-flag.show{opacity:1;}
+
+  .items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;}
+  .item-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);}
+  .item-card .ihead{display:flex;align-items:center;gap:7px;}
+  .item-card .ihead svg{width:15px;height:15px;color:var(--accent-ink);flex:none;}
+  .item-card .ilabel{font-size:12.5px;font-weight:600;color:var(--ink-900);}
+  .item-card .idesc{font-size:11px;color:var(--ink-500);line-height:1.35;min-height:28px;}
+  .item-card .ival{display:flex;align-items:center;gap:6px;margin-top:auto;}
+  .item-card input[type=number]{width:60px;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);font-family:var(--font-mono);font-size:13px;text-align:center;}
+  .item-card .itarget{font-family:var(--font-mono);font-size:12px;color:var(--ink-500);}
+  .item-card.done{border-color:var(--success);}
+
+  /* ---------- Meeting checklist (Rotina 1:1) ---------- */
+  .meeting-card{grid-column:1 / -1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;display:flex;flex-direction:column;gap:16px;}
+  .meeting-card.done{border-color:var(--success);}
+  .meeting-top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px;}
+  .meeting-top .titles{display:flex;gap:10px;align-items:flex-start;}
+  .meeting-top .titles svg{width:20px;height:20px;color:var(--accent-ink);margin-top:2px;flex:none;}
+  .meeting-top .eyebrow{font-family:var(--font-display);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);}
+  .meeting-top h3{font-size:16.5px;color:var(--ink-900);margin-top:2px;}
+  .meeting-top .tagline{font-size:12px;color:var(--ink-500);font-style:italic;margin-top:2px;}
+  .meeting-progress{display:flex;align-items:center;gap:10px;}
+  .meeting-progress .frac{font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--ink-900);}
+  .meeting-progress .bar{width:90px;height:6px;border-radius:999px;background:var(--pending-soft);overflow:hidden;}
+  .meeting-progress .bar span{display:block;height:100%;background:var(--success);}
+
+  .meeting-indicator{display:flex;flex-direction:column;gap:4px;background:var(--accent-soft);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;min-width:150px;}
+  .meeting-indicator label{font-size:10.5px;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  .meeting-indicator .row{display:flex;align-items:baseline;gap:5px;}
+  .meeting-indicator input{width:52px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-family:var(--font-mono);font-size:14px;text-align:center;font-weight:700;}
+  .meeting-indicator .of{font-family:var(--font-mono);font-size:11px;color:var(--ink-500);}
+
+  .followup-card{background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius-sm);padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+  .followup-card.fu-state-done{background:var(--success-soft);border-color:var(--success);}
+  .followup-card.fu-state-notdone{background:var(--critical-soft);border-color:var(--critical);}
+  .followup-card .fu-label{font-family:var(--font-display);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);font-weight:700;}
+  .followup-card .fu-text{font-size:12.5px;color:var(--ink-900);line-height:1.45;white-space:pre-wrap;}
+  .fu-actions{display:flex;gap:8px;}
+  .fu-btn{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 13px;font-size:11.5px;font-weight:600;cursor:pointer;color:var(--ink-700);}
+  .fu-btn:hover{border-color:var(--accent);}
+  .fu-btn.fu-done.sel{background:var(--success);border-color:var(--success);color:#fff;}
+  .fu-btn.fu-notdone.sel{background:var(--critical);border-color:var(--critical);color:#fff;}
+
+  .meeting-sections{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+  .meeting-section{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+  .meeting-section .sname{font-family:var(--font-display);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-500);}
+  .meeting-section .snote{font-size:11px;color:var(--ink-500);font-style:italic;margin-top:-4px;}
+  .meeting-section .sfooter{font-size:11px;color:var(--ink-500);font-style:italic;border-top:1px dashed var(--border);padding-top:6px;margin-top:2px;}
+  .check-row{display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:2px 0;}
+  .check-row input{margin-top:3px;width:15px;height:15px;accent-color:var(--accent);flex:none;cursor:pointer;}
+  .check-row span{font-size:12.5px;color:var(--ink-700);line-height:1.4;}
+  .check-row.checked span{color:var(--ink-900);}
+  .scale-row{display:flex;flex-direction:column;gap:6px;padding:4px 0;}
+  .scale-row .qtext{font-size:12.5px;color:var(--ink-700);line-height:1.4;}
+  .scale-picker{display:flex;flex-wrap:wrap;gap:4px;}
+  .scale-btn{width:23px;height:23px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-family:var(--font-mono);font-size:10.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink-700);}
+  .scale-btn:hover{border-color:var(--accent);}
+  .scale-btn.sel{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
+  .value-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:3px 0;}
+  .value-row .qtext{font-size:12.5px;color:var(--ink-700);line-height:1.4;flex:1;}
+  .value-input{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 9px;flex:none;}
+  .value-input .prefix{font-family:var(--font-mono);font-size:11px;color:var(--ink-500);}
+  .value-input input{width:100px;border:none;background:transparent;font-family:var(--font-mono);font-size:13px;text-align:right;padding:3px 0;}
+  .value-input input:focus{outline:none;}
+  .value-input:focus-within{border-color:var(--accent);}
+
+  .meeting-ata{display:flex;flex-direction:column;gap:8px;}
+  .meeting-ata > label{font-size:11px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.05em;}
+  .meeting-ata textarea{width:100%;min-height:64px;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-size:12.5px;resize:vertical;}
+  .ata-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .ata-hint{font-size:11px;color:var(--ink-500);}
+
+  .quadrant-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:12px;}
+  .quadrant-head .eyebrow{font-family:var(--font-display);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);font-weight:700;}
+  .quadrant-head h3{font-size:16px;color:var(--ink-900);margin-top:2px;}
+  .quadrant-head .desc{font-size:12px;color:var(--ink-500);margin-top:2px;}
+  .quadrant-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:640px){ .quadrant-grid{grid-template-columns:1fr;} }
+  .quadrant-card{
+    text-align:left;cursor:pointer;border-radius:var(--radius-sm);padding:14px 16px;
+    display:flex;flex-direction:column;gap:8px;border:2px solid transparent;
+    color:#e9edf5;background:var(--qz-bg);transition:transform .12s,border-color .12s;
+  }
+  .quadrant-card:hover{transform:translateY(-1px);}
+  .quadrant-card.selected{border-color:var(--qz-accent);box-shadow:0 0 0 1px var(--qz-accent);}
+  .quadrant-card .qz-top{display:flex;align-items:center;gap:10px;}
+  .quadrant-card .qz-letter{
+    width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:700;font-size:14px;background:var(--qz-accent);color:#101623;
+  }
+  .quadrant-card .qz-name{font-family:var(--font-display);font-size:13.5px;font-weight:700;color:var(--qz-accent);text-transform:uppercase;letter-spacing:.03em;}
+  .quadrant-card .qz-crit{font-size:11px;color:#c3cbdb;margin-top:1px;}
+  .quadrant-card ul{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:3px;}
+  .quadrant-card li{font-size:11.5px;line-height:1.4;color:#dfe4ee;}
+  .quadrant-badge{
+    display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;
+    font-family:var(--font-display);font-size:10px;font-weight:700;color:#101623;flex:none;
+  }
+
+  .pipeline-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:12px;}
+  .pipeline-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .pipeline-head h3{font-size:15px;color:var(--ink-900);}
+  .pipeline-head .desc{font-size:11.5px;color:var(--ink-500);margin-top:2px;max-width:46ch;}
+  .pipeline-list{display:flex;flex-direction:column;gap:8px;}
+  .deal-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
+  .deal-card .dc-top{display:flex;align-items:center;gap:8px;}
+  .deal-card .dc-title{flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-weight:600;color:var(--ink-900);font-family:var(--font-body);}
+  .deal-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;}
+  .deal-fields label{display:flex;flex-direction:column;gap:3px;font-size:10px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.04em;}
+  .deal-fields input,.deal-fields select{padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--ink-900);text-transform:none;letter-spacing:normal;font-family:var(--font-body);}
+  .deal-card .del-btn{width:26px;height:26px;flex:none;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--critical);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;}
+  .deal-card .del-btn:hover{background:var(--critical-soft);border-color:var(--critical);}
+  .pipeline-empty{font-size:12px;color:var(--ink-500);font-style:italic;padding:4px 0;}
+
+  .notes-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:6px;}
+  .notes-wrap label{font-size:11px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.05em;}
+  .notes-wrap textarea{width:100%;min-height:56px;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-size:12.5px;resize:vertical;}
+
+  /* ---------- Footer / toolbar ---------- */
+  .toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
+  .legend-strip{display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--ink-500);}
+  .legend-strip span{display:inline-flex;align-items:center;gap:5px;}
+  .legend-strip .d{width:8px;height:8px;border-radius:50%;}
+  .btn{display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid var(--border);background:var(--surface);padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink-700);}
+  .btn:hover{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft);}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn.primary:hover{filter:brightness(1.06);}
+  .toolbar .actions{display:flex;gap:8px;align-items:center;}
+  input[type=file]{display:none;}
+
+  /* ---------- Settings overlay ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(10,14,18,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .overlay[hidden]{display:none;}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);width:100%;max-width:460px;padding:20px;display:flex;flex-direction:column;gap:14px;max-height:86vh;overflow-y:auto;}
+  .panel h3{font-size:15px;color:var(--ink-900);}
+  .panel .desc{font-size:12px;color:var(--ink-500);}
+  .target-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+  .target-row:last-of-type{border-bottom:none;}
+  .target-row .tl{font-size:12.5px;color:var(--ink-900);font-weight:600;}
+  .target-row input{width:64px;padding:5px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);font-family:var(--font-mono);text-align:center;}
+  .panel-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px;}
+  #linkInput{width:100%;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-family:var(--font-mono);font-size:12px;color:var(--ink-900);}
+  .modal-textarea{width:100%;min-height:180px;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-family:var(--font-mono);font-size:11.5px;color:var(--ink-900);resize:vertical;}
+
+  #statusPanelList{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;}
+  .status-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer;text-align:left;width:100%;}
+  .status-row:hover{border-color:var(--accent);background:var(--surface-2);}
+  .status-row .nm{flex:1;font-size:12.5px;font-weight:600;color:var(--ink-900);}
+  .status-row .tm{font-size:11px;color:var(--ink-500);}
+  .status-row .pc{font-family:var(--font-mono);font-size:12.5px;}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#121a22;color:#f4f6f8;padding:9px 16px;border-radius:999px;font-size:12.5px;box-shadow:var(--shadow);z-index:60;opacity:0;transition:opacity .2s;}
+  .toast.show{opacity:1;}
+  .toast[hidden]{display:none;}
+
+  @media (max-width:640px){
+    .scoreboard{grid-template-columns:repeat(2,1fr);}
+    .advisor-row{grid-template-columns:14px 1fr 60px 16px;}
+    .advisor-chips{display:none;}
+  }
+</style>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="eyebrow">Painel do líder</span>
+      <h1>Rotina Comercial</h1>
+      <span class="sub">Checklist semanal por assessor</span>
+    </div>
+
+    <div class="week-nav">
+      <button id="prevWeek" aria-label="Semana anterior" title="Semana anterior">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="label tabular" id="weekLabel">— <small id="weekSub">—</small></span>
+      <button id="nextWeek" aria-label="Próxima semana" title="Próxima semana">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button class="today-btn" id="todayBtn">hoje</button>
+    </div>
+
+    <select id="teamSelect" class="team-select" aria-label="Filtrar por equipe">
+      <option value="">Todas as equipes</option>
+    </select>
+
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" type="text" placeholder="Buscar assessor…" autocomplete="off">
+      <div id="searchResults" class="search-results" hidden></div>
+    </div>
+
+    <button class="icon-btn" id="settingsBtn" aria-label="Ajustar metas" title="Ajustar metas semanais">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <section>
+    <div class="section-head">
+      <h2 id="scoreboardScope">Todas as equipes</h2>
+      <span class="hint" id="scoreboardHint"></span>
+    </div>
+    <div class="scoreboard" id="scoreboard"></div>
+  </section>
+
+  <section id="overviewView">
+    <div class="section-head">
+      <h2>Equipes</h2>
+      <span class="hint" id="overviewHint"></span>
+    </div>
+    <div class="teams-grid" id="teamsGrid"></div>
+  </section>
+
+  <section id="teamView" class="team-detail" hidden>
+    <div class="back-row">
+      <button class="back-btn" id="backToOverview">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Todas as equipes
+      </button>
+      <button class="back-btn" id="copyTeamLinkBtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>
+        Link desta equipe
+      </button>
+    </div>
+    <h2 class="title" id="teamTitle"></h2>
+    <p class="team-summary" id="teamSummary"></p>
+    <div class="advisor-list" id="advisorList"></div>
+  </section>
+
+  <section id="advisorView" class="advisor-page" hidden>
+    <div class="back-row">
+      <button class="back-btn" id="backToTeam">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span id="backToTeamLabel">Equipe</span>
+      </button>
+    </div>
+    <div class="advisor-head">
+      <div class="who">
+        <h2 id="advisorName"></h2>
+        <div class="team-tag" id="advisorTeamTag"></div>
+      </div>
+      <div class="schedule-pill">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><line x1="3" y1="9.5" x2="21" y2="9.5"/><line x1="7.5" y1="2.5" x2="7.5" y2="6.5"/><line x1="16.5" y1="2.5" x2="16.5" y2="6.5"/></svg>
+        <div>
+          <label>1:1 combinada</label>
+          <div class="row">
+            <select id="scheduleDay">
+              <option value="">Dia</option>
+              <option value="seg">Segunda</option>
+              <option value="ter">Terça</option>
+              <option value="qua">Quarta</option>
+              <option value="qui">Quinta</option>
+              <option value="sex">Sexta</option>
+              <option value="sab">Sábado</option>
+              <option value="dom">Domingo</option>
+            </select>
+            <input type="time" id="scheduleTime">
+          </div>
+        </div>
+      </div>
+      <div class="stat-pill">
+        <span class="status-dot" id="advisorDot"></span>
+        <div>
+          <div class="pct tabular" id="advisorPct">—</div>
+          <div class="wk" id="advisorWeekLabel"></div>
+        </div>
+      </div>
+      <span class="save-flag" id="advisorSaveFlag">Salvo</span>
+    </div>
+    <div class="quadrant-section">
+      <div class="quadrant-head">
+        <span class="eyebrow">Diagnóstico do time</span>
+        <h3>Quadrante Esforço × Resultado</h3>
+        <p class="desc">Clique na zona que melhor descreve este assessor agora.</p>
+      </div>
+      <div class="quadrant-grid" id="quadrantGrid"></div>
+    </div>
+
+    <div class="items-grid" id="itemsGrid"></div>
+
+    <div class="pipeline-section">
+      <div class="pipeline-head">
+        <div>
+          <h3>Pipeline de grandes negócios</h3>
+          <p class="desc">Negócios relevantes em andamento com este assessor — fica salvo e não reseta toda semana.</p>
+        </div>
+        <button type="button" class="btn primary" id="addDealBtn">+ Negócio</button>
+      </div>
+      <div id="pipelineList" class="pipeline-list"></div>
+    </div>
+
+    <div class="notes-wrap">
+      <label>Observações gerais da semana</label>
+      <textarea id="generalNotes" rows="2" placeholder="Contexto, impedimentos, combinados com o assessor…"></textarea>
+    </div>
+  </section>
+
+  <footer class="toolbar">
+    <div class="legend-strip">
+      <span><span class="d" style="background:var(--success)"></span>Em dia (≥80%)</span>
+      <span><span class="d" style="background:var(--warning)"></span>Atenção (50–79%)</span>
+      <span><span class="d" style="background:var(--critical)"></span>Crítico (&lt;50%)</span>
+      <span><span class="d" style="background:var(--pending)"></span>Não preenchido</span>
+    </div>
+    <div class="actions">
+      <button class="btn" id="importBtn">Importar arquivo</button>
+      <input type="file" id="importFile" accept="application/json">
+      <button class="btn" id="pasteImportBtn">Colar dados</button>
+      <button class="btn primary" id="exportBtn">Exportar dados</button>
+    </div>
+  </footer>
+
+  <p class="team-summary" style="text-align:center;">
+    Dados salvos neste navegador. Use “Exportar” para copiar e enviar seus dados, ou “Colar dados”/“Importar arquivo” para receber os de outra pessoa.
+  </p>
+</div>
+
+<div class="overlay" id="settingsOverlay" hidden>
+  <div class="panel">
+    <h3>Metas semanais por item</h3>
+    <p class="desc">Valores sugeridos como ponto de partida — ajuste conforme a realidade de cada mesa/equipe. A 1:1 de Resultados tem checklist fixo de 12 pontos.</p>
+    <div id="targetsList"></div>
+    <div class="panel-actions">
+      <button class="btn" id="resetTargets">Restaurar padrão</button>
+      <button class="btn primary" id="closeSettings">Concluído</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="statusOverlay" hidden>
+  <div class="panel">
+    <h3 id="statusPanelTitle"></h3>
+    <p class="desc" id="statusPanelDesc"></p>
+    <div id="statusPanelList"></div>
+    <div class="panel-actions">
+      <button class="btn primary" id="closeStatusPanel">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="linkOverlay" hidden>
+  <div class="panel">
+    <h3>Link direto desta equipe</h3>
+    <p class="desc">Envie este link para o líder da equipe — ao abrir, a página já entra direto nela.</p>
+    <input type="text" id="linkInput" readonly>
+    <div class="panel-actions">
+      <button class="btn" id="closeLinkPanel">Fechar</button>
+      <button class="btn primary" id="copyLinkBtn">Copiar link</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="textModal" hidden>
+  <div class="panel">
+    <h3 id="textModalTitle"></h3>
+    <p class="desc" id="textModalDesc"></p>
+    <textarea id="textModalArea" class="modal-textarea" rows="10" readonly></textarea>
+    <div class="panel-actions">
+      <button class="btn" id="closeTextModal">Fechar</button>
+      <button class="btn primary" id="copyTextModalBtn">Copiar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="pasteImportModal" hidden>
+  <div class="panel">
+    <h3>Colar dados recebidos</h3>
+    <p class="desc">Cole aqui o texto que a outra pessoa te enviou (aquele gerado em "Exportar dados").</p>
+    <textarea id="pasteImportArea" class="modal-textarea" rows="10" placeholder="Cole o texto aqui…"></textarea>
+    <div class="panel-actions">
+      <button class="btn" id="closePasteImport">Cancelar</button>
+      <button class="btn primary" id="confirmPasteImport">Importar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- Data ---------------- */
+  var ADVISORS = [{"nome":"Adilson Bonvino","equipe":"Maximus - SOR"},{"nome":"Adriano de Araujo","equipe":"Gold11 - SBC"},{"nome":"Alencar Bonifácio Leite","equipe":"Desbravadores JK - SP"},{"nome":"Alex de Souza Dias","equipe":"Rota 100"},{"nome":"Alexandre Andreazzi Barnabe","equipe":"Staff"},{"nome":"Alexandre Selencovich Bandeira","equipe":"Macanudos - POA"},{"nome":"Alexandre Yoshio Setani","equipe":"Gestores"},{"nome":"Alexanndre Kevin de Souza Puglisi","equipe":"Mesa proprietária"},{"nome":"Alkeos Gonçalves Saroglou","equipe":"Gestores"},{"nome":"Allan Mendes Pereira","equipe":"Nasdaq - SP"},{"nome":"Alta Vista Digital","equipe":"Sparta - SP"},{"nome":"Ana Lucia de Araujo Nunes","equipe":"Highlanders - SP"},{"nome":"Andre Castro","equipe":"AV Anywhere"},{"nome":"Andre Figueiredo Siqueira Cunha","equipe":"Highlanders - SP"},{"nome":"Andre Francisco Ferreira Miguel","equipe":"Rota 100"},{"nome":"Andre Pantoja Albo","equipe":"Gestores"},{"nome":"Andrea de Oliveira Nogueira Berna","equipe":"Desbravadores JK - SP"},{"nome":"Andreia Cristina Tupy","equipe":"Gold11 - SBC"},{"nome":"Ângelo de la Costa Junior","equipe":"Nasdaq - SP"},{"nome":"Apostolos Demadis","equipe":"AV Anywhere"},{"nome":"Artur Lauriano de Oliveira","equipe":"Gestores"},{"nome":"Audilene Timoteo Lima Rodrigues","equipe":"Rota 100"},{"nome":"Beatriz de Melo Spilack","equipe":"Nasdaq - SP"},{"nome":"Bianca Roque da Silva","equipe":"Sparta - SP"},{"nome":"Bruno Cauduro Maciel","equipe":"Vikings - POA"},{"nome":"Bruno dos Santos de Sa","equipe":"Mesa proprietária"},{"nome":"Bruno Mendes Augusto","equipe":"Mesa proprietária"},{"nome":"Caique Antonio Bizoni","equipe":"Maximus - SOR"},{"nome":"Camila Caparelli","equipe":"Maximus - SOR"},{"nome":"Camila Karayan Fernandes","equipe":"Sparta - SP"},{"nome":"Carla Baima da Silva","equipe":"Zênite - SP"},{"nome":"Carlos Alexandre Golfeto Junior","equipe":"Maximus - SOR"},{"nome":"Carlos Ivan Sturzbecher","equipe":"Rota 100"},{"nome":"Carlos Roberto Figueira Junior","equipe":"Nasdaq - SP"},{"nome":"Carlos Rogerio Thome","equipe":"Gestores"},{"nome":"Carlos Satoru Okada","equipe":"Sparta - SP"},{"nome":"Carmen Luce Oliveira Da Silva","equipe":"Macanudos - POA"},{"nome":"Caue Glorigiano Ribeiro","equipe":"Vikings - POA"},{"nome":"Celia Maciel Marques","equipe":"Rota 100"},{"nome":"Celso Alves Gonçalves Dias","equipe":"Dendê Equity - SSA"},{"nome":"Celso Arras Minchillo","equipe":"Highlanders - SP"},{"nome":"Christiane Hoerde Manfrin","equipe":"Vikings - POA"},{"nome":"Christianne Martins Fedeli Stoll","equipe":"Rota 100"},{"nome":"Cintia Manhani di Luccio","equipe":"Nasdaq - SP"},{"nome":"Cintia Oliveira Faria Sidiropoulos","equipe":"Zênite - SP"},{"nome":"Clara Maria Ribeiro de Souza","equipe":"Gold11 - SBC"},{"nome":"Claudio Augusto Mauad","equipe":"AV Anywhere"},{"nome":"Claudio Diogenes Ferreira de Oliveira","equipe":"Rota 100"},{"nome":"Dalécio Guimares Papim","equipe":"Rota 100"},{"nome":"Daniel Assis de Almeida","equipe":"Dendê Equity - SSA"},{"nome":"Daniel Ignacio","equipe":"Rota 100"},{"nome":"Daniel Martelozzo Otavani","equipe":"Desbravadores JK - SP"},{"nome":"Daniel Miranda de Abreu Salum","equipe":"Gold11 - SBC"},{"nome":"Daniela Ferreira Midena","equipe":"Desbravadores JK - SP"},{"nome":"Daniele Mota Rodrigues de Almeida","equipe":"Zênite - SP"},{"nome":"Danielle Martini Scroback","equipe":"Zênite - SP"},{"nome":"Denise Guimarães Printes","equipe":"Nasdaq - SP"},{"nome":"Denys Labonia Ferreira Da Luz","equipe":"Maximus - SOR"},{"nome":"Diego Chaves Franco","equipe":"Gold11 - SBC"},{"nome":"Diego Lucio Martins","equipe":"AV Anywhere"},{"nome":"Diniz Braga Pires","equipe":"Sparta - SP"},{"nome":"Diogo Alejandro Hoffmann","equipe":"Rota 100"},{"nome":"Diogo Silvestre Scariot","equipe":"Macanudos - POA"},{"nome":"Domingos Eduardo Di Pietro","equipe":"Nasdaq - SP"},{"nome":"Edgar Endo","equipe":"Desbravadores JK - SP"},{"nome":"Eduardo Cavendish Carvalho","equipe":"Nasdaq - SP"},{"nome":"Eduardo Nunes Tavares","equipe":"Staff"},{"nome":"Eliana Bastos Martins","equipe":"Macanudos - POA"},{"nome":"Erick Teruhiko Katayama","equipe":"Rota 100"},{"nome":"Felipe Araujo Ribeiro","equipe":"Rota 100"},{"nome":"Felipe Chamarelli Pavanelli","equipe":"Staff"},{"nome":"Felipe Galan Baptistella","equipe":"Staff"},{"nome":"Felipe Nicolau Batista","equipe":"Gold11 - SBC"},{"nome":"Fernanda Priscila Pedroso Salgado","equipe":"Highlanders - SP"},{"nome":"Fernando Marchetti Encinas","equipe":"Gold11 - SBC"},{"nome":"Fernando Svitras de Oliveira","equipe":"Gold11 - SBC"},{"nome":"Fernando Yonehara Junior","equipe":"Highlanders - SP"},{"nome":"Filipe Costa de Araujo Santos","equipe":"Dendê Equity - SSA"},{"nome":"Filipe Erico Sudário Cunha","equipe":"Gold11 - SBC"},{"nome":"Filipe Sales Baptista da Costa Machado","equipe":"Dendê Equity - SSA"},{"nome":"Flavio Caravieri batista","equipe":"Nasdaq - SP"},{"nome":"Gabriel Brito Batista","equipe":"Sparta - SP"},{"nome":"Gabriel Corrente De Andrade","equipe":"Staff"},{"nome":"Gabriel Silvestre Scariot","equipe":"Vikings - POA"},{"nome":"Gabrielle Ramos Couto","equipe":"Staff"},{"nome":"George Isaias Melo","equipe":"Sparta - SP"},{"nome":"Gianfranco Martini Frasson","equipe":"Vikings - POA"},{"nome":"Giovanni Avilla","equipe":"Highlanders - SP"},{"nome":"Giovanni DAngelo Guimarães Leite","equipe":"Staff"},{"nome":"Gisele Bervian Pinto Ribeiro","equipe":"Macanudos - POA"},{"nome":"Gislene Lepri de Medeiros","equipe":"Vikings - POA"},{"nome":"Gláucia de Oliveira Santos","equipe":"Gold11 - SBC"},{"nome":"Glauco Henrique Pinheiro Maciel","equipe":"Maximus - SOR"},{"nome":"Gregory de Oliveira Pagot","equipe":"Macanudos - POA"},{"nome":"Guilherme Bastos Hildebrand","equipe":"Vikings - POA"},{"nome":"Guilherme Jung Bittencourt","equipe":"Staff"},{"nome":"Guilherme Luis Bizarro dos Reis","equipe":"Macanudos - POA"},{"nome":"Gustavo Bercito Caruso","equipe":"Zênite - SP"},{"nome":"Gustavo Felipe Ferreira Faria","equipe":"Sparta - SP"},{"nome":"Gustavo Ferreira Soares Azevedo","equipe":"Zênite - SP"},{"nome":"Gustavo Martins Correia","equipe":"AV Anywhere"},{"nome":"Hariton Gomes Inacio Andrade","equipe":"Maximus - SOR"},{"nome":"Henrique Guedes Prohaska","equipe":"Maximus - SOR"},{"nome":"Henry Massaaki Ito","equipe":"AV Anywhere"},{"nome":"Ingrid Landgraf","equipe":"Gold11 - SBC"},{"nome":"Isaac Newton Ferreira Castelo","equipe":"Dendê Equity - SSA"},{"nome":"Ivancler Bruns Camacho","equipe":"Thunders - CX"},{"nome":"Jhonatan Alkimim Tognete","equipe":"Sparta - SP"},{"nome":"João Gilberto Martins Mello","equipe":"AV Anywhere"},{"nome":"João Lucas Albieri de Almeida","equipe":"Mesa proprietária"},{"nome":"João Lucas da Silva","equipe":"Rota 100"},{"nome":"João Paulo Teixeira Cardoso","equipe":"Maximus - SOR"},{"nome":"José Luciano Costa Maia","equipe":"Zênite - SP"},{"nome":"Juliana Honda Domingues","equipe":"Desbravadores JK - SP"},{"nome":"Julio Alberto Passos Baez","equipe":"Vikings - POA"},{"nome":"Kaio Henrique Colone Rodrigues","equipe":"Maximus - SOR"},{"nome":"Karine Urack Krug","equipe":"Vikings - POA"},{"nome":"Karoline de Lima Reis","equipe":"Gestores"},{"nome":"Keilla Gomes","equipe":"AV Anywhere"},{"nome":"Laura Figueiredo Vieira","equipe":"Staff"},{"nome":"Leandro França Gonçalves","equipe":"Gestores"},{"nome":"Leandro Hirt Rassier","equipe":"Macanudos - POA"},{"nome":"Leandro Marchioretto","equipe":"Gestores"},{"nome":"Leonardo Baumgarten","equipe":"Thunders - CX"},{"nome":"Leonardo Governo Faviere","equipe":"Nasdaq - SP"},{"nome":"Leontina Fernandes Codesseira","equipe":"Rota 100"},{"nome":"Lincoln de Lucio Medeiros","equipe":"Rota 100"},{"nome":"Lisiane Nitschke","equipe":"Vikings - POA"},{"nome":"Luan Gustavo Schmidt","equipe":"AV Anywhere"},{"nome":"Lucas Martins Braga","equipe":"Macanudos - POA"},{"nome":"Lucas Rodrigues Coura Junior","equipe":"Vikings - POA"},{"nome":"Luciane Andrade Prado Ribeiro","equipe":"Desbravadores JK - SP"},{"nome":"Lucio Beiersdorf Flor","equipe":"Vikings - POA"},{"nome":"Luiz Fernando Da Silva Guimarães","equipe":"Vikings - POA"},{"nome":"Luiz Pedro da Cunha Albornoz","equipe":"Zênite - SP"},{"nome":"Maikon Souza Oliveira","equipe":"Vikings - POA"},{"nome":"Manoel Francisco Bastos Neto","equipe":"Dendê Equity - SSA"},{"nome":"Manoel Soares de Gouveia Horta Neto","equipe":"Rota 100"},{"nome":"Marcelo Roth Kunzler","equipe":"Macanudos - POA"},{"nome":"Marcelo Santiago","equipe":"Nasdaq - SP"},{"nome":"Marcelo Sartor","equipe":"Thunders - CX"},{"nome":"Marcelo Serrano","equipe":"Maximus - SOR"},{"nome":"Marcos Andre da Luz","equipe":"Sparta - SP"},{"nome":"Marcos Corte Campos","equipe":"Highlanders - SP"},{"nome":"Mariana Sena Brito Gonçalves","equipe":"Dendê Equity - SSA"},{"nome":"Mariano Michalska Pereira Scalco","equipe":"Macanudos - POA"},{"nome":"Marisa de Oliveira","equipe":"Desbravadores JK - SP"},{"nome":"Martinho De Oliveira Fernandes","equipe":"Highlanders - SP"},{"nome":"Matheus Gonçalo Antunes","equipe":"Staff"},{"nome":"Matheus Vargas Martins","equipe":"Vikings - POA"},{"nome":"Mauricio Manfron Santos","equipe":"Macanudos - POA"},{"nome":"Mesa proprietária","equipe":"Mesa proprietária"},{"nome":"Michael Martins da Silva","equipe":"Vikings - POA"},{"nome":"Milena Bleinroth Artea","equipe":"Sparta - SP"},{"nome":"Miriam Reiko Takara","equipe":"Staff"},{"nome":"Moisés Santos","equipe":"Sparta - SP"},{"nome":"Murilo dos Santos Medeiros","equipe":"Desbravadores JK - SP"},{"nome":"Murilo Godoi Vecchi","equipe":"Gold11 - SBC"},{"nome":"Murilo Simões Gonçalves de Sousa","equipe":"Mesa proprietária"},{"nome":"Nataly Ferreira da Silva Sothe","equipe":"Zênite - SP"},{"nome":"Nelson Nicastro Jnior","equipe":"Rota 100"},{"nome":"Orlando Bachesque Junior","equipe":"Gestores"},{"nome":"Paloma Aparecida Pinheiro Brito","equipe":"Staff"},{"nome":"Patrick de Lima Rodrigues","equipe":"Macanudos - POA"},{"nome":"Paula Ribeiro Campos","equipe":"Rota 100"},{"nome":"Paulo Alberto Pessotti Tavares","equipe":"Zênite - SP"},{"nome":"Paulo André Bertone Faneco","equipe":"AV Anywhere"},{"nome":"Paulo Marcus Kudler","equipe":"Rota 100"},{"nome":"Paulo Rogerio Chrispim de Oliveira","equipe":"Rota 100"},{"nome":"Pedro Cavendish Carvalho","equipe":"Sparta - SP"},{"nome":"Pedro Santos Gumiel","equipe":"Nasdaq - SP"},{"nome":"Pedro Serravalle de Sá","equipe":"Dendê Equity - SSA"},{"nome":"Piero Boschi","equipe":"AV Anywhere"},{"nome":"Rafael Alvares Fredini","equipe":"Gestores"},{"nome":"Rafael Carini","equipe":"Thunders - CX"},{"nome":"Rafael de Freitas Costa","equipe":"Dendê Equity - SSA"},{"nome":"Rafael Girardi Fassarella","equipe":"Nasdaq - SP"},{"nome":"Rafael Papp Pereira","equipe":"Desbravadores JK - SP"},{"nome":"Rafael Quintana Da Rosa","equipe":"Macanudos - POA"},{"nome":"Rafael Ramalho De Souza","equipe":"Thunders - CX"},{"nome":"Ramiro Inocencio Filho","equipe":"Staff"},{"nome":"Renan Guelbali Perton","equipe":"Gold11 - SBC"},{"nome":"Renan Nogueira Hoffmann","equipe":"Maximus - SOR"},{"nome":"Renato de Almeida Silva","equipe":"Maximus - SOR"},{"nome":"Renato Ferreira Da Silva Junior","equipe":"Gestores"},{"nome":"Renato Jun Yoshioka","equipe":"Nasdaq - SP"},{"nome":"Renato Tavares Vulcano","equipe":"Maximus - SOR"},{"nome":"Rene Almeida Sampaio Santos","equipe":"Zênite - SP"},{"nome":"Ricardo Antonello","equipe":"AV Anywhere"},{"nome":"Ricardo Hiroshi Ueda","equipe":"Gestores"},{"nome":"Riuji Augusto Kiyohara","equipe":"Highlanders - SP"},{"nome":"Roberta Tronco Nunes","equipe":"Thunders - CX"},{"nome":"Roberto Pedroso Garcia","equipe":"Nasdaq - SP"},{"nome":"Rodrigo de Oliveira Mascher","equipe":"Gold11 - SBC"},{"nome":"Rodrigo Mota Mello Rodriguez","equipe":"Staff"},{"nome":"Rodrigo Vinicius Cavalcante Piombo","equipe":"Desbravadores JK - SP"},{"nome":"Rômulo Arpini da Rosa","equipe":"Vikings - POA"},{"nome":"Ronie Silva De Carvalho","equipe":"Rota 100"},{"nome":"Roselene Mello Milani","equipe":"Zênite - SP"},{"nome":"Sabrina Roberta Stefani","equipe":"Maximus - SOR"},{"nome":"Solange dos Santos Lopes","equipe":"Sparta - SP"},{"nome":"Tamires Angelica Vidal","equipe":"Desbravadores JK - SP"},{"nome":"Thiago Hitoshi Kayo","equipe":"Gestores"},{"nome":"Thiago Vicente Rentz","equipe":"Thunders - CX"},{"nome":"Thiago Vicentin Pereira","equipe":"AV Anywhere"},{"nome":"Thiago Visacre Souza Santos","equipe":"Gestores"},{"nome":"Tiago Camilo Teixeira","equipe":"Maximus - SOR"},{"nome":"Tiago Sigillo Pellegrini","equipe":"Highlanders - SP"},{"nome":"Victor Dib","equipe":"Maximus - SOR"},{"nome":"Victor Gomes Delfini","equipe":"Vikings - POA"},{"nome":"Victor Romano","equipe":"Staff"},{"nome":"Vinícius Torres Carnelós","equipe":"Rota 100"},{"nome":"Vinicius Xavier Parra","equipe":"Zênite - SP"},{"nome":"Vitor Fernando Matioli Guerra","equipe":"Desbravadores JK - SP"}].filter(function(a){ return a.equipe !== "Staff"; });
+
+  var MEETING_SECTIONS = [
+    { name:"Pré-reunião", note:"Antes da conversa, o líder deve chegar preparado.", items:[
+        "Checar pace do planejamento anual",
+        "Identificar os 2 principais gaps",
+        "Revisar posição nas campanhas ativas",
+        "Analisar o funil do assessor (CRM)",
+        "Separar 1 ou 2 oportunidades que merecem atenção"
+      ]},
+    { name:"Abertura (check-in)", note:"A conversa começa com a pessoa, não com os números.", footer:"Objetivo: entender o contexto antes de analisar os indicadores.", items:[
+        "Como você está?",
+        "Uma evolução desde a última 1:1",
+        "Onde você mais direcionou energia essa semana?",
+        "Boas práticas que podem ser replicadas",
+      ]},
+    { name:"Análise do funil", note:"Diagnosticar a causa do resultado.", items:[
+        "Trabalhou as atividades críticas e Expert Allocation",
+        "Onde está seu maior gargalo hoje?",
+        "O problema é de esforço, abordagem ou conhecimento?"
+      ]},
+    { name:"Plano de ação", note:"Poucas ações, muito claras.", items:[
+        "Definir no máximo 3 ações prioritárias",
+        "Cada ação responde: o que · até quando · como vamos medir",
+        "Definir o apoio que o líder dará",
+        { t:"Confirmar o compromisso do assessor", k:"scale" },
+        "Registrar a ata e enviar após a reunião"
+      ]}
+  ];
+
+  var INDICATORS_SECTIONS = [
+    { name:"Indicadores", items:[
+        { t:"Captação líquida na semana", k:"value", unit:"R$ mil" },
+        { t:"Contas abertas", k:"value", unit:"contas" },
+        { t:"Receita na semana", k:"value", unit:"R$" },
+        { t:"Reuniões de seguro realizadas", k:"value", unit:"reuniões" },
+        { t:"Reuniões de consórcio realizadas", k:"value", unit:"reuniões" },
+        { t:"Reuniões de revisão de carteira realizadas", k:"value", unit:"reuniões" },
+        { t:"Eventos realizados", k:"value", unit:"eventos" },
+        { t:"Financial Plannings realizados no mês", k:"value", unit:"FPs" },
+        { t:"Missões de assessor ativas no mês", k:"value", unit:"missões" },
+        { t:"Modelo de servir", k:"value", unit:"/ 100" }
+      ]}
+  ];
+
+  function normItem(it){ return typeof it === "string" ? { t:it, k:"check" } : it; }
+  var CHECKLISTS = {};
+  function registerChecklist(key, sections){
+    var flat = [];
+    var sectionRanges = [];
+    sections.forEach(function(sec){
+      var start = flat.length;
+      sec.items.forEach(function(it){ flat.push(normItem(it)); });
+      sectionRanges.push({ start:start, end:flat.length, count:sec.items.length });
+    });
+    CHECKLISTS[key] = { sections:sections, flat:flat, total:flat.length, sectionRanges:sectionRanges };
+  }
+  registerChecklist("reuniao11", MEETING_SECTIONS);
+  registerChecklist("indicadoresResultado", INDICATORS_SECTIONS);
+
+  function isAnswered(val, kind){
+    if(kind==="scale" || kind==="value") return val!==undefined && val!==null && val!=="";
+    return !!val;
+  }
+
+  // A section counts as fully done once 2 of its items are answered — leaders
+  // aren't expected to fill every single line to be considered "em dia".
+  function checklistRatio(answers, cl){
+    if(!cl.sectionRanges.length) return 0;
+    var sum = 0;
+    cl.sectionRanges.forEach(function(r){
+      var answered = 0;
+      for(var i=r.start;i<r.end;i++){ if(isAnswered(answers[i], cl.flat[i].k)) answered++; }
+      var target = Math.min(2, r.count) || 1;
+      sum += Math.min(answered/target, 1);
+    });
+    return sum / cl.sectionRanges.length;
+  }
+
+  function checklistAnswerCount(answers, flat){
+    var count = 0;
+    for(var i=0;i<flat.length;i++){
+      var val = answers[i];
+      var k = flat[i].k;
+      if(k==="scale" || k==="value"){ if(val!==undefined && val!==null && val!=="") count++; }
+      else if(val){ count++; }
+    }
+    return count;
+  }
+
+  var ITEM_DEFS = [
+    { key:"reuniao11", type:"checklist", label:"1:1 de Resultados", tagline:"Diagnosticar e direcionar, não cobrar", hasAta:true, hasModelo:false },
+    { key:"indicadoresResultado", type:"checklist", label:"Indicadores de Resultado", tagline:"Captação, receita, modelo de servir e campanhas", hasAta:false, hasModelo:false }
+  ];
+
+  var ICONS = {
+    reuniao11: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><line x1="3" y1="9.5" x2="21" y2="9.5"/><line x1="7.5" y1="2.5" x2="7.5" y2="6.5"/><line x1="16.5" y1="2.5" x2="16.5" y2="6.5"/><circle cx="9" cy="14" r="1.4"/><circle cx="15" cy="14" r="1.4"/><circle cx="9" cy="17.6" r="1.2"/></svg>',
+    indicadoresResultado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="13" width="3" height="5"/><rect x="12" y="9" width="3" height="9"/><rect x="17" y="5" width="3" height="13"/></svg>'
+  };
+
+  var TEAMS = (function(){
+    var set = {};
+    ADVISORS.forEach(function(a){ set[a.equipe] = (set[a.equipe]||0) + 1; });
+    return Object.keys(set).sort();
+  })();
+
+  /* ---------------- Storage ---------------- */
+  var STORE_KEY = "rotinaComercial_v3";
+  var store = loadStore();
+  function loadStore(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return { weeks:{}, targets:{} };
+  }
+  function persist(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }catch(e){}
+  }
+  function targetFor(key){
+    if(store.targets && typeof store.targets[key] === "number") return store.targets[key];
+    var def = ITEM_DEFS.filter(function(i){ return i.key===key; })[0];
+    return def ? def.def : 1;
+  }
+  function entryFor(weekKey, equipe, nome, create){
+    store.weeks[weekKey] = store.weeks[weekKey] || {};
+    store.weeks[weekKey][equipe] = store.weeks[weekKey][equipe] || {};
+    var team = store.weeks[weekKey][equipe];
+    if(!team[nome] && create){ team[nome] = { items:{}, notes:"" }; }
+    return team[nome] || null;
+  }
+
+  /* ---------------- Week helpers ---------------- */
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function startOfWeek(d){
+    var x = new Date(d);
+    var day = (x.getDay()+6)%7;
+    x.setDate(x.getDate()-day);
+    x.setHours(0,0,0,0);
+    return x;
+  }
+  function isoWeekInfo(d){
+    var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var dayNum = (t.getUTCDay()+6)%7;
+    t.setUTCDate(t.getUTCDate()-dayNum+3);
+    var firstThursday = new Date(Date.UTC(t.getUTCFullYear(),0,4));
+    var fDayNum = (firstThursday.getUTCDay()+6)%7;
+    firstThursday.setUTCDate(firstThursday.getUTCDate()-fDayNum+3);
+    var week = 1 + Math.round((t-firstThursday)/(7*864e5));
+    return { year:t.getUTCFullYear(), week:week };
+  }
+  function weekKeyFor(monday){
+    var info = isoWeekInfo(monday);
+    return info.year + "-W" + pad2(info.week);
+  }
+  function fmtRange(monday){
+    var sunday = new Date(monday); sunday.setDate(sunday.getDate()+6);
+    var months = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+    var f = function(d){ return d.getDate()+" "+months[d.getMonth()]; };
+    var sameMonth = monday.getMonth()===sunday.getMonth();
+    return sameMonth ? (monday.getDate()+"–"+f(sunday)) : (f(monday)+" – "+f(sunday));
+  }
+
+  var currentMonday = startOfWeek(new Date());
+  var currentTeam = null;
+  var currentAdvisor = null;
+
+  /* ---------------- Item ratio / status ---------------- */
+  function itemRatio(def, items){
+    if(def.type === "checklist"){
+      var cl = CHECKLISTS[def.key];
+      var obj = items[def.key] || {};
+      var answers = obj.answers || [];
+      var count = checklistAnswerCount(answers, cl.flat);
+      return { ratio: checklistRatio(answers, cl), touched: count>0, count:count, total:cl.total };
+    }
+    var raw = items[def.key];
+    var v = Number(raw)||0;
+    var t = targetFor(def.key)||1;
+    var touched = raw!==undefined && raw!==null && raw!=="";
+    return { ratio: Math.min(v/t,1), touched: touched, count:v, total:t };
+  }
+
+  function computeStatus(weekKey, equipe, nome){
+    var wk = store.weeks[weekKey];
+    var entry = wk && wk[equipe] && wk[equipe][nome];
+    if(!entry) return { status:"pend", pct:null, entry:null };
+    var items = entry.items || {};
+    var anyTouched = false, sum = 0;
+    ITEM_DEFS.forEach(function(def){
+      var r = itemRatio(def, items);
+      if(r.touched) anyTouched = true;
+      sum += r.ratio;
+    });
+    if(!anyTouched) return { status:"pend", pct:null, entry:entry };
+    var pct = Math.round((sum/ITEM_DEFS.length)*100);
+    var status = pct>=80 ? "ok" : pct>=50 ? "warn" : "crit";
+    return { status:status, pct:pct, entry:entry };
+  }
+
+  function teamStats(equipe, weekKey){
+    var advisors = ADVISORS.filter(function(a){ return a.equipe===equipe; });
+    var counts = { ok:0, warn:0, crit:0, pend:0 };
+    var pctSum = 0, pctN = 0;
+    advisors.forEach(function(a){
+      var r = computeStatus(weekKey, a.equipe, a.nome);
+      counts[r.status]++;
+      if(r.pct!==null){ pctSum += r.pct; pctN++; }
+    });
+    var avg = pctN ? Math.round(pctSum/pctN) : null;
+    return { total:advisors.length, counts:counts, avg:avg };
+  }
+
+  function dotColor(status){
+    return status==="ok" ? "var(--success)" : status==="warn" ? "var(--warning)" : status==="crit" ? "var(--critical)" : "var(--pending)";
+  }
+
+  /* ---------------- Rendering helpers ---------------- */
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function renderWeekLabel(){
+    var wk = weekKeyFor(currentMonday);
+    $("weekLabel").innerHTML = fmtRange(currentMonday) + " <small>Semana " + wk.split("-W")[1] + " · " + wk.split("-W")[0] + "</small>";
+  }
+
+  function renderScoreboard(){
+    var weekKey = weekKeyFor(currentMonday);
+    var scope = currentTeam ? ADVISORS.filter(function(a){ return a.equipe===currentTeam; }) : ADVISORS;
+    var counts = { ok:0, warn:0, crit:0, pend:0 };
+    scope.forEach(function(a){
+      var r = computeStatus(weekKey, a.equipe, a.nome);
+      counts[r.status]++;
+    });
+    var total = scope.length;
+    $("scoreboardScope").textContent = currentTeam || "Todas as equipes";
+    if($("teamSelect").value !== (currentTeam||"")) $("teamSelect").value = currentTeam||"";
+    $("scoreboardHint").innerHTML = currentTeam ? 'Filtrado por equipe · <a href="#" id="clearTeamFilter" style="color:var(--accent-ink);">ver todas</a>' : "";
+    var clearLink = $("clearTeamFilter");
+    if(clearLink){
+      clearLink.addEventListener("click", function(e){ e.preventDefault(); showOverview(); });
+    }
+    $("scoreboard").innerHTML =
+      stat("total","Assessores", total) +
+      stat("ok","Em dia", counts.ok) +
+      stat("warn","Atenção", counts.warn) +
+      stat("crit","Crítico", counts.crit) +
+      stat("pend","Não preenchido", counts.pend);
+    function stat(cls,label,n){
+      return '<button type="button" class="stat '+cls+'" data-status="'+cls+'"><span class="n tabular">'+n+'</span><span class="l">'+label+'</span></button>';
+    }
+    Array.prototype.forEach.call($("scoreboard").querySelectorAll(".stat"), function(btn){
+      btn.addEventListener("click", function(){ showStatusList(btn.getAttribute("data-status")); });
+    });
+  }
+
+  function showStatusList(status){
+    var weekKey = weekKeyFor(currentMonday);
+    var scope = currentTeam ? ADVISORS.filter(function(a){ return a.equipe===currentTeam; }) : ADVISORS;
+    var labels = { total:"Assessores", ok:"Em dia", warn:"Atenção", crit:"Crítico", pend:"Não preenchido" };
+    var list = scope.filter(function(a){
+      return status==="total" ? true : computeStatus(weekKey, a.equipe, a.nome).status===status;
+    }).sort(function(a,b){ return a.nome.localeCompare(b.nome,"pt-BR"); });
+
+    $("statusPanelTitle").textContent = labels[status]+" — "+list.length;
+    $("statusPanelDesc").textContent = currentTeam ? ("Equipe: "+currentTeam+" · semana "+fmtRange(currentMonday)) : ("Todas as equipes · semana "+fmtRange(currentMonday));
+
+    if(!list.length){
+      $("statusPanelList").innerHTML = '<p class="desc">Nenhum assessor nesse status.</p>';
+    } else {
+      $("statusPanelList").innerHTML = list.map(function(a){
+        var r = computeStatus(weekKey, a.equipe, a.nome);
+        var pctLabel = r.pct===null ? "—" : r.pct+"%";
+        return '<button type="button" class="status-row" data-nome="'+esc(a.nome)+'" data-team="'+esc(a.equipe)+'">'+
+          '<span class="status-dot '+r.status+'"></span>'+
+          '<span class="nm">'+esc(a.nome)+'</span>'+
+          (currentTeam ? '' : '<span class="tm">'+esc(a.equipe)+'</span>')+
+          '<span class="pc tabular" style="color:'+dotColor(r.status)+'">'+pctLabel+'</span>'+
+        '</button>';
+      }).join("");
+      Array.prototype.forEach.call($("statusPanelList").querySelectorAll(".status-row"), function(btn){
+        btn.addEventListener("click", function(){
+          $("statusOverlay").hidden = true;
+          showAdvisor(btn.getAttribute("data-team"), btn.getAttribute("data-nome"));
+        });
+      });
+    }
+    $("statusOverlay").hidden = false;
+  }
+
+  function barSegments(counts,total){
+    if(!total) return "";
+    var order = [["ok","var(--success)"],["warn","var(--warning)"],["crit","var(--critical)"],["pend","var(--pending-soft)"]];
+    return order.map(function(o){
+      var w = (counts[o[0]]/total*100);
+      return w>0 ? '<span style="width:'+w+'%;background:'+o[1]+'"></span>' : "";
+    }).join("");
+  }
+
+  /* ---------------- Views ---------------- */
+  function showOverview(){
+    currentTeam = null; currentAdvisor = null;
+    $("overviewView").hidden = false;
+    $("teamView").hidden = true;
+    $("advisorView").hidden = true;
+    renderScoreboard();
+    renderOverview();
+  }
+  function showTeam(team){
+    currentTeam = team; currentAdvisor = null;
+    $("overviewView").hidden = true;
+    $("teamView").hidden = false;
+    $("advisorView").hidden = true;
+    renderScoreboard();
+    renderTeam();
+  }
+  function showAdvisor(team, nome){
+    currentTeam = team; currentAdvisor = nome;
+    $("overviewView").hidden = true;
+    $("teamView").hidden = true;
+    $("advisorView").hidden = false;
+    renderScoreboard();
+    renderAdvisor();
+  }
+
+  function renderOverview(){
+    var weekKey = weekKeyFor(currentMonday);
+    var rows = TEAMS.map(function(t){ return { team:t, s: teamStats(t, weekKey) }; });
+    rows.sort(function(a,b){
+      var av = a.s.avg===null ? -1 : a.s.avg, bv = b.s.avg===null ? -1 : b.s.avg;
+      return av-bv;
+    });
+    $("overviewHint").textContent = "Ordenado por quem mais precisa de atenção";
+    $("teamsGrid").innerHTML = rows.map(function(r){
+      var s = r.s;
+      var pctLabel = s.avg===null ? "—" : s.avg+"%";
+      var pctColor = s.avg===null ? "var(--pending)" : s.avg>=80 ? "var(--success)" : s.avg>=50 ? "var(--warning)" : "var(--critical)";
+      return '<button class="team-card" data-team="'+esc(r.team)+'">'+
+        '<div class="row1"><span class="name">'+esc(r.team)+'</span><span class="pct tabular" style="color:'+pctColor+'">'+pctLabel+'</span></div>'+
+        '<span class="count">'+s.total+' assessor'+(s.total===1?'':'es')+'</span>'+
+        '<div class="bar">'+barSegments(s.counts, s.total)+'</div>'+
+        '<div class="legend"><span><b class="tabular">'+s.counts.ok+'</b> em dia</span><span><b class="tabular">'+s.counts.warn+'</b> atenção</span><span><b class="tabular">'+s.counts.crit+'</b> crítico</span></div>'+
+        '</button>';
+    }).join("");
+    Array.prototype.forEach.call($("teamsGrid").querySelectorAll(".team-card"), function(btn){
+      btn.addEventListener("click", function(){ showTeam(btn.getAttribute("data-team")); });
+    });
+  }
+
+  function chipHtml(def, items){
+    var r = itemRatio(def, items);
+    var cls = !r.touched ? "" : (r.ratio>=1 ? "ok" : (r.ratio>0 ? "warn" : ""));
+    var label = def.type==="checklist" ? (r.count+"/"+r.total) : (r.count+"/"+r.total);
+    return '<span class="chip '+cls+'" title="'+esc(def.label)+': '+label+'">'+ICONS[def.key]+'</span>';
+  }
+
+  function renderTeam(){
+    var weekKey = weekKeyFor(currentMonday);
+    var s = teamStats(currentTeam, weekKey);
+    $("teamTitle").textContent = currentTeam;
+    $("teamSummary").textContent = s.total+" assessor"+(s.total===1?"":"es")+" · média "+(s.avg===null?"—":s.avg+"%")+" na semana de "+fmtRange(currentMonday);
+
+    var advisors = ADVISORS.filter(function(a){ return a.equipe===currentTeam; })
+      .sort(function(a,b){ return a.nome.localeCompare(b.nome,"pt-BR"); });
+
+    $("advisorList").innerHTML = advisors.map(function(a){
+      var r = computeStatus(weekKey, a.equipe, a.nome);
+      var items = (r.entry && r.entry.items) || {};
+      var pctLabel = r.pct===null ? "—" : r.pct+"%";
+      var chips = ITEM_DEFS.map(function(def){ return chipHtml(def, items); }).join("");
+      var sched = getSchedule(a.equipe, a.nome);
+      var schedText = sched.day ? (DAY_LABELS[sched.day]||sched.day)+(sched.time?" · "+sched.time:"") : "";
+      var quad = quadrantById(getQuadrant(a.equipe, a.nome));
+      var badge = quad ? '<span class="quadrant-badge" style="background:'+quad.accent+'" title="'+esc(quad.name)+'">'+quad.id+'</span>' : '';
+      return '<button class="advisor-row" data-nome="'+esc(a.nome)+'">'+
+        '<span class="status-dot '+r.status+'"></span>'+
+        '<span class="advisor-name-wrap"><span class="advisor-name-line">'+badge+'<span class="advisor-name">'+esc(a.nome)+'</span></span>'+(schedText?'<span class="advisor-sched">'+esc(schedText)+'</span>':'')+'</span>'+
+        '<span class="advisor-pct tabular" style="color:'+dotColor(r.status)+'">'+pctLabel+'</span>'+
+        '<span class="advisor-chips">'+chips+'</span>'+
+        '<svg class="row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>'+
+      '</button>';
+    }).join("");
+
+    Array.prototype.forEach.call($("advisorList").querySelectorAll(".advisor-row"), function(btn){
+      btn.addEventListener("click", function(){ showAdvisor(currentTeam, btn.getAttribute("data-nome")); });
+    });
+  }
+
+  function renderAdvisor(){
+    var weekKey = weekKeyFor(currentMonday);
+    var r = computeStatus(weekKey, currentTeam, currentAdvisor);
+    var items = (r.entry && r.entry.items) || {};
+
+    $("backToTeamLabel").textContent = currentTeam;
+    $("advisorName").textContent = currentAdvisor;
+    $("advisorTeamTag").textContent = currentTeam;
+    $("advisorDot").className = "status-dot "+r.status;
+    $("advisorPct").textContent = r.pct===null ? "—" : r.pct+"%";
+    $("advisorPct").style.color = dotColor(r.status);
+    $("advisorWeekLabel").textContent = fmtRange(currentMonday);
+
+    var prevMonday = new Date(currentMonday); prevMonday.setDate(prevMonday.getDate()-7);
+    var prevWeekKey = weekKeyFor(prevMonday);
+    var prevEntry = entryFor(prevWeekKey, currentTeam, currentAdvisor, false);
+    var followUp = (prevEntry && prevEntry.items && prevEntry.items.reuniao11 && prevEntry.items.reuniao11.ata) ? prevEntry.items.reuniao11 : null;
+
+    $("itemsGrid").innerHTML = ITEM_DEFS.map(function(def){
+      return def.type==="checklist" ? meetingCardHtml(def, items, followUp) : counterCardHtml(def, items);
+    }).join("");
+
+    $("generalNotes").value = (r.entry && r.entry.notes) || "";
+
+    var sched = getSchedule(currentTeam, currentAdvisor);
+    $("scheduleDay").value = sched.day || "";
+    $("scheduleTime").value = sched.time || "";
+
+    renderQuadrant();
+    renderPipeline();
+    bindAdvisorInputs();
+  }
+
+  var QUADRANTS = [
+    { id:"A", name:"Referência", crit:"Alto Esforço · Alta Captação", bg:"#16213d", accent:"#d4af37",
+      actions:["1:1 semanal — foco em crescimento e carreira","Desafiar com carteira premium e contas estratégicas","Engajar como case nas reuniões do time","Preparação para liderança"] },
+    { id:"B", name:"Em Ascensão", crit:"Baixo Esforço · Alta Captação", bg:"#163524", accent:"#4caf6d",
+      actions:["1:1 semanal — estruturar método e CRM","Acompanhar indicadores de esforço","Monitorias com foco em consistência","Aplicar plano de otimização da carteira"] },
+    { id:"C", name:"Em Declínio", crit:"Alto Esforço · Baixa Captação", bg:"#123044", accent:"#34b3d1",
+      actions:["1:1 semanal — foco técnico e de discurso","Roleplay e portal monitorado","Rodar plano intensivo de FP + OPIN","Recalibrar carteira: foco onde tem chance real"] },
+    { id:"D", name:"Problema", crit:"Baixo Esforço · Baixa Captação", bg:"#3a1414", accent:"#e2694e",
+      actions:["1:1 semanal com acompanhamento próximo","Diagnóstico direto: você quer seguir nessa carreira?","Roleplay e portal monitorado"] }
+  ];
+  function quadrantById(id){ return QUADRANTS.filter(function(q){ return q.id===id; })[0]; }
+  function getQuadrant(equipe, nome){
+    return (store.quadrant && store.quadrant[scheduleKey(equipe,nome)]) || "";
+  }
+  function setQuadrant(equipe, nome, id){
+    store.quadrant = store.quadrant || {};
+    store.quadrant[scheduleKey(equipe,nome)] = id;
+    persist();
+  }
+
+  function renderQuadrant(){
+    var current = getQuadrant(currentTeam, currentAdvisor);
+    $("quadrantGrid").innerHTML = QUADRANTS.map(function(q){
+      var sel = q.id===current;
+      return '<button type="button" class="quadrant-card'+(sel?' selected':'')+'" data-qid="'+q.id+'" style="--qz-bg:'+q.bg+';--qz-accent:'+q.accent+'">'+
+        '<div class="qz-top"><span class="qz-letter">'+q.id+'</span><div><div class="qz-name">'+esc(q.name)+'</div><div class="qz-crit">'+esc(q.crit)+'</div></div></div>'+
+        '<ul>'+q.actions.map(function(a){ return '<li>'+esc(a)+'</li>'; }).join("")+'</ul>'+
+      '</button>';
+    }).join("");
+    Array.prototype.forEach.call($("quadrantGrid").querySelectorAll(".quadrant-card"), function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-qid");
+        setQuadrant(currentTeam, currentAdvisor, id===current ? "" : id);
+        renderQuadrant();
+        flashSave();
+      });
+    });
+  }
+
+  var STAGE_OPTIONS = ["Prospecção","Proposta enviada","Em negociação","Fechamento"];
+  var TYPE_OPTIONS = ["Captação","Seguro","Consórcio","Outro"];
+  function getPipeline(equipe, nome){
+    return (store.pipeline && store.pipeline[scheduleKey(equipe,nome)]) || [];
+  }
+  function setPipeline(equipe, nome, list){
+    store.pipeline = store.pipeline || {};
+    store.pipeline[scheduleKey(equipe,nome)] = list;
+    persist();
+  }
+
+  function renderPipeline(){
+    var list = getPipeline(currentTeam, currentAdvisor);
+    var box = $("pipelineList");
+    if(!list.length){
+      box.innerHTML = '<p class="pipeline-empty">Nenhum negócio cadastrado ainda.</p>';
+      return;
+    }
+    box.innerHTML = list.map(function(d, i){
+      var valor = (d.valor===undefined || d.valor===null) ? "" : d.valor;
+      var tipo = d.tipo || TYPE_OPTIONS[0];
+      var showOther = tipo === "Outro";
+      return '<div class="deal-card" data-idx="'+i+'">'+
+        '<div class="dc-top">'+
+          '<input type="text" class="dc-title" data-deal-field="cliente" placeholder="Cliente / negócio" value="'+esc(d.cliente||"")+'">'+
+          '<button type="button" class="del-btn" title="Remover negócio">×</button>'+
+        '</div>'+
+        '<div class="deal-fields">'+
+          '<label>Tipo<select data-deal-field="tipo">'+
+            TYPE_OPTIONS.map(function(t){ return '<option value="'+esc(t)+'"'+(tipo===t?' selected':'')+'>'+esc(t)+'</option>'; }).join("")+
+          '</select></label>'+
+          (showOther ? '<label>Qual?<input type="text" data-deal-field="tipoOutro" placeholder="Especifique" value="'+esc(d.tipoOutro||"")+'"></label>' : '')+
+          '<label>Valor<input type="number" step="0.01" data-deal-field="valor" placeholder="R$ mil" value="'+valor+'"></label>'+
+          '<label>Estágio<select data-deal-field="estagio">'+
+            STAGE_OPTIONS.map(function(s){ return '<option value="'+esc(s)+'"'+(d.estagio===s?' selected':'')+'>'+esc(s)+'</option>'; }).join("")+
+          '</select></label>'+
+          '<label>Previsão<input type="date" data-deal-field="previsao" value="'+esc(d.previsao||"")+'"></label>'+
+        '</div>'+
+      '</div>';
+    }).join("");
+
+    Array.prototype.forEach.call(box.querySelectorAll(".deal-card"), function(row){
+      var idx = Number(row.getAttribute("data-idx"));
+      Array.prototype.forEach.call(row.querySelectorAll("[data-deal-field]"), function(el){
+        var evt = el.tagName==="SELECT" ? "change" : "input";
+        el.addEventListener(evt, function(){
+          var field = el.getAttribute("data-deal-field");
+          var list2 = getPipeline(currentTeam, currentAdvisor);
+          list2[idx][field] = el.value;
+          setPipeline(currentTeam, currentAdvisor, list2);
+          flashSave();
+          if(field==="tipo"){ renderPipeline(); }
+        });
+      });
+      row.querySelector(".del-btn").addEventListener("click", function(){
+        var list2 = getPipeline(currentTeam, currentAdvisor);
+        list2.splice(idx,1);
+        setPipeline(currentTeam, currentAdvisor, list2);
+        renderPipeline();
+        flashSave();
+      });
+    });
+  }
+
+  function scheduleKey(equipe, nome){ return equipe+"|"+nome; }
+  function getSchedule(equipe, nome){
+    return (store.schedule && store.schedule[scheduleKey(equipe,nome)]) || {};
+  }
+  function setSchedule(equipe, nome, day, time){
+    store.schedule = store.schedule || {};
+    store.schedule[scheduleKey(equipe,nome)] = { day:day, time:time };
+    persist();
+  }
+  var DAY_LABELS = { seg:"Seg", ter:"Ter", qua:"Qua", qui:"Qui", sex:"Sex", sab:"Sáb", dom:"Dom" };
+
+  function counterCardHtml(def, items){
+    var raw = items[def.key];
+    var v = (raw===undefined || raw===null) ? "" : raw;
+    var t = targetFor(def.key);
+    var done = raw!=="" && Number(raw)>=t;
+    return '<div class="item-card'+(done?" done":"")+'">'+
+      '<div class="ihead">'+ICONS[def.key]+'<span class="ilabel">'+esc(def.label)+'</span></div>'+
+      '<div class="idesc">'+esc(def.desc)+'</div>'+
+      '<div class="ival"><input type="number" min="0" inputmode="numeric" data-item="'+def.key+'" value="'+v+'" placeholder="0"><span class="itarget tabular">/ '+t+' '+esc(def.unit)+'</span></div>'+
+      '</div>';
+  }
+
+  function scaleButtonsHtml(idx, val){
+    var html = "";
+    for(var i=0;i<=10;i++){
+      html += '<button type="button" class="scale-btn'+(val===i?' sel':'')+'" data-meeting-idx="'+idx+'" data-val="'+i+'">'+i+'</button>';
+    }
+    return html;
+  }
+
+  function followUpHtml(followUp){
+    if(!followUp) return "";
+    var status = followUp.status || "";
+    var stateCls = status==="done" ? " fu-state-done" : status==="not_done" ? " fu-state-notdone" : "";
+    return '<div class="followup-card'+stateCls+'">'+
+      '<span class="fu-label">Combinado da semana passada — foi realizado?</span>'+
+      '<span class="fu-text">'+esc(followUp.ata)+'</span>'+
+      '<div class="fu-actions">'+
+        '<button type="button" class="fu-btn fu-done'+(status==="done"?" sel":"")+'" data-status="done">Realizado</button>'+
+        '<button type="button" class="fu-btn fu-notdone'+(status==="not_done"?" sel":"")+'" data-status="not_done">Não realizado</button>'+
+      '</div>'+
+    '</div>';
+  }
+
+  function planBlockHtml(obj){
+    var ata = obj.ata || "";
+    return '<div class="meeting-ata">'+
+      '<label>Ata / plano de ação combinado</label>'+
+      '<textarea data-meeting-ata rows="3" placeholder="O que · até quando · como mede — registre os combinados para enviar ao assessor">'+esc(ata)+'</textarea>'+
+      '<div class="ata-actions"><button type="button" class="btn ai-analyze-btn">Analisar com IA</button><span class="ata-hint">Copia o texto para você colar numa conversa com o Claude e receber um plano organizado.</span></div>'+
+    '</div>';
+  }
+
+  function meetingCardHtml(def, items, followUp){
+    var cl = CHECKLISTS[def.key];
+    var obj = items[def.key] || {};
+    var answers = obj.answers || [];
+    var ata = obj.ata || "";
+    var flatIdx = 0;
+    var sectionsHtml = cl.sections.map(function(sec){
+      var rowsHtml = sec.items.map(function(raw){
+        var it = normItem(raw);
+        var idx = flatIdx++;
+        if(it.k === "scale"){
+          var val = answers[idx];
+          val = (val===undefined||val===null||val==="") ? -1 : Number(val);
+          return '<div class="scale-row"><span class="qtext">'+esc(it.t)+'</span><div class="scale-picker">'+scaleButtonsHtml(idx, val)+'</div></div>';
+        }
+        if(it.k === "value"){
+          var vv = answers[idx];
+          vv = (vv===undefined||vv===null) ? "" : vv;
+          return '<div class="value-row"><span class="qtext">'+esc(it.t)+'</span><div class="value-input"><span class="prefix">'+esc(it.unit||"")+'</span><input type="number" step="0.01" inputmode="decimal" data-meeting-idx="'+idx+'" data-meeting-value value="'+vv+'" placeholder="0"></div></div>';
+        }
+        var checked = !!answers[idx];
+        return '<label class="check-row'+(checked?' checked':'')+'">'+
+          '<input type="checkbox" data-meeting-idx="'+idx+'"'+(checked?' checked':'')+'>'+
+          '<span>'+esc(it.t)+'</span>'+
+        '</label>';
+      }).join("");
+      return '<div class="meeting-section"><span class="sname">'+esc(sec.name)+'</span>'+
+        (sec.note ? '<span class="snote">'+esc(sec.note)+'</span>' : '')+
+        rowsHtml+
+        (sec.footer ? '<span class="sfooter">'+esc(sec.footer)+'</span>' : '')+
+        '</div>';
+    }).join("");
+    var count = checklistAnswerCount(answers, cl.flat);
+    var done = checklistRatio(answers, cl) >= 1;
+    var modelo = (obj.modeloServir===undefined || obj.modeloServir===null) ? "" : obj.modeloServir;
+    return '<div class="meeting-card'+(done?" done":"")+'" data-def-key="'+def.key+'">'+
+      '<div class="meeting-top">'+
+        '<div class="titles">'+ICONS[def.key]+
+          '<div><div class="eyebrow">Rotina</div><h3>'+esc(def.label)+'</h3><div class="tagline">'+esc(def.tagline)+'</div></div>'+
+        '</div>'+
+        (def.hasModelo ? '<div class="meeting-indicator"><label>Modelo de servir</label><div class="row"><input type="number" min="1" max="100" inputmode="numeric" data-meeting-modelo value="'+modelo+'" placeholder="—"><span class="of">/ 100</span></div></div>' : '')+
+      '</div>'+
+      (def.hasAta ? followUpHtml(followUp) : '')+
+      '<div class="meeting-sections">'+sectionsHtml+'</div>'+
+      (def.hasAta ? planBlockHtml(obj) : '')+
+      '</div>';
+  }
+
+  function bindAdvisorInputs(){
+    var weekKey = weekKeyFor(currentMonday);
+    var equipe = currentTeam, nome = currentAdvisor;
+    var grid = $("itemsGrid");
+
+    Array.prototype.forEach.call(grid.querySelectorAll("input[data-item]"), function(inp){
+      inp.addEventListener("input", function(){
+        var entry = entryFor(weekKey, equipe, nome, true);
+        entry.items[inp.getAttribute("data-item")] = inp.value === "" ? "" : Number(inp.value);
+        persist();
+        afterEdit();
+      });
+    });
+
+    Array.prototype.forEach.call(grid.querySelectorAll('input[type=checkbox][data-meeting-idx]'), function(box){
+      box.addEventListener("change", function(){
+        var key = box.closest(".meeting-card").getAttribute("data-def-key");
+        var entry = entryFor(weekKey, equipe, nome, true);
+        entry.items[key] = entry.items[key] || { answers:[], ata:"" };
+        var idx = Number(box.getAttribute("data-meeting-idx"));
+        entry.items[key].answers[idx] = box.checked;
+        persist();
+        var row = box.closest(".check-row");
+        if(row) row.classList.toggle("checked", box.checked);
+        afterEdit();
+      });
+    });
+
+    Array.prototype.forEach.call(grid.querySelectorAll("button.scale-btn"), function(btn){
+      btn.addEventListener("click", function(){
+        var key = btn.closest(".meeting-card").getAttribute("data-def-key");
+        var entry = entryFor(weekKey, equipe, nome, true);
+        entry.items[key] = entry.items[key] || { answers:[], ata:"" };
+        var idx = Number(btn.getAttribute("data-meeting-idx"));
+        var val = Number(btn.getAttribute("data-val"));
+        entry.items[key].answers[idx] = val;
+        persist();
+        Array.prototype.forEach.call(btn.parentElement.querySelectorAll(".scale-btn"), function(b){ b.classList.remove("sel"); });
+        btn.classList.add("sel");
+        afterEdit();
+      });
+    });
+
+    Array.prototype.forEach.call(grid.querySelectorAll("input[data-meeting-value]"), function(inp){
+      inp.addEventListener("input", function(){
+        var key = inp.closest(".meeting-card").getAttribute("data-def-key");
+        var entry = entryFor(weekKey, equipe, nome, true);
+        entry.items[key] = entry.items[key] || { answers:[], ata:"" };
+        var idx = Number(inp.getAttribute("data-meeting-idx"));
+        entry.items[key].answers[idx] = inp.value === "" ? "" : Number(inp.value);
+        persist();
+        afterEdit();
+      });
+    });
+
+    var prevMonday = new Date(currentMonday); prevMonday.setDate(prevMonday.getDate()-7);
+    var prevWeekKey = weekKeyFor(prevMonday);
+    Array.prototype.forEach.call(grid.querySelectorAll(".fu-btn"), function(btn){
+      btn.addEventListener("click", function(){
+        var prevEntry = entryFor(prevWeekKey, equipe, nome, true);
+        prevEntry.items.reuniao11 = prevEntry.items.reuniao11 || { answers:[], ata:"" };
+        prevEntry.items.reuniao11.status = btn.getAttribute("data-status");
+        persist();
+        var card = btn.closest(".followup-card");
+        card.classList.remove("fu-state-done","fu-state-notdone");
+        card.classList.add(btn.getAttribute("data-status")==="done" ? "fu-state-done" : "fu-state-notdone");
+        Array.prototype.forEach.call(card.querySelectorAll(".fu-btn"), function(b){ b.classList.remove("sel"); });
+        btn.classList.add("sel");
+      });
+    });
+
+    var ataEl = grid.querySelector("textarea[data-meeting-ata]");
+    if(ataEl){
+      ataEl.addEventListener("input", function(){
+        var entry = entryFor(weekKey, equipe, nome, true);
+        entry.items.reuniao11 = entry.items.reuniao11 || { answers:[], ata:"" };
+        entry.items.reuniao11.ata = ataEl.value;
+        persist();
+        flashSave();
+      });
+    }
+
+    var aiBtn = grid.querySelector(".ai-analyze-btn");
+    if(aiBtn){
+      aiBtn.addEventListener("click", function(){
+        var text = ataEl ? ataEl.value.trim() : "";
+        if(!text){ showToast("Escreva a ata antes de analisar"); return; }
+        var prompt = "Organize este plano de ação de uma 1:1 comercial em itens claros (o que, até quando, como medir):\n\n"+text;
+        copyForAiAnalysis(prompt);
+      });
+    }
+
+    var modeloEl = grid.querySelector("input[data-meeting-modelo]");
+    if(modeloEl){
+      modeloEl.addEventListener("input", function(){
+        var entry = entryFor(weekKey, equipe, nome, true);
+        entry.items.reuniao11 = entry.items.reuniao11 || { answers:[], ata:"" };
+        var v = modeloEl.value === "" ? "" : Math.max(1, Math.min(100, Number(modeloEl.value)));
+        entry.items.reuniao11.modeloServir = v;
+        persist();
+        flashSave();
+      });
+    }
+
+    $("generalNotes").addEventListener("input", function(){
+      var entry = entryFor(weekKey, equipe, nome, true);
+      entry.notes = $("generalNotes").value;
+      persist();
+      flashSave();
+    });
+
+    function saveSchedule(){
+      setSchedule(equipe, nome, $("scheduleDay").value, $("scheduleTime").value);
+      flashSave();
+    }
+    $("scheduleDay").addEventListener("change", saveSchedule);
+    $("scheduleTime").addEventListener("change", saveSchedule);
+  }
+
+  function afterEdit(){
+    flashSave();
+    var weekKey = weekKeyFor(currentMonday);
+    var r = computeStatus(weekKey, currentTeam, currentAdvisor);
+    $("advisorDot").className = "status-dot "+r.status;
+    $("advisorPct").textContent = r.pct===null ? "—" : r.pct+"%";
+    $("advisorPct").style.color = dotColor(r.status);
+    refreshChecklistCards();
+    renderScoreboard();
+  }
+
+  function refreshChecklistCards(){
+    var weekKey = weekKeyFor(currentMonday);
+    var entry = entryFor(weekKey, currentTeam, currentAdvisor, false);
+    var items = (entry && entry.items) || {};
+    Array.prototype.forEach.call($("itemsGrid").querySelectorAll(".meeting-card[data-def-key]"), function(card){
+      var key = card.getAttribute("data-def-key");
+      var cl = CHECKLISTS[key];
+      if(!cl) return;
+      var obj = items[key] || {};
+      var answers = obj.answers || [];
+      card.classList.toggle("done", checklistRatio(answers, cl) >= 1);
+    });
+  }
+
+  function flashSave(){
+    var flag = $("advisorSaveFlag");
+    flag.classList.add("show");
+    clearTimeout(flag._t);
+    flag._t = setTimeout(function(){ flag.classList.remove("show"); }, 1200);
+  }
+
+  /* ---------------- Search ---------------- */
+  function renderSearch(q){
+    var box = $("searchResults");
+    if(!q){ box.hidden = true; box.innerHTML=""; return; }
+    var ql = q.toLowerCase();
+    var matches = ADVISORS.filter(function(a){ return a.nome.toLowerCase().indexOf(ql) !== -1; }).slice(0,8);
+    if(!matches.length){ box.innerHTML = '<div class="search-empty">Nenhum assessor encontrado</div>'; box.hidden=false; return; }
+    box.innerHTML = matches.map(function(a){
+      return '<button data-nome="'+esc(a.nome)+'" data-team="'+esc(a.equipe)+'"><span>'+esc(a.nome)+'</span><span class="tag">'+esc(a.equipe)+'</span></button>';
+    }).join("");
+    box.hidden = false;
+    Array.prototype.forEach.call(box.querySelectorAll("button"), function(btn){
+      btn.addEventListener("click", function(){
+        $("searchInput").value = "";
+        box.hidden = true;
+        showAdvisor(btn.getAttribute("data-team"), btn.getAttribute("data-nome"));
+      });
+    });
+  }
+
+  /* ---------------- Settings panel ---------------- */
+  function renderTargets(){
+    $("targetsList").innerHTML = ITEM_DEFS.filter(function(def){ return def.type==="counter"; }).map(function(def){
+      return '<div class="target-row"><span class="tl">'+esc(def.label)+'</span>'+
+        '<span><input type="number" min="1" data-target="'+def.key+'" value="'+targetFor(def.key)+'"> '+esc(def.unit)+'</span></div>';
+    }).join("");
+    Array.prototype.forEach.call($("targetsList").querySelectorAll("input"), function(inp){
+      inp.addEventListener("change", function(){
+        store.targets = store.targets || {};
+        store.targets[inp.getAttribute("data-target")] = Number(inp.value)||1;
+        persist();
+        renderScoreboard();
+        if(currentAdvisor) renderAdvisor(); else if(currentTeam) renderTeam(); else renderOverview();
+      });
+    });
+  }
+
+  /* ---------------- Export / Import ---------------- */
+  function showToast(msg){
+    var t = $("toast");
+    t.textContent = msg;
+    t.hidden = false;
+    t.classList.add("show");
+    clearTimeout(t._t);
+    t._t = setTimeout(function(){ t.classList.remove("show"); setTimeout(function(){ t.hidden=true; }, 250); }, 2400);
+  }
+
+  function copyText(text){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(text);
+    }
+    return Promise.reject(new Error("no-clipboard-api"));
+  }
+
+  function showTextModal(title, desc, content){
+    $("textModalTitle").textContent = title;
+    $("textModalDesc").textContent = desc;
+    $("textModalArea").value = content;
+    $("textModal").hidden = false;
+    $("textModalArea").focus();
+    $("textModalArea").select();
+  }
+
+  function copyForAiAnalysis(text){
+    copyText(text).then(function(){
+      showToast("Copiado! Cole numa conversa com o Claude para organizar o plano.");
+    }).catch(function(){
+      showTextModal("Plano de ação", "Não deu pra copiar automaticamente — selecione o texto abaixo e copie manualmente.", text);
+    });
+  }
+
+  function doExport(){
+    var payload = JSON.stringify(store, null, 2);
+    showTextModal(
+      "Exportar dados — semana "+weekKeyFor(currentMonday),
+      "Copie o texto abaixo e envie (e-mail, WhatsApp etc.) para quem for importar.",
+      payload
+    );
+  }
+
+  function importFromObject(incoming){
+    if(!incoming || typeof incoming !== "object" || !incoming.weeks){
+      showToast("Dados inválidos");
+      return false;
+    }
+    var mergedWeeks = Object.assign({}, store.weeks);
+    Object.keys(incoming.weeks || {}).forEach(function(weekKey){
+      mergedWeeks[weekKey] = Object.assign({}, mergedWeeks[weekKey]);
+      Object.keys(incoming.weeks[weekKey] || {}).forEach(function(equipe){
+        mergedWeeks[weekKey][equipe] = Object.assign({}, mergedWeeks[weekKey][equipe], incoming.weeks[weekKey][equipe]);
+      });
+    });
+    store.weeks = mergedWeeks;
+    store.targets = Object.assign({}, store.targets, incoming.targets||{});
+    store.schedule = Object.assign({}, store.schedule, incoming.schedule||{});
+    store.pipeline = Object.assign({}, store.pipeline, incoming.pipeline||{});
+    store.quadrant = Object.assign({}, store.quadrant, incoming.quadrant||{});
+    persist();
+    renderAll();
+    showToast("Dados importados");
+    return true;
+  }
+
+  function doImport(file){
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var incoming = JSON.parse(reader.result);
+        var ok = confirm("Importar isso vai mesclar os dados com o que já está salvo neste navegador. Em caso de conflito no mesmo assessor/semana, o importado prevalece. Continuar?");
+        if(!ok) return;
+        importFromObject(incoming);
+      }catch(e){
+        showToast("Não foi possível ler o arquivo");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function doPasteImport(){
+    var text = $("pasteImportArea").value.trim();
+    if(!text){ showToast("Cole o texto antes de importar"); return; }
+    try{
+      var incoming = JSON.parse(text);
+      if(importFromObject(incoming)){ $("pasteImportModal").hidden = true; }
+    }catch(e){
+      showToast("Texto inválido — confira se copiou tudo certinho");
+    }
+  }
+
+  /* ---------------- Wire up ---------------- */
+  function renderAll(){
+    renderWeekLabel();
+    renderScoreboard();
+    if(currentAdvisor){ renderAdvisor(); }
+    else if(currentTeam){ renderTeam(); }
+    else { renderOverview(); }
+  }
+
+  $("prevWeek").addEventListener("click", function(){ currentMonday = new Date(currentMonday); currentMonday.setDate(currentMonday.getDate()-7); renderAll(); });
+  $("nextWeek").addEventListener("click", function(){ currentMonday = new Date(currentMonday); currentMonday.setDate(currentMonday.getDate()+7); renderAll(); });
+  $("todayBtn").addEventListener("click", function(){ currentMonday = startOfWeek(new Date()); renderAll(); });
+  $("backToOverview").addEventListener("click", showOverview);
+  $("backToTeam").addEventListener("click", function(){ showTeam(currentTeam); });
+
+  $("addDealBtn").addEventListener("click", function(){
+    var list = getPipeline(currentTeam, currentAdvisor);
+    list.push({ cliente:"", tipo:TYPE_OPTIONS[0], valor:"", estagio:STAGE_OPTIONS[0], previsao:"" });
+    setPipeline(currentTeam, currentAdvisor, list);
+    renderPipeline();
+  });
+
+  TEAMS.forEach(function(t){
+    var opt = document.createElement("option");
+    opt.value = t; opt.textContent = t;
+    $("teamSelect").appendChild(opt);
+  });
+  $("teamSelect").addEventListener("change", function(){
+    var v = this.value;
+    if(v){ showTeam(v); } else { showOverview(); }
+  });
+
+  $("searchInput").addEventListener("input", function(){ renderSearch(this.value.trim()); });
+  document.addEventListener("click", function(e){
+    if(!e.target.closest(".search-wrap")){ $("searchResults").hidden = true; }
+  });
+
+  if(!ITEM_DEFS.some(function(d){ return d.type==="counter"; })){ $("settingsBtn").style.display = "none"; }
+  $("settingsBtn").addEventListener("click", function(){ renderTargets(); $("settingsOverlay").hidden = false; });
+  $("closeSettings").addEventListener("click", function(){ $("settingsOverlay").hidden = true; });
+  $("settingsOverlay").addEventListener("click", function(e){ if(e.target===this) this.hidden = true; });
+  $("closeStatusPanel").addEventListener("click", function(){ $("statusOverlay").hidden = true; });
+  $("statusOverlay").addEventListener("click", function(e){ if(e.target===this) this.hidden = true; });
+
+  $("copyTeamLinkBtn").addEventListener("click", function(){
+    var url = window.location.origin + window.location.pathname + "?equipe=" + encodeURIComponent(currentTeam);
+    $("linkInput").value = url;
+    $("linkOverlay").hidden = false;
+    $("linkInput").select();
+  });
+  $("closeLinkPanel").addEventListener("click", function(){ $("linkOverlay").hidden = true; });
+  $("linkOverlay").addEventListener("click", function(e){ if(e.target===this) this.hidden = true; });
+  $("copyLinkBtn").addEventListener("click", function(){
+    var url = $("linkInput").value;
+    $("linkInput").select();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(function(){ showToast("Link copiado"); }).catch(function(){
+        try{ document.execCommand("copy"); showToast("Link copiado"); }catch(e){ showToast("Selecione e copie o link manualmente"); }
+      });
+    } else {
+      try{ document.execCommand("copy"); showToast("Link copiado"); }catch(e){ showToast("Selecione e copie o link manualmente"); }
+    }
+  });
+  $("resetTargets").addEventListener("click", function(){
+    store.targets = {};
+    persist();
+    renderTargets();
+    renderAll();
+  });
+
+  $("exportBtn").addEventListener("click", doExport);
+  $("importBtn").addEventListener("click", function(){ $("importFile").click(); });
+  $("importFile").addEventListener("change", function(){
+    if(this.files && this.files[0]) doImport(this.files[0]);
+    this.value = "";
+  });
+
+  $("closeTextModal").addEventListener("click", function(){ $("textModal").hidden = true; });
+  $("textModal").addEventListener("click", function(e){ if(e.target===this) this.hidden = true; });
+  $("copyTextModalBtn").addEventListener("click", function(){
+    var text = $("textModalArea").value;
+    $("textModalArea").select();
+    copyText(text).then(function(){ showToast("Copiado"); }).catch(function(){
+      try{ document.execCommand("copy"); showToast("Copiado"); }
+      catch(e){ showToast("Selecione o texto e copie manualmente (Ctrl/Cmd+C)"); }
+    });
+  });
+
+  $("pasteImportBtn").addEventListener("click", function(){
+    $("pasteImportArea").value = "";
+    $("pasteImportModal").hidden = false;
+    $("pasteImportArea").focus();
+  });
+  $("closePasteImport").addEventListener("click", function(){ $("pasteImportModal").hidden = true; });
+  $("pasteImportModal").addEventListener("click", function(e){ if(e.target===this) this.hidden = true; });
+  $("confirmPasteImport").addEventListener("click", doPasteImport);
+
+  renderWeekLabel();
+  (function openFromLink(){
+    try{
+      var params = new URLSearchParams(window.location.search);
+      var teamParam = params.get("equipe");
+      if(teamParam && TEAMS.indexOf(teamParam) !== -1){ showTeam(teamParam); return; }
+    }catch(e){}
+    renderAll();
+  })();
+})();
+</script>
