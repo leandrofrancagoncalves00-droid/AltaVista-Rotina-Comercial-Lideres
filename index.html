@@ -747,6 +747,54 @@
     return sameMonth ? (monday.getDate()+"–"+f(sunday)) : (f(monday)+" – "+f(sunday));
   }
 
+  var SHEETS_URL = "https://script.google.com/macros/s/AKfycbxl-VqTbrwGOnPaBMpBWmZ_RFAhMHle37-utpkohzW7hU2Y-8-c6h4v03tk6EF4LpoF/exec";
+
+  var syncTimer = null;
+  function scheduleSync(){
+    if(!SHEETS_URL) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(doSyncToSheet, 1200);
+  }
+
+  function findIndicatorValue(items, label){
+    var cl = CHECKLISTS.indicadoresResultado;
+    var idx = -1;
+    for(var i=0;i<cl.flat.length;i++){ if(cl.flat[i].t===label){ idx=i; break; } }
+    if(idx===-1) return null;
+    var answers = (items.indicadoresResultado && items.indicadoresResultado.answers) || [];
+    var v = answers[idx];
+    return (v===undefined||v===null||v==="") ? null : v;
+  }
+
+  function doSyncToSheet(){
+    if(!SHEETS_URL || !currentTeam || !currentAdvisor) return;
+    var weekKey = weekKeyFor(currentMonday);
+    var entry = entryFor(weekKey, currentTeam, currentAdvisor, false);
+    var items = (entry && entry.items) || {};
+    var r1 = itemRatio(ITEM_DEFS[0], items);
+    var r2 = itemRatio(ITEM_DEFS[1], items);
+    var payload = {
+      equipe: currentTeam,
+      nome: currentAdvisor,
+      weekKey: weekKey,
+      pct1a1: Math.round(r1.ratio*100),
+      pctIndicadores: Math.round(r2.ratio*100),
+      quadrante: getQuadrant(currentTeam, currentAdvisor),
+      captacao: findIndicatorValue(items, "Captação líquida na semana"),
+      receita: findIndicatorValue(items, "Receita na semana"),
+      modeloServir: findIndicatorValue(items, "Modelo de servir"),
+      ata: (items.reuniao11 && items.reuniao11.ata) || ""
+    };
+    try{
+      fetch(SHEETS_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+    }catch(e){}
+  }
+
   var currentMonday = startOfWeek(new Date());
   var currentTeam = null;
   var currentAdvisor = null;
@@ -1044,6 +1092,7 @@
         setQuadrant(currentTeam, currentAdvisor, id===current ? "" : id);
         renderQuadrant();
         flashSave();
+        scheduleSync();
       });
     });
   }
@@ -1293,6 +1342,7 @@
         entry.items.reuniao11.ata = ataEl.value;
         persist();
         flashSave();
+        scheduleSync();
       });
     }
 
@@ -1342,6 +1392,7 @@
     $("advisorPct").style.color = dotColor(r.status);
     refreshChecklistCards();
     renderScoreboard();
+    scheduleSync();
   }
 
   function refreshChecklistCards(){
