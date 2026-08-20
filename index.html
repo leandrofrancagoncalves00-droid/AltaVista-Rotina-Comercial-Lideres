@@ -731,6 +731,20 @@
     return team[nome] || null;
   }
 
+  // Observações gerais "carregam" para as semanas seguintes: se a semana atual
+  // ainda não tem nada escrito, mostra a última observação registrada como ponto
+  // de partida (só vira dado de verdade desta semana se o líder editar algo).
+  function findCarriedNotes(equipe, nome, fromMonday){
+    var d = new Date(fromMonday);
+    for(var i=0;i<52;i++){
+      d.setDate(d.getDate()-7);
+      var wk = weekKeyFor(d);
+      var entry = store.weeks[wk] && store.weeks[wk][equipe] && store.weeks[wk][equipe][nome];
+      if(entry && entry.notes){ return entry.notes; }
+    }
+    return "";
+  }
+
   /* ---------------- Week helpers ---------------- */
   function pad2(n){ return String(n).padStart(2,"0"); }
   function startOfWeek(d){
@@ -1171,7 +1185,8 @@
       return def.type==="checklist" ? meetingCardHtml(def, items, followUp) : counterCardHtml(def, items);
     }).join("");
 
-    $("generalNotes").value = (r.entry && r.entry.notes) || "";
+    var currentNotes = (r.entry && r.entry.notes) || "";
+    $("generalNotes").value = currentNotes || findCarriedNotes(currentTeam, currentAdvisor, currentMonday);
 
     var sched = getSchedule(currentTeam, currentAdvisor);
     $("scheduleDay").value = sched.day || "";
