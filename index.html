@@ -974,14 +974,16 @@
   function teamStats(equipe, weekKey){
     var advisors = ADVISORS.filter(function(a){ return a.equipe===equipe; });
     var counts = { ok:0, warn:0, crit:0, pend:0 };
-    var pctSum = 0, pctN = 0;
+    var did1a1 = 0;
     advisors.forEach(function(a){
       var r = computeStatus(weekKey, a.equipe, a.nome);
       counts[r.status]++;
-      if(r.pct!==null){ pctSum += r.pct; pctN++; }
+      var entry = entryFor(weekKey, a.equipe, a.nome, false);
+      var items = (entry && entry.items) || {};
+      if(itemRatio(ITEM_DEFS[0], items).ratio >= 1){ did1a1++; }
     });
-    var avg = pctN ? Math.round(pctSum/pctN) : null;
-    return { total:advisors.length, counts:counts, avg:avg };
+    var avg = advisors.length ? Math.round(did1a1/advisors.length*100) : null;
+    return { total:advisors.length, counts:counts, avg:avg, did1a1:did1a1 };
   }
 
   function dotColor(status){
@@ -1135,7 +1137,7 @@
     var weekKey = weekKeyFor(currentMonday);
     var s = teamStats(currentTeam, weekKey);
     $("teamTitle").textContent = currentTeam;
-    $("teamSummary").textContent = s.total+" assessor"+(s.total===1?"":"es")+" · média "+(s.avg===null?"—":s.avg+"%")+" na semana de "+fmtRange(currentMonday);
+    $("teamSummary").textContent = s.total+" assessor"+(s.total===1?"":"es")+" · "+s.did1a1+" de "+s.total+" fizeram a 1:1 ("+(s.avg===null?"—":s.avg+"%")+") na semana de "+fmtRange(currentMonday);
 
     var advisors = ADVISORS.filter(function(a){ return a.equipe===currentTeam; })
       .sort(function(a,b){ return a.nome.localeCompare(b.nome,"pt-BR"); });
