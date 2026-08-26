@@ -324,9 +324,11 @@
   .deal-card .del-btn:hover{background:var(--critical-soft);border-color:var(--critical);}
   .pipeline-empty{font-size:12px;color:var(--ink-500);font-style:italic;padding:4px 0;}
 
-  .prev-notes-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;display:flex;flex-direction:column;gap:4px;}
+  .prev-notes-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;display:flex;flex-direction:column;gap:6px;}
+  .prev-notes-card .pn-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .prev-notes-card .pn-label{font-family:var(--font-display);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-500);font-weight:700;}
   .prev-notes-card .pn-text{font-size:12.5px;color:var(--ink-900);line-height:1.5;white-space:pre-wrap;}
+  .prev-notes-remove{padding:4px 11px;font-size:11px;}
   .notes-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:6px;}
   .notes-wrap label{font-size:11px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.05em;}
   .notes-wrap textarea{width:100%;min-height:56px;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-size:12.5px;resize:vertical;}
@@ -736,6 +738,19 @@
     return team[nome] || null;
   }
 
+  // Procura a observação geral registrada mais recente antes da semana atual,
+  // voltando semana a semana até achar uma preenchida (ou esgotar 1 ano).
+  function findLastNotes(equipe, nome, beforeMonday){
+    var d = new Date(beforeMonday);
+    for(var i=0;i<52;i++){
+      d.setDate(d.getDate()-7);
+      var wk = weekKeyFor(d);
+      var entry = store.weeks[wk] && store.weeks[wk][equipe] && store.weeks[wk][equipe][nome];
+      if(entry && entry.notes){ return { weekKey: wk, monday: new Date(d), notes: entry.notes }; }
+    }
+    return null;
+  }
+
   /* ---------------- Week helpers ---------------- */
   function pad2(n){ return String(n).padStart(2,"0"); }
   function startOfWeek(d){
@@ -790,9 +805,8 @@
     pipelineSyncTimer = setTimeout(function(){ pushPipeline(currentTeam, currentAdvisor); }, 900);
   }
 
-  function pushCurrentEntry(){
+  function pushEntryForWeek(weekKey){
     if(!currentTeam || !currentAdvisor) return;
-    var weekKey = weekKeyFor(currentMonday);
     var entry = entryFor(weekKey, currentTeam, currentAdvisor, false);
     var items = (entry && entry.items) || {};
     var notes = (entry && entry.notes) || "";
@@ -807,6 +821,10 @@
     }).catch(function(){
       setSyncFlag("error", "Falha ao sincronizar");
     });
+  }
+
+  function pushCurrentEntry(){
+    pushEntryForWeek(weekKeyFor(currentMonday));
   }
 
   function pushAdvisorMeta(equipe, nome){
@@ -1180,10 +1198,21 @@
 
     $("generalNotes").value = (r.entry && r.entry.notes) || "";
 
-    var prevNotes = (prevEntry && prevEntry.notes) || "";
-    $("prevNotesBlock").innerHTML = prevNotes
-      ? '<div class="prev-notes-card"><span class="pn-label">Observação da semana anterior · '+esc(fmtRange(prevMonday))+'</span><span class="pn-text">'+esc(prevNotes)+'</span></div>'
+    var lastNotes = findLastNotes(currentTeam, currentAdvisor, currentMonday);
+    $("prevNotesBlock").innerHTML = lastNotes
+      ? '<div class="prev-notes-card"><div class="pn-top"><span class="pn-label">Observação de '+esc(fmtRange(lastNotes.monday))+'</span><button type="button" class="btn prev-notes-remove" data-week="'+esc(lastNotes.weekKey)+'">Remover</button></div><span class="pn-text">'+esc(lastNotes.notes)+'</span></div>'
       : "";
+    var removeBtn = $("prevNotesBlock").querySelector(".prev-notes-remove");
+    if(removeBtn){
+      removeBtn.addEventListener("click", function(){
+        var wk = removeBtn.getAttribute("data-week");
+        var entry = entryFor(wk, currentTeam, currentAdvisor, true);
+        entry.notes = "";
+        persist();
+        pushEntryForWeek(wk);
+        renderAdvisor();
+      });
+    }
 
     var sched = getSchedule(currentTeam, currentAdvisor);
     $("scheduleDay").value = sched.day || "";
