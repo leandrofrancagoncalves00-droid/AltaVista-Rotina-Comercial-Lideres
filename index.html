@@ -324,6 +324,9 @@
   .deal-card .del-btn:hover{background:var(--critical-soft);border-color:var(--critical);}
   .pipeline-empty{font-size:12px;color:var(--ink-500);font-style:italic;padding:4px 0;}
 
+  .prev-notes-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;display:flex;flex-direction:column;gap:4px;}
+  .prev-notes-card .pn-label{font-family:var(--font-display);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-500);font-weight:700;}
+  .prev-notes-card .pn-text{font-size:12.5px;color:var(--ink-900);line-height:1.5;white-space:pre-wrap;}
   .notes-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:6px;}
   .notes-wrap label{font-size:11px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.05em;}
   .notes-wrap textarea{width:100%;min-height:56px;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-size:12.5px;resize:vertical;}
@@ -505,6 +508,8 @@
       </div>
       <div id="pipelineList" class="pipeline-list"></div>
     </div>
+
+    <div id="prevNotesBlock"></div>
 
     <div class="notes-wrap">
       <label>Observações gerais da semana</label>
@@ -729,20 +734,6 @@
     var team = store.weeks[weekKey][equipe];
     if(!team[nome] && create){ team[nome] = { items:{}, notes:"" }; }
     return team[nome] || null;
-  }
-
-  // Observações gerais "carregam" para as semanas seguintes: se a semana atual
-  // ainda não tem nada escrito, mostra a última observação registrada como ponto
-  // de partida (só vira dado de verdade desta semana se o líder editar algo).
-  function findCarriedNotes(equipe, nome, fromMonday){
-    var d = new Date(fromMonday);
-    for(var i=0;i<52;i++){
-      d.setDate(d.getDate()-7);
-      var wk = weekKeyFor(d);
-      var entry = store.weeks[wk] && store.weeks[wk][equipe] && store.weeks[wk][equipe][nome];
-      if(entry && entry.notes){ return entry.notes; }
-    }
-    return "";
   }
 
   /* ---------------- Week helpers ---------------- */
@@ -1187,8 +1178,12 @@
       return def.type==="checklist" ? meetingCardHtml(def, items, followUp) : counterCardHtml(def, items);
     }).join("");
 
-    var currentNotes = (r.entry && r.entry.notes) || "";
-    $("generalNotes").value = currentNotes || findCarriedNotes(currentTeam, currentAdvisor, currentMonday);
+    $("generalNotes").value = (r.entry && r.entry.notes) || "";
+
+    var prevNotes = (prevEntry && prevEntry.notes) || "";
+    $("prevNotesBlock").innerHTML = prevNotes
+      ? '<div class="prev-notes-card"><span class="pn-label">Observação da semana anterior · '+esc(fmtRange(prevMonday))+'</span><span class="pn-text">'+esc(prevNotes)+'</span></div>'
+      : "";
 
     var sched = getSchedule(currentTeam, currentAdvisor);
     $("scheduleDay").value = sched.day || "";
