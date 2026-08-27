@@ -822,8 +822,14 @@
     pipelineSyncTimer = setTimeout(function(){ pushPipeline(currentTeam, currentAdvisor); }, 900);
   }
 
+  var recentWrites = {};
+  function markRecentWrite(weekKey, equipe, nome){
+    recentWrites[weekKey+"|"+equipe+"|"+nome] = Date.now();
+  }
+
   function pushEntryForWeek(weekKey){
     if(!currentTeam || !currentAdvisor) return;
+    markRecentWrite(weekKey, currentTeam, currentAdvisor);
     var entry = entryFor(weekKey, currentTeam, currentAdvisor, false);
     var items = (entry && entry.items) || {};
     var notes = (entry && entry.notes) || "";
@@ -920,17 +926,21 @@
         var localId = String(row.deal_id).split("|").slice(2).join("|") || genId();
         pipeline[key].push({ id: localId, cliente: row.cliente || "", tipo: row.tipo || "", tipoOutro: row.tipo_outro || "", valor: row.valor===null?"":row.valor, estagio: row.estagio || "", previsao: row.previsao || "" });
       });
-      // Se há uma edição local recém-feita ainda não enviada (dentro da janela de debounce),
-      // preserva ela em vez de deixar o pull sobrescrever com o estado antigo do servidor.
-      if(syncTimer && currentTeam && currentAdvisor){
-        var wk = weekKeyFor(currentMonday);
-        var localEntry = (store.weeks[wk] && store.weeks[wk][currentTeam] && store.weeks[wk][currentTeam][currentAdvisor]) || null;
+      // Qualquer semana/assessor escrito localmente nos últimos segundos (dentro do
+      // tempo de debounce + ida e volta da rede) é preservado — evita que o pull
+      // periódico sobrescreva uma marcação recém-feita com o estado antigo do servidor.
+      var RECENT_WRITE_WINDOW_MS = 10000;
+      Object.keys(recentWrites).forEach(function(key){
+        if(Date.now() - recentWrites[key] > RECENT_WRITE_WINDOW_MS){ delete recentWrites[key]; return; }
+        var parts = key.split("|");
+        var wk = parts[0], eq = parts[1], nm = parts[2];
+        var localEntry = (store.weeks[wk] && store.weeks[wk][eq] && store.weeks[wk][eq][nm]) || null;
         if(localEntry){
           weeks[wk] = weeks[wk] || {};
-          weeks[wk][currentTeam] = weeks[wk][currentTeam] || {};
-          weeks[wk][currentTeam][currentAdvisor] = localEntry;
+          weeks[wk][eq] = weeks[wk][eq] || {};
+          weeks[wk][eq][nm] = localEntry;
         }
-      }
+      });
       if(pipelineSyncTimer && currentTeam && currentAdvisor){
         var pkey = currentTeam+"|"+currentAdvisor;
         if(store.pipeline[pkey]) pipeline[pkey] = store.pipeline[pkey];
