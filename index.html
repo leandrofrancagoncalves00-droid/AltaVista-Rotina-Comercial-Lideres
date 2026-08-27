@@ -241,6 +241,11 @@
   .meeting-indicator .row{display:flex;align-items:baseline;gap:5px;}
   .meeting-indicator input{width:52px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-family:var(--font-mono);font-size:14px;text-align:center;font-weight:700;}
   .meeting-indicator .of{font-family:var(--font-mono);font-size:11px;color:var(--ink-500);}
+  .meeting-history{display:flex;flex-direction:column;gap:4px;background:var(--accent-soft);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;min-width:150px;}
+  .meeting-history label{font-size:10.5px;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  .meeting-history .row{display:flex;gap:14px;}
+  .meeting-history .mh-num{font-family:var(--font-mono);font-size:16px;font-weight:700;}
+  .meeting-history .mh-cap{font-size:9.5px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.03em;}
 
   .followup-card{background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius-sm);padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
   .followup-card.fu-state-done{background:var(--success-soft);border-color:var(--success);}
@@ -736,6 +741,23 @@
     var team = store.weeks[weekKey][equipe];
     if(!team[nome] && create){ team[nome] = { items:{}, notes:"" }; }
     return team[nome] || null;
+  }
+
+  // Conta, em todo o histórico salvo localmente, quantos planos de ação da 1:1
+  // já foram marcados como realizados, não realizados, ou ainda estão em aberto.
+  function actionPlanHistory(equipe, nome){
+    var done = 0, notDone = 0, pending = 0;
+    Object.keys(store.weeks).forEach(function(wk){
+      var teamData = store.weeks[wk] && store.weeks[wk][equipe];
+      var entry = teamData && teamData[nome];
+      var r11 = entry && entry.items && entry.items.reuniao11;
+      if(r11 && r11.ata){
+        if(r11.status==="done"){ done++; }
+        else if(r11.status==="not_done"){ notDone++; }
+        else { pending++; }
+      }
+    });
+    return { done:done, notDone:notDone, pending:pending };
   }
 
   // Procura o combinado (ata) mais recente que ainda não foi marcado como
@@ -1385,6 +1407,15 @@
     return html;
   }
 
+  function meetingHistoryHtml(hist){
+    return '<div class="meeting-history"><label>Histórico de planos de ação</label>'+
+      '<div class="row">'+
+        '<span><span class="mh-num tabular" style="color:var(--success)">'+hist.done+'</span><br><span class="mh-cap">Realizados</span></span>'+
+        '<span><span class="mh-num tabular" style="color:var(--critical)">'+hist.notDone+'</span><br><span class="mh-cap">Não realizados</span></span>'+
+        '<span><span class="mh-num tabular" style="color:var(--pending)">'+hist.pending+'</span><br><span class="mh-cap">Em aberto</span></span>'+
+      '</div></div>';
+  }
+
   function followUpHtml(followUp){
     if(!followUp) return "";
     var status = followUp.status || "";
@@ -1450,6 +1481,7 @@
           '<div><div class="eyebrow">Rotina</div><h3>'+esc(def.label)+'</h3><div class="tagline">'+esc(def.tagline)+'</div></div>'+
         '</div>'+
         (def.hasModelo ? '<div class="meeting-indicator"><label>Modelo de servir</label><div class="row"><input type="number" min="1" max="100" inputmode="numeric" data-meeting-modelo value="'+modelo+'" placeholder="—"><span class="of">/ 100</span></div></div>' : '')+
+        (def.hasAta ? meetingHistoryHtml(actionPlanHistory(currentTeam, currentAdvisor)) : '')+
       '</div>'+
       (def.hasAta ? followUpHtml(followUp) : '')+
       '<div class="meeting-sections">'+sectionsHtml+'</div>'+
