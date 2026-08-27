@@ -989,7 +989,7 @@
       counts[r.status]++;
       var entry = entryFor(weekKey, a.equipe, a.nome, false);
       var items = (entry && entry.items) || {};
-      if(itemRatio(ITEM_DEFS[0], items).ratio >= 1){ did1a1++; }
+      if(itemRatio(ITEM_DEFS[0], items).ratio >= 0.8){ did1a1++; }
     });
     var avg = advisors.length ? Math.round(did1a1/advisors.length*100) : null;
     return { total:advisors.length, counts:counts, avg:avg, did1a1:did1a1 };
