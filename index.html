@@ -738,6 +738,23 @@
     return team[nome] || null;
   }
 
+  // Procura o combinado (ata) mais recente que ainda não foi marcado como
+  // realizado/não realizado, voltando semana a semana (até 1 ano) — assim ele
+  // "carrega" nas semanas seguintes até o líder resolver.
+  function findOpenFollowUp(equipe, nome, beforeMonday){
+    var d = new Date(beforeMonday);
+    for(var i=0;i<52;i++){
+      d.setDate(d.getDate()-7);
+      var wk = weekKeyFor(d);
+      var entry = store.weeks[wk] && store.weeks[wk][equipe] && store.weeks[wk][equipe][nome];
+      var r11 = entry && entry.items && entry.items.reuniao11;
+      if(r11 && r11.ata && !r11.status){
+        return { weekKey: wk, monday: new Date(d), data: r11 };
+      }
+    }
+    return null;
+  }
+
   // Procura a observação geral registrada mais recente antes da semana atual,
   // voltando semana a semana até achar uma preenchida (ou esgotar 1 ano).
   function findLastNotes(equipe, nome, beforeMonday){
@@ -1187,10 +1204,8 @@
     $("advisorPct").style.color = dotColor(r.status);
     $("advisorWeekLabel").textContent = fmtRange(currentMonday);
 
-    var prevMonday = new Date(currentMonday); prevMonday.setDate(prevMonday.getDate()-7);
-    var prevWeekKey = weekKeyFor(prevMonday);
-    var prevEntry = entryFor(prevWeekKey, currentTeam, currentAdvisor, false);
-    var followUp = (prevEntry && prevEntry.items && prevEntry.items.reuniao11 && prevEntry.items.reuniao11.ata) ? prevEntry.items.reuniao11 : null;
+    var followUpInfo = findOpenFollowUp(currentTeam, currentAdvisor, currentMonday);
+    var followUp = followUpInfo ? Object.assign({}, followUpInfo.data, { __weekKey: followUpInfo.weekKey, __monday: followUpInfo.monday }) : null;
 
     $("itemsGrid").innerHTML = ITEM_DEFS.map(function(def){
       return def.type==="checklist" ? meetingCardHtml(def, items, followUp) : counterCardHtml(def, items);
@@ -1364,8 +1379,9 @@
     if(!followUp) return "";
     var status = followUp.status || "";
     var stateCls = status==="done" ? " fu-state-done" : status==="not_done" ? " fu-state-notdone" : "";
-    return '<div class="followup-card'+stateCls+'">'+
-      '<span class="fu-label">Combinado da semana passada — foi realizado?</span>'+
+    var dateLabel = followUp.__monday ? fmtRange(followUp.__monday) : "";
+    return '<div class="followup-card'+stateCls+'" data-week="'+esc(followUp.__weekKey||"")+'">'+
+      '<span class="fu-label">Combinado de '+esc(dateLabel)+' — foi realizado?</span>'+
       '<span class="fu-text">'+esc(followUp.ata)+'</span>'+
       '<div class="fu-actions">'+
         '<button type="button" class="fu-btn fu-done'+(status==="done"?" sel":"")+'" data-status="done">Realizado</button>'+
@@ -1486,19 +1502,17 @@
       });
     });
 
-    var prevMonday = new Date(currentMonday); prevMonday.setDate(prevMonday.getDate()-7);
-    var prevWeekKey = weekKeyFor(prevMonday);
     Array.prototype.forEach.call(grid.querySelectorAll(".fu-btn"), function(btn){
       btn.addEventListener("click", function(){
-        var prevEntry = entryFor(prevWeekKey, equipe, nome, true);
-        prevEntry.items.reuniao11 = prevEntry.items.reuniao11 || { answers:[], ata:"" };
-        prevEntry.items.reuniao11.status = btn.getAttribute("data-status");
-        persist();
         var card = btn.closest(".followup-card");
-        card.classList.remove("fu-state-done","fu-state-notdone");
-        card.classList.add(btn.getAttribute("data-status")==="done" ? "fu-state-done" : "fu-state-notdone");
-        Array.prototype.forEach.call(card.querySelectorAll(".fu-btn"), function(b){ b.classList.remove("sel"); });
-        btn.classList.add("sel");
+        var wk = card.getAttribute("data-week");
+        if(!wk) return;
+        var entry = entryFor(wk, equipe, nome, true);
+        entry.items.reuniao11 = entry.items.reuniao11 || { answers:[], ata:"" };
+        entry.items.reuniao11.status = btn.getAttribute("data-status");
+        persist();
+        pushEntryForWeek(wk);
+        renderAdvisor();
       });
     });
 
