@@ -745,7 +745,7 @@
 
   // Conta, em todo o histórico salvo localmente, quantos planos de ação da 1:1
   // já foram marcados como realizados, não realizados, ou ainda estão em aberto.
-  function actionPlanHistory(equipe, nome){
+  function actionPlanHistory(equipe, nome, currentWeekKey){
     var done = 0, notDone = 0, pending = 0;
     Object.keys(store.weeks).forEach(function(wk){
       var teamData = store.weeks[wk] && store.weeks[wk][equipe];
@@ -754,7 +754,7 @@
       if(r11 && r11.ata){
         if(r11.status==="done"){ done++; }
         else if(r11.status==="not_done"){ notDone++; }
-        else { pending++; }
+        else if(wk !== currentWeekKey){ pending++; }
       }
     });
     return { done:done, notDone:notDone, pending:pending };
@@ -763,18 +763,20 @@
   // Procura o combinado (ata) mais recente que ainda não foi marcado como
   // realizado/não realizado, voltando semana a semana (até 1 ano) — assim ele
   // "carrega" nas semanas seguintes até o líder resolver.
-  function findOpenFollowUp(equipe, nome, beforeMonday){
+  function findOpenFollowUps(equipe, nome, beforeMonday){
     var d = new Date(beforeMonday);
+    var found = [];
     for(var i=0;i<52;i++){
       d.setDate(d.getDate()-7);
       var wk = weekKeyFor(d);
       var entry = store.weeks[wk] && store.weeks[wk][equipe] && store.weeks[wk][equipe][nome];
       var r11 = entry && entry.items && entry.items.reuniao11;
       if(r11 && r11.ata && !r11.status){
-        return { weekKey: wk, monday: new Date(d), data: r11 };
+        found.push({ weekKey: wk, monday: new Date(d), data: r11 });
       }
     }
-    return null;
+    found.sort(function(a,b){ return a.monday - b.monday; });
+    return found;
   }
 
   // Procura a observação geral registrada mais recente antes da semana atual,
@@ -1236,11 +1238,12 @@
     $("advisorPct").style.color = dotColor(r.status);
     $("advisorWeekLabel").textContent = fmtRange(currentMonday);
 
-    var followUpInfo = findOpenFollowUp(currentTeam, currentAdvisor, currentMonday);
-    var followUp = followUpInfo ? Object.assign({}, followUpInfo.data, { __weekKey: followUpInfo.weekKey, __monday: followUpInfo.monday }) : null;
+    var followUps = findOpenFollowUps(currentTeam, currentAdvisor, currentMonday).map(function(info){
+      return Object.assign({}, info.data, { __weekKey: info.weekKey, __monday: info.monday });
+    });
 
     $("itemsGrid").innerHTML = ITEM_DEFS.map(function(def){
-      return def.type==="checklist" ? meetingCardHtml(def, items, followUp) : counterCardHtml(def, items);
+      return def.type==="checklist" ? meetingCardHtml(def, items, followUps) : counterCardHtml(def, items);
     }).join("");
 
     $("generalNotes").value = (r.entry && r.entry.notes) || "";
@@ -1440,7 +1443,7 @@
     '</div>';
   }
 
-  function meetingCardHtml(def, items, followUp){
+  function meetingCardHtml(def, items, followUps){
     var cl = CHECKLISTS[def.key];
     var obj = items[def.key] || {};
     var answers = obj.answers || [];
@@ -1481,9 +1484,9 @@
           '<div><div class="eyebrow">Rotina</div><h3>'+esc(def.label)+'</h3><div class="tagline">'+esc(def.tagline)+'</div></div>'+
         '</div>'+
         (def.hasModelo ? '<div class="meeting-indicator"><label>Modelo de servir</label><div class="row"><input type="number" min="1" max="100" inputmode="numeric" data-meeting-modelo value="'+modelo+'" placeholder="—"><span class="of">/ 100</span></div></div>' : '')+
-        (def.hasAta ? meetingHistoryHtml(actionPlanHistory(currentTeam, currentAdvisor)) : '')+
+        (def.hasAta ? meetingHistoryHtml(actionPlanHistory(currentTeam, currentAdvisor, weekKeyFor(currentMonday))) : '')+
       '</div>'+
-      (def.hasAta ? followUpHtml(followUp) : '')+
+      (def.hasAta && followUps && followUps.length ? followUps.map(followUpHtml).join("") : '')+
       '<div class="meeting-sections">'+sectionsHtml+'</div>'+
       (def.hasAta ? planBlockHtml(obj) : '')+
       '</div>';
