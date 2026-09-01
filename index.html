@@ -192,6 +192,12 @@
   .advisor-head .stat-pill{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);}
   .advisor-head .stat-pill .pct{font-family:var(--font-mono);font-size:19px;font-weight:700;}
   .advisor-head .stat-pill .wk{font-size:11.5px;color:var(--ink-500);}
+  .msv-head-stats{display:flex;gap:10px;}
+  .msv-head-stat{display:flex;flex-direction:column;align-items:center;padding:6px 16px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);min-width:84px;}
+  .msv-head-stat .mhs-label{font-size:10.5px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.03em;text-align:center;}
+  .msv-head-stat .mhs-value{font-family:var(--font-mono);font-size:26px;font-weight:700;line-height:1.2;}
+  .msv-head-stat.msv .mhs-value{color:var(--accent-ink);}
+  .msv-head-stat.saude .mhs-value{color:var(--warning);}
   .schedule-pill{display:flex;align-items:center;gap:9px;padding:8px 14px;border-radius:999px;background:var(--accent-soft);border:1px solid var(--border);color:var(--accent-ink);}
   .schedule-pill label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent-ink);margin-bottom:3px;}
   .schedule-pill .row{display:flex;gap:6px;}
@@ -488,6 +494,7 @@
         <h2 id="advisorName"></h2>
         <div class="team-tag" id="advisorTeamTag"></div>
       </div>
+      <div class="msv-head-stats" id="msvHeadStats"></div>
       <div class="schedule-pill">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><line x1="3" y1="9.5" x2="21" y2="9.5"/><line x1="7.5" y1="2.5" x2="7.5" y2="6.5"/><line x1="16.5" y1="2.5" x2="16.5" y2="6.5"/></svg>
         <div>
@@ -1372,11 +1379,24 @@ var MSV_LOOKUP = {"Andrea de Oliveira Nogueira Berna":{"cta_acess":92.6,"ord_env
 
   function renderMsvBlock(nome){
     var el = $("msvBlock");
-    if(!el) return;
+    var head = $("msvHeadStats");
     var data = MSV_LOOKUP[nome];
-    el.innerHTML = data
-      ? '<div class="msv-wrap">'+msvPanelHtml("Modelo de servir (detalhado)", MSV_FIELDS, data, false)+msvPanelHtml("Saúde do cliente", SAUDE_FIELDS, data, true)+'</div>'
-      : "";
+    if(el){
+      el.innerHTML = data
+        ? '<div class="msv-wrap">'+msvPanelHtml("Modelo de servir (detalhado)", MSV_FIELDS, data, false)+msvPanelHtml("Saúde do cliente", SAUDE_FIELDS, data, true)+'</div>'
+        : "";
+    }
+    if(head){
+      if(data){
+        var msvAvg = Math.round(MSV_FIELDS.reduce(function(sum,f){ return sum + (data[f.key]||0); }, 0) / MSV_FIELDS.length);
+        var saudeIdx = data.saude_idx!==undefined && data.saude_idx!==null ? Math.round(data.saude_idx) : null;
+        head.innerHTML =
+          '<div class="msv-head-stat msv"><span class="mhs-label">Modelo de servir</span><span class="mhs-value tabular">'+msvAvg+'%</span></div>'+
+          '<div class="msv-head-stat saude"><span class="mhs-label">Saúde do cliente</span><span class="mhs-value tabular">'+(saudeIdx===null?"—":saudeIdx+"%")+'</span></div>';
+      } else {
+        head.innerHTML = "";
+      }
+    }
   }
 
   function renderQuadrant(){
