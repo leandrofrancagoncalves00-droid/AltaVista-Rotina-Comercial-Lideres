@@ -241,7 +241,8 @@
   .meeting-indicator .row{display:flex;align-items:baseline;gap:5px;}
   .meeting-indicator input{width:52px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-family:var(--font-mono);font-size:14px;text-align:center;font-weight:700;}
   .meeting-indicator .of{font-family:var(--font-mono);font-size:11px;color:var(--ink-500);}
-  .meeting-history{display:flex;flex-direction:column;gap:4px;background:var(--accent-soft);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;min-width:150px;}
+  .meeting-history{display:flex;flex-direction:column;gap:4px;background:var(--accent-soft);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;min-width:150px;cursor:pointer;text-align:left;transition:border-color .12s;}
+  .meeting-history:hover{border-color:var(--accent);}
   .meeting-history label{font-size:10.5px;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
   .meeting-history .row{display:flex;gap:14px;}
   .meeting-history .mh-num{font-family:var(--font-mono);font-size:16px;font-weight:700;}
@@ -365,6 +366,15 @@
   .modal-textarea{width:100%;min-height:180px;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-family:var(--font-mono);font-size:11.5px;color:var(--ink-900);resize:vertical;}
 
   #statusPanelList{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;}
+  .plan-history-list{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow-y:auto;}
+  .ph-row{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;background:var(--surface-2);display:flex;flex-direction:column;gap:5px;}
+  .ph-row .ph-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .ph-row .ph-date{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-700);font-weight:600;}
+  .ph-row .ph-badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;padding:2px 8px;border-radius:999px;}
+  .ph-row .ph-badge.done{background:var(--success-soft);color:var(--success);}
+  .ph-row .ph-badge.not_done{background:var(--critical-soft);color:var(--critical);}
+  .ph-row .ph-badge.open{background:var(--pending-soft);color:var(--pending);}
+  .ph-row .ph-text{font-size:12px;color:var(--ink-900);line-height:1.45;white-space:pre-wrap;}
   .status-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer;text-align:left;width:100%;}
   .status-row:hover{border-color:var(--accent);background:var(--surface-2);}
   .status-row .nm{flex:1;font-size:12.5px;font-weight:600;color:var(--ink-900);}
@@ -563,6 +573,17 @@
     <div id="statusPanelList"></div>
     <div class="panel-actions">
       <button class="btn primary" id="closeStatusPanel">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="planHistoryOverlay" hidden>
+  <div class="panel">
+    <h3 id="planHistoryTitle">Histórico de planos de ação</h3>
+    <p class="desc">Todos os combinados registrados, mais recentes primeiro.</p>
+    <div id="planHistoryList" class="plan-history-list"></div>
+    <div class="panel-actions">
+      <button class="btn primary" id="closePlanHistory">Fechar</button>
     </div>
   </div>
 </div>
@@ -814,6 +835,17 @@
   function weekKeyFor(monday){
     var info = isoWeekInfo(monday);
     return info.year + "-W" + pad2(info.week);
+  }
+  function mondayFromWeekKey(weekKey){
+    var parts = weekKey.split("-W");
+    var year = parseInt(parts[0],10), week = parseInt(parts[1],10);
+    var jan4 = new Date(Date.UTC(year,0,4));
+    var jan4Day = (jan4.getUTCDay()+6)%7;
+    var week1Monday = new Date(jan4);
+    week1Monday.setUTCDate(jan4.getUTCDate()-jan4Day);
+    var target = new Date(week1Monday);
+    target.setUTCDate(week1Monday.getUTCDate() + (week-1)*7);
+    return new Date(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate());
   }
   function fmtRange(monday){
     var sunday = new Date(monday); sunday.setDate(sunday.getDate()+6);
@@ -1411,12 +1443,27 @@
   }
 
   function meetingHistoryHtml(hist){
-    return '<div class="meeting-history"><label>Histórico de planos de ação</label>'+
+    return '<button type="button" class="meeting-history" id="openPlanHistoryBtn" title="Ver todos os planos de ação">'+
+      '<label>Histórico de planos de ação</label>'+
       '<div class="row">'+
         '<span><span class="mh-num tabular" style="color:var(--success)">'+hist.done+'</span><br><span class="mh-cap">Realizados</span></span>'+
         '<span><span class="mh-num tabular" style="color:var(--critical)">'+hist.notDone+'</span><br><span class="mh-cap">Não realizados</span></span>'+
         '<span><span class="mh-num tabular" style="color:var(--pending)">'+hist.pending+'</span><br><span class="mh-cap">Em aberto</span></span>'+
-      '</div></div>';
+      '</div></button>';
+  }
+
+  function advisorPlanHistoryList(equipe, nome){
+    var list = [];
+    Object.keys(store.weeks).forEach(function(wk){
+      var teamData = store.weeks[wk] && store.weeks[wk][equipe];
+      var entry = teamData && teamData[nome];
+      var r11 = entry && entry.items && entry.items.reuniao11;
+      if(r11 && r11.ata){
+        list.push({ weekKey:wk, monday:mondayFromWeekKey(wk), ata:r11.ata, status:r11.status||"" });
+      }
+    });
+    list.sort(function(a,b){ return b.monday - a.monday; });
+    return list;
   }
 
   function followUpHtml(followUp){
@@ -1496,6 +1543,20 @@
     var weekKey = weekKeyFor(currentMonday);
     var equipe = currentTeam, nome = currentAdvisor;
     var grid = $("itemsGrid");
+
+    var openHistBtn = grid.querySelector("#openPlanHistoryBtn");
+    if(openHistBtn){
+      openHistBtn.addEventListener("click", function(){
+        $("planHistoryTitle").textContent = "Histórico de planos de ação — "+nome;
+        var list = advisorPlanHistoryList(equipe, nome);
+        $("planHistoryList").innerHTML = list.length ? list.map(function(p){
+          var badgeCls = p.status==="done" ? "done" : p.status==="not_done" ? "not_done" : "open";
+          var badgeLabel = p.status==="done" ? "Realizado" : p.status==="not_done" ? "Não realizado" : "Em aberto";
+          return '<div class="ph-row"><div class="ph-top"><span class="ph-date">'+esc(fmtRange(p.monday))+'</span><span class="ph-badge '+badgeCls+'">'+badgeLabel+'</span></div><span class="ph-text">'+esc(p.ata)+'</span></div>';
+        }).join("") : '<p class="desc">Nenhum plano de ação registrado ainda.</p>';
+        $("planHistoryOverlay").hidden = false;
+      });
+    }
 
     Array.prototype.forEach.call(grid.querySelectorAll("input[data-item]"), function(inp){
       inp.addEventListener("input", function(){
@@ -1825,6 +1886,8 @@
     $("linkOverlay").hidden = false;
     $("linkInput").select();
   });
+  $("closePlanHistory").addEventListener("click", function(){ $("planHistoryOverlay").hidden = true; });
+  $("planHistoryOverlay").addEventListener("click", function(e){ if(e.target===this) this.hidden = true; });
   $("closeLinkPanel").addEventListener("click", function(){ $("linkOverlay").hidden = true; });
   $("linkOverlay").addEventListener("click", function(e){ if(e.target===this) this.hidden = true; });
   $("copyLinkBtn").addEventListener("click", function(){
