@@ -560,7 +560,7 @@
     <div class="legend-strip">
       <span><span class="d" style="background:var(--success)"></span>Em dia (≥80%)</span>
       <span><span class="d" style="background:var(--warning)"></span>Atenção (50–79%)</span>
-      <span><span class="d" style="background:var(--critical)"></span>Crítico (&lt;50%)</span>
+      <span><span class="d" style="background:var(--critical)"></span>No show (&lt;50% ou semana anterior não preenchida)</span>
       <span><span class="d" style="background:var(--pending)"></span>Não preenchido</span>
     </div>
     <div class="actions">
@@ -1072,7 +1072,9 @@ var MSV_LOOKUP = {"Andrea de Oliveira Nogueira Berna":{"cta_acess":92.6,"ord_env
   function computeStatus(weekKey, equipe, nome){
     var wk = store.weeks[weekKey];
     var entry = wk && wk[equipe] && wk[equipe][nome];
-    if(!entry) return { status:"pend", pct:null, entry:null };
+    var isPastWeek = weekKey < weekKeyFor(startOfWeek(new Date()));
+    var emptyStatus = isPastWeek ? "crit" : "pend";
+    if(!entry) return { status:emptyStatus, pct:null, entry:null };
     var items = entry.items || {};
     var anyTouched = false, sum = 0;
     ITEM_DEFS.forEach(function(def){
@@ -1080,7 +1082,7 @@ var MSV_LOOKUP = {"Andrea de Oliveira Nogueira Berna":{"cta_acess":92.6,"ord_env
       if(r.touched) anyTouched = true;
       sum += r.ratio;
     });
-    if(!anyTouched) return { status:"pend", pct:null, entry:entry };
+    if(!anyTouched) return { status:emptyStatus, pct:null, entry:entry };
     var pct = Math.round((sum/ITEM_DEFS.length)*100);
     var status = pct>=80 ? "ok" : pct>=50 ? "warn" : "crit";
     return { status:status, pct:pct, entry:entry };
@@ -1138,7 +1140,7 @@ var MSV_LOOKUP = {"Andrea de Oliveira Nogueira Berna":{"cta_acess":92.6,"ord_env
       stat("total","Assessores", total) +
       stat("ok","Em dia", counts.ok) +
       stat("warn","Atenção", counts.warn) +
-      stat("crit","Crítico", counts.crit) +
+      stat("crit","No show", counts.crit) +
       stat("pend","Não preenchido", counts.pend);
     function stat(cls,label,n){
       return '<button type="button" class="stat '+cls+'" data-status="'+cls+'"><span class="n tabular">'+n+'</span><span class="l">'+label+'</span></button>';
@@ -1151,7 +1153,7 @@ var MSV_LOOKUP = {"Andrea de Oliveira Nogueira Berna":{"cta_acess":92.6,"ord_env
   function showStatusList(status){
     var weekKey = weekKeyFor(currentMonday);
     var scope = currentTeam ? ADVISORS.filter(function(a){ return a.equipe===currentTeam; }) : ADVISORS;
-    var labels = { total:"Assessores", ok:"Em dia", warn:"Atenção", crit:"Crítico", pend:"Não preenchido" };
+    var labels = { total:"Assessores", ok:"Em dia", warn:"Atenção", crit:"No show", pend:"Não preenchido" };
     var list = scope.filter(function(a){
       return status==="total" ? true : computeStatus(weekKey, a.equipe, a.nome).status===status;
     }).sort(function(a,b){ return a.nome.localeCompare(b.nome,"pt-BR"); });
@@ -1233,7 +1235,7 @@ var MSV_LOOKUP = {"Andrea de Oliveira Nogueira Berna":{"cta_acess":92.6,"ord_env
         '<div class="row1"><span class="name">'+esc(r.team)+'</span><span class="pct tabular" style="color:'+pctColor+'">'+pctLabel+'</span></div>'+
         '<span class="count">'+s.total+' assessor'+(s.total===1?'':'es')+'</span>'+
         '<div class="bar">'+barSegments(s.counts, s.total)+'</div>'+
-        '<div class="legend"><span><b class="tabular">'+s.counts.ok+'</b> em dia</span><span><b class="tabular">'+s.counts.warn+'</b> atenção</span><span><b class="tabular">'+s.counts.crit+'</b> crítico</span></div>'+
+        '<div class="legend"><span><b class="tabular">'+s.counts.ok+'</b> em dia</span><span><b class="tabular">'+s.counts.warn+'</b> atenção</span><span><b class="tabular">'+s.counts.crit+'</b> no show</span></div>'+
         '</button>';
     }).join("");
     Array.prototype.forEach.call($("teamsGrid").querySelectorAll(".team-card"), function(btn){
