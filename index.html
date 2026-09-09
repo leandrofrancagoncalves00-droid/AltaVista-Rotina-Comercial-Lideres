@@ -312,9 +312,7 @@
   .msv-row .mfill{position:absolute;top:0;left:0;bottom:0;border-radius:4px;background:var(--accent);}
   .msv-row.health .mfill{background:var(--warning);}
   .msv-row .mv{font-family:var(--font-mono);font-size:11.5px;text-align:right;color:var(--ink-900);}
-  .missoes-tags{display:flex;flex-wrap:wrap;gap:8px;}
-  .missao-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font-size:12px;font-weight:600;}
-  .missao-tag .mtipo{opacity:.72;font-weight:500;}
+  .qtext .mtipo{opacity:.7;}
   .missoes-empty{font-size:12.5px;color:var(--ink-500);}
   .quadrant-head .eyebrow{font-family:var(--font-display);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);font-weight:700;}
   .quadrant-head h3{font-size:16px;color:var(--ink-900);margin-top:2px;}
@@ -943,11 +941,12 @@
   function pushAdvisorMeta(equipe, nome){
     var sched = getSchedule(equipe, nome);
     var quad = getQuadrant(equipe, nome);
+    var missoes = (store.missoesEntrega && store.missoesEntrega[scheduleKey(equipe,nome)]) || null;
     setSyncFlag("syncing", "Sincronizando…");
     fetch(sbUrl("advisor_meta?on_conflict=equipe,nome"), {
       method: "POST",
       headers: sbHeaders({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
-      body: JSON.stringify([{ equipe: equipe, nome: nome, quadrant: quad || null, schedule_day: sched.day || null, schedule_time: sched.time || null, updated_at: new Date().toISOString() }])
+      body: JSON.stringify([{ equipe: equipe, nome: nome, quadrant: quad || null, schedule_day: sched.day || null, schedule_time: sched.time || null, missoes_entregue: missoes, updated_at: new Date().toISOString() }])
     }).then(function(r){
       if(!r.ok) throw new Error("http " + r.status);
       setSyncFlag("synced", "Sincronizado");
@@ -1003,11 +1002,12 @@
         weeks[row.week_key][row.equipe] = weeks[row.week_key][row.equipe] || {};
         weeks[row.week_key][row.equipe][row.nome] = { items: row.items || {}, notes: row.notes || "" };
       });
-      var quadrant = {}, schedule = {};
+      var quadrant = {}, schedule = {}, missoesEntrega = {};
       metas.forEach(function(row){
         var key = row.equipe + "|" + row.nome;
         if(row.quadrant) quadrant[key] = row.quadrant;
         if(row.schedule_day || row.schedule_time) schedule[key] = { day: row.schedule_day || "", time: row.schedule_time || "" };
+        if(row.missoes_entregue) missoesEntrega[key] = row.missoes_entregue;
       });
       var pipeline = {};
       deals.forEach(function(row){
@@ -1040,6 +1040,7 @@
       store.quadrant = quadrant;
       store.schedule = schedule;
       store.pipeline = pipeline;
+      store.missoesEntrega = missoesEntrega;
       persist();
       renderAll();
       if(!silent) setSyncFlag("synced", "Dados atualizados");
@@ -1339,7 +1340,7 @@
     renderQuadrant();
     renderPipeline();
     renderMsvBlock(currentAdvisor);
-    renderMissoesBlock(currentAdvisor);
+    renderMissoesBlock(currentTeam, currentAdvisor);
     bindAdvisorInputs();
   }
 
@@ -1422,16 +1423,19 @@
     }
   }
 
-  function renderMissoesBlock(nome){
+  function renderMissoesBlock(equipe, nome){
     var el = $("missoesBlock");
     if(!el) return;
     var lista = MISSOES_LOOKUP[nome];
     if(!lista){ el.innerHTML = ""; return; }
-    var tags = lista.map(function(m){
-      return '<span class="missao-tag">'+esc(m.produto)+' <span class="mtipo">· '+esc(m.tipo)+'</span></span>';
+    var rows = lista.map(function(m){
+      var missaoKey = m.produto+"|"+m.tipo;
+      var v = getMissaoEntrega(equipe, nome, missaoKey);
+      return '<div class="value-row"><span class="qtext">'+esc(m.produto)+' <span class="mtipo">· '+esc(m.tipo)+'</span></span>'+
+        '<div class="value-input"><input type="number" step="0.01" inputmode="decimal" data-missao-key="'+esc(missaoKey)+'" value="'+esc(v)+'" placeholder="Entregue"></div></div>';
     }).join("");
     el.innerHTML = '<div class="msv-panel"><div class="msv-panel-head"><h4>Missões elegíveis no mês</h4><span>Set/2026</span></div>'+
-      '<div class="missoes-tags">'+(tags || '<span class="missoes-empty">Nenhuma missão elegível neste mês.</span>')+'</div></div>';
+      '<div class="msv-rows">'+(rows || '<span class="missoes-empty">Nenhuma missão elegível neste mês.</span>')+'</div></div>';
   }
 
   function renderQuadrant(){
@@ -1527,6 +1531,17 @@
   function setSchedule(equipe, nome, day, time){
     store.schedule = store.schedule || {};
     store.schedule[scheduleKey(equipe,nome)] = { day:day, time:time };
+    persist();
+  }
+  function getMissaoEntrega(equipe, nome, missaoKey){
+    var m = store.missoesEntrega && store.missoesEntrega[scheduleKey(equipe,nome)];
+    return (m && m[missaoKey]!==undefined) ? m[missaoKey] : "";
+  }
+  function setMissaoEntrega(equipe, nome, missaoKey, valor){
+    store.missoesEntrega = store.missoesEntrega || {};
+    var key = scheduleKey(equipe,nome);
+    store.missoesEntrega[key] = store.missoesEntrega[key] || {};
+    store.missoesEntrega[key][missaoKey] = valor;
     persist();
   }
   var DAY_LABELS = { seg:"Seg", ter:"Ter", qua:"Qua", qui:"Qui", sex:"Sex", sab:"Sáb", dom:"Dom" };
@@ -1780,6 +1795,15 @@
     }
     $("scheduleDay").addEventListener("change", saveSchedule);
     $("scheduleTime").addEventListener("change", saveSchedule);
+
+    Array.prototype.forEach.call($("missoesBlock").querySelectorAll("input[data-missao-key]"), function(inp){
+      inp.addEventListener("change", function(){
+        var v = inp.value === "" ? "" : Number(inp.value);
+        setMissaoEntrega(equipe, nome, inp.getAttribute("data-missao-key"), v);
+        flashSave();
+        pushAdvisorMeta(equipe, nome);
+      });
+    });
   }
 
   function afterEdit(){

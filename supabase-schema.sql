@@ -18,9 +18,14 @@ create table if not exists advisor_meta (
   quadrant text,
   schedule_day text,
   schedule_time text,
+  missoes_entregue jsonb,
   updated_at timestamptz not null default now(),
   primary key (equipe, nome)
 );
+
+-- Migracao (2026-09): se a tabela advisor_meta ja existia antes desta coluna,
+-- rode so esta linha no SQL Editor do Supabase para adiciona-la sem perder dados:
+-- alter table advisor_meta add column if not exists missoes_entregue jsonb;
 
 create table if not exists pipeline_deals (
   id bigint generated always as identity primary key,
