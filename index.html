@@ -567,8 +567,8 @@
   <footer class="toolbar">
     <div class="legend-strip">
       <span><span class="d" style="background:var(--success)"></span>Em dia (≥80%)</span>
-      <span><span class="d" style="background:var(--warning)"></span>Atenção (50–79%)</span>
-      <span><span class="d" style="background:var(--critical)"></span>No show (&lt;50% ou semana anterior não preenchida)</span>
+      <span><span class="d" style="background:var(--warning)"></span>Atenção (11–79%)</span>
+      <span><span class="d" style="background:var(--critical)"></span>No show (&le;10% ou semana anterior não preenchida)</span>
       <span><span class="d" style="background:var(--pending)"></span>Não preenchido</span>
     </div>
     <div class="actions">
@@ -1098,7 +1098,7 @@
     });
     if(!anyTouched) return { status:emptyStatus, pct:null, entry:entry };
     var pct = Math.round((sum/ITEM_DEFS.length)*100);
-    var status = pct>=80 ? "ok" : pct>=50 ? "warn" : "crit";
+    var status = pct>=80 ? "ok" : pct>10 ? "warn" : "crit";
     return { status:status, pct:pct, entry:entry };
   }
 
