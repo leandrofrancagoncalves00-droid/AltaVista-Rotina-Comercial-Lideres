@@ -898,6 +898,10 @@
 
   var syncTimer = null;
   function scheduleSync(){
+    // Marca a escrita como recente a cada tecla digitada (não só quando o push
+    // debounced eventualmente dispara) — evita que o pull periódico (a cada 25s)
+    // sobrescreva um campo que o líder ainda está digitando há mais de 10s sem pausar.
+    if(currentTeam && currentAdvisor) markRecentWrite(weekKeyFor(currentMonday), currentTeam, currentAdvisor);
     clearTimeout(syncTimer);
     syncTimer = setTimeout(pushCurrentEntry, 900);
   }
