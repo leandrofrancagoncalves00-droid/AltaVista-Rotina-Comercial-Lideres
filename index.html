@@ -312,6 +312,19 @@
   .msv-row .mfill{position:absolute;top:0;left:0;bottom:0;border-radius:4px;background:var(--accent);}
   .msv-row.health .mfill{background:var(--warning);}
   .msv-row .mv{font-family:var(--font-mono);font-size:11.5px;text-align:right;color:var(--ink-900);}
+  summary.msv-row.actionable{grid-template-columns:108px 1fr 42px 16px;cursor:pointer;list-style:none;}
+  summary.msv-row.actionable::-webkit-details-marker{display:none;}
+  summary.msv-row.actionable:hover .ml{color:var(--ink-900);}
+  .msv-row-chevron{width:14px;height:14px;color:var(--ink-500);transition:transform .15s ease;}
+  .msv-row-detail[open] .msv-row-chevron{transform:rotate(90deg);}
+  .msv-row-detail{border-radius:8px;}
+  .msv-row-detail[open]{background:var(--surface-2);margin:-4px -8px 0;padding:4px 8px 8px;}
+  .msv-actions{padding:8px 2px 2px;}
+  .msv-actions-meta{display:flex;gap:10px;font-size:10px;font-weight:700;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;}
+  .msv-actions-obj{font-size:11.5px;color:var(--ink-700);line-height:1.4;margin:0 0 8px;}
+  .msv-actions-label{font-size:10.5px;font-weight:700;color:var(--ink-700);margin:0 0 4px;}
+  .msv-actions-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;}
+  .msv-actions-list li{font-size:11.5px;color:var(--ink-700);line-height:1.4;}
   .qtext .mtipo{opacity:.7;}
   .missoes-empty{font-size:12.5px;color:var(--ink-500);}
   .quadrant-head .eyebrow{font-family:var(--font-display);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);font-weight:700;}
@@ -1383,13 +1396,88 @@
     { key:"saude_ader", label:"Aderência" }
   ];
 
-  function msvPanelHtml(title, fields, data, healthStyle){
+  var MSV_ACTIONS = {
+    cta_acess: { pontos:"15 pontos", validade:"Validade: 30 dias",
+      objetivo:"Acompanhar a conta do cliente, conhecer suas posições e identificar oportunidades de atuação.",
+      acoes:[
+        "Acessar regularmente a conta do cliente no Hub.",
+        "Analisar saldos, posições e movimentações.",
+        "Identificar recursos em conta corrente ou aplicações de baixa eficiência.",
+        "Mapear vencimentos e oportunidades de investimento.",
+        "Verificar concentração de ativos.",
+        "Preparar o contato com informações atualizadas para uma conversa consultiva."
+      ] },
+    ord_env: { pontos:"25 pontos", validade:"Validade: 60 dias",
+      objetivo:"Transformar o planejamento e as recomendações em ação, com envio e aprovação de ordens de investimento.",
+      acoes:[
+        "Apresentar recomendações personalizadas ao cliente.",
+        "Enviar a ordem e acompanhar a aprovação.",
+        "Direcionar novas aplicações (RF, RV, Fundos, Previdência, COE ou Câmbio).",
+        "Aproveitar vencimentos para realocar os recursos.",
+        "Executar oportunidades identificadas no FP ou na revisão de carteira.",
+        "Registrar o racional da recomendação e manter follow-up da implementação."
+      ] },
+    xperf: { pontos:"10 pontos", validade:"Validade: 90 dias",
+      objetivo:"Revisar a rentabilidade da carteira e gerar insights para a tomada de decisão do cliente.",
+      acoes:[
+        "Enviar todos os meses o relatório de XPerformance para o cliente.",
+        "Apresentar e explicar o resultado ao cliente.",
+        "Comparar a performance com benchmarks adequados.",
+        "Identificar os principais ofensores e oportunidades de melhoria.",
+        "Discutir ajustes de alocação e rebalanceamento.",
+        "Aproveitar a reunião para identificar novas necessidades de investimento."
+      ] },
+    ac_trat: { pontos:"25 pontos (extra)", validade:"Validade: 30 dias",
+      objetivo:"Manter um relacionamento próximo e contínuo com o cliente, utilizando as atividades de Expert Allocation e atividades críticas com foco em conversão de negócios.",
+      acoes:[
+        "Realizar as atividades de Expert Allocation com objetivo em conversão de negócios.",
+        "Realizar as atividades críticas com profundidade em cada cliente.",
+        "Fazer contatos proativos (e-mail, telefone, reunião).",
+        "Dar boas-vindas para novos clientes.",
+        "Parabenizar o cliente no aniversário.",
+        "Utilizar gatilhos de conversa (recomendação de FP, saldo em conta digital, saldo em OPIN etc.).",
+        "Registrar as interações no CRM e definir próximos passos."
+      ] },
+    fp: { pontos:"25 pontos", validade:"Validade: 365 dias",
+      objetivo:"Conhecer o cliente em profundidade e manter o planejamento financeiro atualizado.",
+      acoes:[
+        "Realizar o Financial Planning ou atualizar o existente.",
+        "Entender objetivos de vida e perfil de risco.",
+        "Identificar capacidade de aporte e horizonte de investimento.",
+        "Mapear patrimônio total (com e sem XP).",
+        "Identificar necessidades de proteção, crédito e consórcio.",
+        "Definir plano de ação e próximos passos com o cliente."
+      ] },
+    opin: { pontos:"25 pontos", validade:"Validade: indeterminada",
+      objetivo:"Aumentar o conhecimento sobre o patrimônio total do cliente e identificar oportunidades de captação (share of wallet).",
+      acoes:[
+        "Solicitar o compartilhamento dos investimentos via Open Finance (Open Invest).",
+        "Explicar os benefícios do compartilhamento de dados.",
+        "Analisar o patrimônio externo e comparar com a carteira atual.",
+        "Identificar vencimentos e oportunidades de portabilidade.",
+        "Construir proposta de consolidação de patrimônio.",
+        "Revisitar periodicamente as informações e atualizar o diagnóstico."
+      ] }
+  };
+
+  function msvPanelHtml(title, fields, data, healthStyle, actionable){
     var rows = fields.map(function(f){
       var v = data[f.key];
       var pct = (v===undefined || v===null) ? 0 : Math.max(0, Math.min(100, v));
-      return '<div class="msv-row'+(healthStyle?' health':'')+'"><span class="ml">'+esc(f.label)+'</span>'+
+      var rowInner = '<span class="ml">'+esc(f.label)+'</span>'+
         '<div class="mtrack"><span class="mfill" style="width:'+pct+'%"></span></div>'+
-        '<span class="mv tabular">'+(v===undefined||v===null?"—":v+"%")+'</span></div>';
+        '<span class="mv tabular">'+(v===undefined||v===null?"—":v+"%")+'</span>';
+      var action = actionable ? MSV_ACTIONS[f.key] : null;
+      if(action){
+        var acoesHtml = action.acoes.map(function(a){ return '<li>'+esc(a)+'</li>'; }).join("");
+        return '<details class="msv-row-detail"><summary class="msv-row actionable'+(healthStyle?' health':'')+'">'+rowInner+
+          '<svg class="msv-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg></summary>'+
+          '<div class="msv-actions"><div class="msv-actions-meta"><span>'+esc(action.pontos)+'</span><span>'+esc(action.validade)+'</span></div>'+
+          '<p class="msv-actions-obj">'+esc(action.objetivo)+'</p>'+
+          '<p class="msv-actions-label">Ações que você pode sugerir:</p>'+
+          '<ol class="msv-actions-list">'+acoesHtml+'</ol></div></details>';
+      }
+      return '<div class="msv-row'+(healthStyle?' health':'')+'">'+rowInner+'</div>';
     }).join("");
     return '<div class="msv-panel"><div class="msv-panel-head"><h4>'+esc(title)+'</h4><span>Set/2026</span></div><div class="msv-rows">'+rows+'</div></div>';
   }
@@ -1409,7 +1497,7 @@
     var data = MSV_LOOKUP[nome];
     if(el){
       el.innerHTML = data
-        ? '<div class="msv-wrap">'+msvPanelHtml("Modelo de servir (detalhado)", MSV_FIELDS, data, false)+msvPanelHtml("Saúde do cliente", SAUDE_FIELDS, data, true)+'</div>'
+        ? '<div class="msv-wrap">'+msvPanelHtml("Modelo de servir (detalhado)", MSV_FIELDS, data, false, true)+msvPanelHtml("Saúde do cliente", SAUDE_FIELDS, data, true, false)+'</div>'
         : "";
     }
     if(head){
