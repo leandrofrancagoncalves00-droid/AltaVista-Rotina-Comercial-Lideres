@@ -322,6 +322,7 @@
   .msv-actions{padding:8px 2px 2px;}
   .msv-actions-meta{display:flex;gap:10px;font-size:10px;font-weight:700;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;}
   .msv-actions-obj{font-size:11.5px;color:var(--ink-700);line-height:1.4;margin:0 0 8px;}
+  .msv-actions-produtos{font-size:10.5px;color:var(--ink-500);line-height:1.4;margin:-4px 0 10px;font-style:italic;}
   .msv-actions-label{font-size:10.5px;font-weight:700;color:var(--ink-700);margin:0 0 4px;}
   .msv-actions-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;}
   .msv-actions-list li{font-size:11.5px;color:var(--ink-700);line-height:1.4;}
@@ -1397,7 +1398,7 @@
   ];
 
   var MSV_ACTIONS = {
-    cta_acess: { pontos:"15 pontos", validade:"Validade: 30 dias",
+    cta_acess: { meta:["15 pontos","Validade: 30 dias"],
       objetivo:"Acompanhar a conta do cliente, conhecer suas posições e identificar oportunidades de atuação.",
       acoes:[
         "Acessar regularmente a conta do cliente no Hub.",
@@ -1407,7 +1408,7 @@
         "Verificar concentração de ativos.",
         "Preparar o contato com informações atualizadas para uma conversa consultiva."
       ] },
-    ord_env: { pontos:"25 pontos", validade:"Validade: 60 dias",
+    ord_env: { meta:["25 pontos","Validade: 60 dias"],
       objetivo:"Transformar o planejamento e as recomendações em ação, com envio e aprovação de ordens de investimento.",
       acoes:[
         "Apresentar recomendações personalizadas ao cliente.",
@@ -1417,7 +1418,7 @@
         "Executar oportunidades identificadas no FP ou na revisão de carteira.",
         "Registrar o racional da recomendação e manter follow-up da implementação."
       ] },
-    xperf: { pontos:"10 pontos", validade:"Validade: 90 dias",
+    xperf: { meta:["10 pontos","Validade: 90 dias"],
       objetivo:"Revisar a rentabilidade da carteira e gerar insights para a tomada de decisão do cliente.",
       acoes:[
         "Enviar todos os meses o relatório de XPerformance para o cliente.",
@@ -1427,7 +1428,7 @@
         "Discutir ajustes de alocação e rebalanceamento.",
         "Aproveitar a reunião para identificar novas necessidades de investimento."
       ] },
-    ac_trat: { pontos:"25 pontos (extra)", validade:"Validade: 30 dias",
+    ac_trat: { meta:["25 pontos (extra)","Validade: 30 dias"],
       objetivo:"Manter um relacionamento próximo e contínuo com o cliente, utilizando as atividades de Expert Allocation e atividades críticas com foco em conversão de negócios.",
       acoes:[
         "Realizar as atividades de Expert Allocation com objetivo em conversão de negócios.",
@@ -1438,7 +1439,7 @@
         "Utilizar gatilhos de conversa (recomendação de FP, saldo em conta digital, saldo em OPIN etc.).",
         "Registrar as interações no CRM e definir próximos passos."
       ] },
-    fp: { pontos:"25 pontos", validade:"Validade: 365 dias",
+    fp: { meta:["25 pontos","Validade: 365 dias"],
       objetivo:"Conhecer o cliente em profundidade e manter o planejamento financeiro atualizado.",
       acoes:[
         "Realizar o Financial Planning ou atualizar o existente.",
@@ -1448,7 +1449,7 @@
         "Identificar necessidades de proteção, crédito e consórcio.",
         "Definir plano de ação e próximos passos com o cliente."
       ] },
-    opin: { pontos:"25 pontos", validade:"Validade: indeterminada",
+    opin: { meta:["25 pontos","Validade: indeterminada"],
       objetivo:"Aumentar o conhecimento sobre o patrimônio total do cliente e identificar oportunidades de captação (share of wallet).",
       acoes:[
         "Solicitar o compartilhamento dos investimentos via Open Finance (Open Invest).",
@@ -1460,20 +1461,94 @@
       ] }
   };
 
-  function msvPanelHtml(title, fields, data, healthStyle, actionable){
+  var SAUDE_ACTIONS = {
+    saude_aportes: { meta:["Meta: aportou em 4+ meses"],
+      objetivo:"Fazer o cliente voltar a aportar com recorrência.",
+      acoes:[
+        "Fazer Planejamento Financeiro e definir capacidade de aporte.",
+        "Contatar clientes sem aporte nos últimos 12 meses.",
+        "Apresentar oportunidades de Renda Fixa (NTN-B, CDB, LCI/LCA).",
+        "Mapear e antecipar vencimentos em outras instituições.",
+        "Identificar recursos em outros bancos/corretoras.",
+        "Utilizar Open Finance/Open Investment.",
+        "Criar agenda recorrente de aportes.",
+        "Identificar bônus, PLR, dividendos e liquidez futura.",
+        "Retomar clientes que já aportaram no passado.",
+        "Estruturar régua de relacionamento para clientes inativos."
+      ] },
+    saude_var_auc: { meta:["Meta: custódia aumentou ≥ 20%"],
+      objetivo:"Aumentar o patrimônio do cliente sob nossa custódia (share of wallet).",
+      acoes:[
+        "Fazer Planejamento Financeiro com visão consolidada.",
+        "Mapear patrimônio total do cliente (XP + outras instituições).",
+        "Utilizar Open Finance/Open Investment.",
+        "Identificar vencimentos externos.",
+        "Trabalhar portabilidade de investimentos.",
+        "Mapear previdência em outras instituições.",
+        "Identificar recursos em conta corrente e aplicações de baixa eficiência.",
+        "Revisitar os maiores resgates dos últimos 12 meses.",
+        "Trabalhar PJ do cliente e grupo familiar.",
+        "Apresentar proposta de consolidação de patrimônio."
+      ] },
+    saude_rentab: { meta:["Meta: rentabilidade bruta ≥ 100% vs CDI"],
+      objetivo:"Melhorar a eficiência da carteira, alinhada ao perfil e objetivos.",
+      acoes:[
+        "Fazer revisão completa da carteira.",
+        "Identificar os ativos que mais prejudicam o resultado.",
+        "Avaliar concentração excessiva.",
+        "Verificar caixa parado e liquidez.",
+        "Revisar alocação entre classes de ativos.",
+        "Avaliar produtos antigos e fundos com performance abaixo da expectativa.",
+        "Comparar com benchmark adequado.",
+        "Verificar se o risco está alinhado ao retorno esperado.",
+        "Propor rebalanceamento quando necessário.",
+        "Direcionar novos aportes para corrigir desequilíbrios."
+      ] },
+    saude_cross: { meta:["Meta: possui 4+ produtos"],
+      objetivo:"Ampliar o relacionamento, atendendo mais necessidades do cliente.",
+      produtos:"Produtos que contam para o indicador: Conta digital, Cartão de crédito, Seguro de vida, Seguro de cartão e conta, Crédito, Consórcio.",
+      acoes:[
+        "Fazer Planejamento Financeiro para identificar necessidades.",
+        "Oferecer e ativar a conta digital.",
+        "Apresentar e ativar o cartão de crédito.",
+        "Oferecer o seguro de vida.",
+        "Apresentar o seguro de cartão e conta (proteção em compras e transações).",
+        "Identificar necessidade de crédito (pessoal, imobiliário, consignado etc.) e encaminhar proposta.",
+        "Avaliar oportunidade de consórcio (veículo, imóvel, serviços).",
+        "Acompanhar ativação e uso dos produtos contratados."
+      ] },
+    saude_ader: { meta:["Meta: aderência ≥ 80%"],
+      objetivo:"Aproximar a carteira da estratégia recomendada, respeitando o perfil.",
+      acoes:[
+        "Fazer revisão formal da carteira.",
+        "Identificar clientes com aderência abaixo de 80%.",
+        "Mostrar carteira atual x recomendada.",
+        "Revisar perfil de risco e objetivos.",
+        "Identificar as maiores distorções de alocação.",
+        "Propor rebalanceamento gradual.",
+        "Utilizar novos aportes para ajustar a carteira.",
+        "Utilizar vencimentos para aumentar a aderência.",
+        "Reduzir concentrações excessivas.",
+        "Registrar e explicar o racional das mudanças ao cliente."
+      ] }
+  };
+
+  function msvPanelHtml(title, fields, data, healthStyle, actionsMap){
     var rows = fields.map(function(f){
       var v = data[f.key];
       var pct = (v===undefined || v===null) ? 0 : Math.max(0, Math.min(100, v));
       var rowInner = '<span class="ml">'+esc(f.label)+'</span>'+
         '<div class="mtrack"><span class="mfill" style="width:'+pct+'%"></span></div>'+
         '<span class="mv tabular">'+(v===undefined||v===null?"—":v+"%")+'</span>';
-      var action = actionable ? MSV_ACTIONS[f.key] : null;
+      var action = actionsMap ? actionsMap[f.key] : null;
       if(action){
+        var metaHtml = action.meta.map(function(m){ return '<span>'+esc(m)+'</span>'; }).join("");
         var acoesHtml = action.acoes.map(function(a){ return '<li>'+esc(a)+'</li>'; }).join("");
         return '<details class="msv-row-detail"><summary class="msv-row actionable'+(healthStyle?' health':'')+'">'+rowInner+
           '<svg class="msv-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg></summary>'+
-          '<div class="msv-actions"><div class="msv-actions-meta"><span>'+esc(action.pontos)+'</span><span>'+esc(action.validade)+'</span></div>'+
+          '<div class="msv-actions"><div class="msv-actions-meta">'+metaHtml+'</div>'+
           '<p class="msv-actions-obj">'+esc(action.objetivo)+'</p>'+
+          (action.produtos ? '<p class="msv-actions-produtos">'+esc(action.produtos)+'</p>' : '')+
           '<p class="msv-actions-label">Ações que você pode sugerir:</p>'+
           '<ol class="msv-actions-list">'+acoesHtml+'</ol></div></details>';
       }
@@ -1497,7 +1572,7 @@
     var data = MSV_LOOKUP[nome];
     if(el){
       el.innerHTML = data
-        ? '<div class="msv-wrap">'+msvPanelHtml("Modelo de servir (detalhado)", MSV_FIELDS, data, false, true)+msvPanelHtml("Saúde do cliente", SAUDE_FIELDS, data, true, false)+'</div>'
+        ? '<div class="msv-wrap">'+msvPanelHtml("Modelo de servir (detalhado)", MSV_FIELDS, data, false, MSV_ACTIONS)+msvPanelHtml("Saúde do cliente", SAUDE_FIELDS, data, true, SAUDE_ACTIONS)+'</div>'
         : "";
     }
     if(head){
