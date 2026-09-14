@@ -325,7 +325,10 @@
   .msv-actions-produtos{font-size:10.5px;color:var(--ink-500);line-height:1.4;margin:-4px 0 10px;font-style:italic;}
   .msv-actions-label{font-size:10.5px;font-weight:700;color:var(--ink-700);margin:0 0 4px;}
   .msv-actions-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;}
-  .msv-actions-list li{font-size:11.5px;color:var(--ink-700);line-height:1.4;}
+  .msv-actions-list li{font-size:11.5px;color:var(--ink-700);line-height:1.4;cursor:pointer;border-radius:5px;padding:2px 4px;margin:0 -4px;transition:background .1s ease,color .1s ease;}
+  .msv-actions-list li:hover{background:var(--accent-soft);color:var(--accent-ink);}
+  .msv-actions-list li::marker{color:var(--ink-500);}
+  .msv-actions-label .hint{font-weight:400;font-style:italic;color:var(--ink-500);text-transform:none;}
   .qtext .mtipo{opacity:.7;}
   .missoes-empty{font-size:12.5px;color:var(--ink-500);}
   .quadrant-head .eyebrow{font-family:var(--font-display);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);font-weight:700;}
@@ -1549,7 +1552,7 @@
           '<div class="msv-actions"><div class="msv-actions-meta">'+metaHtml+'</div>'+
           '<p class="msv-actions-obj">'+esc(action.objetivo)+'</p>'+
           (action.produtos ? '<p class="msv-actions-produtos">'+esc(action.produtos)+'</p>' : '')+
-          '<p class="msv-actions-label">Ações que você pode sugerir:</p>'+
+          '<p class="msv-actions-label">Ações que você pode sugerir <span class="hint">(clique para adicionar ao plano de ação)</span></p>'+
           '<ol class="msv-actions-list">'+acoesHtml+'</ol></div></details>';
       }
       return '<div class="msv-row'+(healthStyle?' health':'')+'">'+rowInner+'</div>';
@@ -1566,6 +1569,22 @@
     return '<span class="mhs-trend '+(up?"up":"down")+'" title="'+(up?"+":"−")+Math.abs(diff)+' pts vs ago/2026">'+(up?"▲":"▼")+' '+Math.abs(diff)+'</span>';
   }
 
+  function addActionToAta(text){
+    if(!currentTeam || !currentAdvisor) return;
+    var weekKey = weekKeyFor(currentMonday);
+    var entry = entryFor(weekKey, currentTeam, currentAdvisor, true);
+    entry.items.reuniao11 = entry.items.reuniao11 || { answers:[], ata:"" };
+    var atual = entry.items.reuniao11.ata || "";
+    var linha = "- " + text;
+    entry.items.reuniao11.ata = atual ? (atual.replace(/\s+$/,"") + "\n" + linha) : linha;
+    persist();
+    var ataEl = document.querySelector("textarea[data-meeting-ata]");
+    if(ataEl) ataEl.value = entry.items.reuniao11.ata;
+    flashSave();
+    scheduleSync();
+    showToast("Ação adicionada ao plano de ação");
+  }
+
   function renderMsvBlock(nome){
     var el = $("msvBlock");
     var head = $("msvHeadStats");
@@ -1574,6 +1593,9 @@
       el.innerHTML = data
         ? '<div class="msv-wrap">'+msvPanelHtml("Modelo de servir (detalhado)", MSV_FIELDS, data, false, MSV_ACTIONS)+msvPanelHtml("Saúde do cliente", SAUDE_FIELDS, data, true, SAUDE_ACTIONS)+'</div>'
         : "";
+      Array.prototype.forEach.call(el.querySelectorAll(".msv-actions-list li"), function(li){
+        li.addEventListener("click", function(){ addActionToAta(li.textContent); });
+      });
     }
     if(head){
       if(data){
