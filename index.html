@@ -298,6 +298,21 @@
   .ata-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .ata-hint{font-size:11px;color:var(--ink-500);}
 
+  .pilares-gap{display:flex;flex-direction:column;gap:10px;}
+  .pilares-gap-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+  .pilares-gap-head .eyebrow{font-size:11px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.05em;}
+  .pilares-gap-head .hint{font-size:11px;color:var(--ink-500);font-style:italic;}
+  .pilares-grid{display:flex;flex-wrap:wrap;gap:8px;}
+  .pilar-chip{display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink-700);}
+  .pilar-chip:hover{border-color:var(--accent);}
+  .pilar-chip .pnum{width:18px;height:18px;border-radius:50%;background:var(--ink-500);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;}
+  .pilar-chip.selected{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink);}
+  .pilar-chip.selected .pnum{background:var(--accent);}
+  .pilar-detail{background:var(--surface-2);border-radius:var(--radius-sm);padding:11px 13px;}
+  .pilar-detail-olhar{font-size:11.5px;color:var(--ink-700);line-height:1.4;margin:0 0 6px;}
+  .pilar-detail-pergunta{font-size:12.5px;font-weight:600;color:var(--accent-ink);font-style:italic;margin:0;cursor:pointer;padding:4px 6px;border-radius:6px;margin-left:-6px;margin-right:-6px;}
+  .pilar-detail-pergunta:hover{background:var(--accent-soft);}
+
   .quadrant-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:12px;}
   .msv-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   @media (max-width:700px){ .msv-wrap{grid-template-columns:1fr;} }
@@ -1815,6 +1830,40 @@
     '</div>';
   }
 
+  var PILARES_1X1 = [
+    { key:"captacao", num:1, label:"Captação",
+      olhar:["Captação líquida","Aportes e resgates","Pipeline 30/60 dias","Prospects","Bons negócios plantados"],
+      pergunta:"De onde virá sua próxima captação?" },
+    { key:"receita", num:2, label:"Receita",
+      olhar:["Receita realizada x meta","Recorrência","Comissão","Produtos","Oportunidades"],
+      pergunta:"O que você está fazendo hoje que vai gerar receita nas próximas semanas?" },
+    { key:"fee_fixo", num:3, label:"Fee fixo",
+      olhar:["Clientes mapeados","Apresentações","Conversões","PL convertido","Principais objeções"],
+      pergunta:"Quais clientes você vai converter e o que está impedindo o fechamento?" },
+    { key:"modelo_servir", num:4, label:"Modelo de servir",
+      olhar:["Nota atual","Principais ofensores","Financial Planning","Atividades Críticas","Open Investment","Cobertura","Disciplina da rotina"],
+      pergunta:"Quais são seus 2 maiores gaps e o que fará nesta semana para corrigi-los?" },
+    { key:"saude_cliente", num:5, label:"Saúde do cliente",
+      olhar:["Nota","Frequência de aportes","Variação patrimonial","Aderência","Rentabilidade","Cross-sell"],
+      pergunta:"Quais clientes precisam de uma ação agora e qual oportunidade existe aí?" }
+  ];
+
+  function pilaresGapHtml(obj){
+    var gaps = obj.gaps || [];
+    var chips = PILARES_1X1.map(function(p){
+      var sel = gaps.indexOf(p.key) !== -1;
+      return '<button type="button" class="pilar-chip'+(sel?' selected':'')+'" data-pilar-key="'+p.key+'">'+
+        '<span class="pnum">'+p.num+'</span><span>'+esc(p.label)+'</span></button>';
+    }).join("");
+    var details = PILARES_1X1.filter(function(p){ return gaps.indexOf(p.key) !== -1; }).map(function(p){
+      return '<div class="pilar-detail"><p class="pilar-detail-olhar"><strong>O que olhar:</strong> '+esc(p.olhar.join(", "))+'.</p>'+
+        '<p class="pilar-detail-pergunta" data-pilar-pergunta title="Clique para adicionar ao plano de ação">"'+esc(p.pergunta)+'"</p></div>';
+    }).join("");
+    return '<div class="pilares-gap">'+
+      '<div class="pilares-gap-head"><span class="eyebrow">Principais gaps da semana</span><span class="hint">Selecione até 2</span></div>'+
+      '<div class="pilares-grid">'+chips+'</div>'+details+'</div>';
+  }
+
   function meetingCardHtml(def, items, followUps){
     var cl = CHECKLISTS[def.key];
     var obj = items[def.key] || {};
@@ -1860,6 +1909,7 @@
       '</div>'+
       (def.hasAta && followUps && followUps.length ? followUps.map(followUpHtml).join("") : '')+
       '<div class="meeting-sections">'+sectionsHtml+'</div>'+
+      (def.hasAta ? pilaresGapHtml(obj) : '')+
       (def.hasAta ? planBlockHtml(obj) : '')+
       '</div>';
   }
@@ -1980,6 +2030,30 @@
         flashSave();
       });
     }
+
+    Array.prototype.forEach.call(grid.querySelectorAll(".pilar-chip"), function(btn){
+      btn.addEventListener("click", function(){
+        var key = btn.getAttribute("data-pilar-key");
+        var entry = entryFor(weekKey, equipe, nome, true);
+        entry.items.reuniao11 = entry.items.reuniao11 || { answers:[], ata:"" };
+        var gaps = entry.items.reuniao11.gaps || [];
+        var idx = gaps.indexOf(key);
+        if(idx !== -1){
+          gaps.splice(idx, 1);
+        } else {
+          if(gaps.length >= 2){ showToast("Selecione no máximo 2 pilares — desmarque um primeiro"); return; }
+          gaps.push(key);
+        }
+        entry.items.reuniao11.gaps = gaps;
+        persist();
+        afterEdit();
+        renderAdvisor();
+      });
+    });
+
+    Array.prototype.forEach.call(grid.querySelectorAll("[data-pilar-pergunta]"), function(p){
+      p.addEventListener("click", function(){ addActionToAta(p.textContent.replace(/^"|"$/g,"")); });
+    });
 
     $("generalNotes").addEventListener("input", function(){
       var entry = entryFor(weekKey, equipe, nome, true);
