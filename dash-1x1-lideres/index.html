@@ -306,7 +306,7 @@
       <div id="searchResults" class="search-results" hidden></div>
     </div>
 
-    <button class="btn primary" id="execSummaryBtn" title="Gerar resumo executivo da semana com IA">
+    <button class="btn primary" id="execSummaryBtn" title="Gerar resumo executivo automático da semana">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.6 5.3L19 9l-5.4 1.7L12 16l-1.6-5.3L5 9l5.4-1.7L12 2z"/><path d="M19 14l.8 2.6L22 17.5l-2.2.9L19 21l-.8-2.6L16 17.5l2.2-.9L19 14z"/></svg>
       Resumo executivo
     </button>
@@ -1163,8 +1163,179 @@
     showToast("Resumo copiado");
   });
 
-  /* ---------------- Resumo executivo (IA) ---------------- */
-  var EDGE_FUNCTION_URL = SUPABASE_URL + "/functions/v1/generate-summary";
+  /* ---------------- Resumo executivo (automático, sem IA/API) ---------------- */
+  var PERSONAL_SIGNAL_PATTERNS = [
+    { re: /no show|não compareceu|nao compareceu|não apareceu/i, label: "ausência (no-show)", sensitive: false },
+    { re: /f[ée]rias/i, label: "férias", sensitive: false },
+    { re: /doen[çc]a|doente|atestado|cr[ôo]nic[oa]/i, label: "saúde", sensitive: true },
+    { re: /internad[oa]/i, label: "internação (familiar)", sensitive: true },
+    { re: /emerg[êe]ncia/i, label: "emergência", sensitive: true },
+    { re: /desliga|saída da empresa|processo de saída/i, label: "desligamento/transição", sensitive: false },
+    { re: /à venda|a venda|desengajad/i, label: "possível desengajamento", sensitive: false }
+  ];
+  var THEME_TERMS = ["fee fixo","fee based","captação","modelo de servir","opin","financial planning"," fp ","missão","missões","seguro","consórcio","wealth","saúde do cliente"];
+
+  function detectPersonalSignals(text){
+    var hits = [];
+    PERSONAL_SIGNAL_PATTERNS.forEach(function(p){ if(p.re.test(text)) hits.push(p); });
+    return hits;
+  }
+  function isQuestionHeavy(text){
+    var lines = text.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+    if(lines.length < 2) return false;
+    var qCount = lines.filter(function(l){ return /\?\s*$/.test(l); }).length;
+    return (qCount / lines.length) >= 0.6;
+  }
+
+  function buildHeuristicSummary(){
+    var weekKey = weekKeyFor(currentMonday);
+    var prevMonday = new Date(currentMonday); prevMonday.setDate(prevMonday.getDate()-7);
+    var prevWeekKey = weekKeyFor(prevMonday);
+
+    var statusRows = TEAMS.map(function(t){
+      var s = teamStats(t, weekKey), prev = teamStats(t, prevWeekKey);
+      var bucket = s.avg===null ? "Sem dados" : s.avg>=80 ? "Em dia" : s.avg>=50 ? "Atenção" : "Crítico";
+      var delta = (s.avg!==null && prev.avg!==null) ? (s.avg-prev.avg) : null;
+      return { equipe:t, lider: liderFor(t), avg:s.avg, bucket:bucket, delta:delta, total:s.total };
+    });
+    var counts = { "Em dia":0, "Atenção":0, "Crítico":0, "Sem dados":0 };
+    statusRows.forEach(function(r){ counts[r.bucket]++; });
+
+    var lines = [];
+    lines.push("## Panorama geral");
+    lines.push("");
+    lines.push("| Time | Líder | Aderência | Variação |");
+    lines.push("|---|---|---|---|");
+    statusRows.sort(function(a,b){ var av=a.avg===null?-1:a.avg, bv=b.avg===null?-1:b.avg; return av-bv; }).forEach(function(r){
+      var pct = r.avg===null ? "—" : r.avg+"%";
+      var d = r.delta===null ? "" : (r.delta>0?"+":"")+r.delta+"pp";
+      lines.push("| "+r.equipe+" | "+(r.lider||"—")+" | "+pct+" ("+r.bucket+") | "+d+" |");
+    });
+    lines.push("");
+    lines.push("Em dia: "+counts["Em dia"]+" · Atenção: "+counts["Atenção"]+" · Crítico: "+counts["Crítico"]+" · Sem dados: "+counts["Sem dados"]+" — semana de "+fmtRange(currentMonday)+".");
+
+    // Quadrante por time
+    lines.push("");
+    lines.push("### Diagnóstico de quadrante (Esforço × Resultado)");
+    lines.push("");
+    var quadFlags = [];
+    TEAMS.forEach(function(t){
+      var advisors = ADVISORS.filter(function(a){ return a.equipe===t; });
+      var q = { A:0,B:0,C:0,D:0,sem:0 };
+      advisors.forEach(function(a){
+        var id = quadrantData[a.equipe+"|"+a.nome];
+        if(id==="A"||id==="B"||id==="C"||id==="D") q[id]++; else q.sem++;
+      });
+      var classificados = advisors.length - q.sem;
+      if(classificados===0 && advisors.length>0){
+        quadFlags.push("- **"+t+"**: nenhum assessor classificado no quadrante ("+advisors.length+" no time) — diagnóstico não está sendo feito.");
+      } else if(classificados>0 && (q.C+q.D)/classificados >= 0.6){
+        var detalhe = q.D>0 && q.C>0 ? q.D+" em \"Problema\" e "+q.C+" em \"Em Declínio\""
+          : q.D>0 ? q.D+" em \"Problema\""
+          : q.C+" em \"Em Declínio\"";
+        var abNote = (q.A===0 && q.B===0) ? ", nenhum em \"Referência\"/\"Em Ascensão\"" : "";
+        quadFlags.push("- **"+t+"**: "+detalhe+" de "+classificados+" assessores classificados — concentração alta em quadrantes baixos"+abNote+".");
+      }
+    });
+    if(quadFlags.length){ lines = lines.concat(quadFlags); }
+    else { lines.push("Nenhum padrão de concentração relevante encontrado nos times com classificação preenchida."); }
+
+    // Sinais pessoais/performance via palavra-chave
+    lines.push("");
+    lines.push("### Sinais de alerta — pessoal e performance (detectado por palavra-chave)");
+    lines.push("");
+    var found = [];
+    Object.keys(weeksData[weekKey] || {}).forEach(function(equipe){
+      Object.keys(weeksData[weekKey][equipe]).forEach(function(nome){
+        var entry = weeksData[weekKey][equipe][nome];
+        var text = ((entry.items && entry.items.reuniao11 && entry.items.reuniao11.ata) || "") + " " + (entry.notes || "");
+        if(!text.trim()) return;
+        var hits = detectPersonalSignals(text);
+        hits.forEach(function(h){ found.push({ equipe:equipe, nome:nome, label:h.label, sensitive:h.sensitive }); });
+      });
+    });
+    if(found.length){
+      found.forEach(function(f){
+        var who = f.sensitive ? "Um assessor da equipe "+f.equipe : f.nome+" ("+f.equipe+")";
+        lines.push("- "+who+" — sinal detectado: "+f.label+".");
+      });
+    } else {
+      lines.push("Nenhuma palavra-chave de alerta encontrada nos registros desta semana.");
+    }
+    lines.push("");
+    lines.push("*Detecção por palavra-chave — pode haver falsos positivos/negativos. Vale ler o registro completo antes de agir.*");
+
+    // Possível superficialidade (muitas perguntas sem resposta aparente)
+    lines.push("");
+    lines.push("### Possível superficialidade no registro");
+    lines.push("");
+    var shallow = {};
+    Object.keys(weeksData[weekKey] || {}).forEach(function(equipe){
+      Object.keys(weeksData[weekKey][equipe]).forEach(function(nome){
+        var entry = weeksData[weekKey][equipe][nome];
+        var ata = (entry.items && entry.items.reuniao11 && entry.items.reuniao11.ata) || "";
+        if(ata && isQuestionHeavy(ata)){
+          shallow[equipe] = shallow[equipe] || { count:0, total:0 };
+        }
+      });
+      var advisorsInTeam = ADVISORS.filter(function(a){ return a.equipe===equipe; }).length;
+      if(shallow[equipe]) shallow[equipe].total = advisorsInTeam;
+    });
+    Object.keys(weeksData[weekKey] || {}).forEach(function(equipe){
+      Object.keys(weeksData[weekKey][equipe]).forEach(function(nome){
+        var entry = weeksData[weekKey][equipe][nome];
+        var ata = (entry.items && entry.items.reuniao11 && entry.items.reuniao11.ata) || "";
+        if(ata && isQuestionHeavy(ata)){
+          shallow[equipe] = shallow[equipe] || { count:0, total: ADVISORS.filter(function(a){return a.equipe===equipe;}).length };
+          shallow[equipe].count++;
+        }
+      });
+    });
+    var shallowKeys = Object.keys(shallow).filter(function(k){ return shallow[k].count>=2; });
+    if(shallowKeys.length){
+      shallowKeys.forEach(function(k){
+        lines.push("- **"+k+"** ("+(liderFor(k)||"líder não cadastrado")+"): "+shallow[k].count+" registro(s) com maioria de linhas terminando em \"?\" e sem texto de resposta visível — pode indicar perguntas-modelo coladas sem preencher.");
+      });
+    } else {
+      lines.push("Nenhum time com esse padrão nesta semana.");
+    }
+
+    // Temas mais citados
+    lines.push("");
+    lines.push("## Alinhamento estratégico — temas mais citados");
+    lines.push("");
+    var themeCounts = {};
+    THEME_TERMS.forEach(function(t){ themeCounts[t] = 0; });
+    Object.keys(weeksData[weekKey] || {}).forEach(function(equipe){
+      Object.keys(weeksData[weekKey][equipe]).forEach(function(nome){
+        var entry = weeksData[weekKey][equipe][nome];
+        var text = (((entry.items && entry.items.reuniao11 && entry.items.reuniao11.ata) || "") + " " + (entry.notes || "")).toLowerCase();
+        THEME_TERMS.forEach(function(t){ if(text.indexOf(t)!==-1) themeCounts[t]++; });
+      });
+    });
+    var rankedThemes = THEME_TERMS.filter(function(t){ return themeCounts[t]>0; }).sort(function(a,b){ return themeCounts[b]-themeCounts[a]; }).slice(0,6);
+    if(rankedThemes.length){
+      rankedThemes.forEach(function(t){ lines.push("- **"+t.trim()+"**: citado em "+themeCounts[t]+" registro(s)."); });
+    } else {
+      lines.push("Nenhum dos termos monitorados apareceu nos registros desta semana.");
+    }
+
+    lines.push("");
+    lines.push("## Recomendações");
+    lines.push("");
+    var recs = [];
+    statusRows.forEach(function(r){
+      if(r.delta!==null && r.delta<=-15){ recs.push("Investigar a queda de "+Math.abs(r.delta)+" pontos em **"+r.equipe+"**."); }
+    });
+    statusRows.filter(function(r){ return r.bucket==="Sem dados"; }).forEach(function(r){
+      if(!r.lider) recs.push("Cadastrar um líder para **"+r.equipe+"**, hoje sem acompanhamento formal.");
+    });
+    shallowKeys.forEach(function(k){ recs.push("Reforçar com o líder de **"+k+"** a importância de registrar respostas reais, não só as perguntas do checklist."); });
+    if(!recs.length){ recs.push("Nenhum ponto crítico automático identificado — revisar manualmente os sinais de alerta acima."); }
+    recs.slice(0,6).forEach(function(r){ lines.push("- "+r); });
+
+    return lines.join("\n");
+  }
 
   function renderMarkdown(md){
     var lines = esc(md).split("\n");
@@ -1211,21 +1382,14 @@
 
   $("execSummaryBtn").addEventListener("click", function(){
     $("execSummaryModal").hidden = false;
-    $("execSummaryDesc").textContent = "Gerado por IA a partir dos dados do Rotina Comercial.";
-    $("execSummaryBody").innerHTML = '<div class="exec-summary-loading"><span class="sync-flag show syncing"><span class="dot"></span></span>Gerando resumo com IA — isso pode levar alguns segundos…</div>';
-    fetch(EDGE_FUNCTION_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_KEY, "apikey": SUPABASE_KEY }
-    }).then(function(r){ return r.json().then(function(data){ return { ok: r.ok, data: data }; }); })
-      .then(function(res){
-        if(!res.ok || !res.data.summary){
-          throw new Error((res.data && res.data.error) || "Falha ao gerar resumo");
-        }
-        $("execSummaryBody").innerHTML = renderMarkdown(res.data.summary);
-        $("execSummaryBody").setAttribute("data-raw", res.data.summary);
-      }).catch(function(err){
-        $("execSummaryBody").innerHTML = '<p style="color:var(--critical);">Não foi possível gerar o resumo: '+esc(String(err.message||err))+'</p>';
-      });
+    $("execSummaryDesc").textContent = "Calculado automaticamente a partir dos dados (sem IA/API) — cálculos e detecção por palavra-chave, não leitura interpretativa.";
+    try{
+      var md = buildHeuristicSummary();
+      $("execSummaryBody").innerHTML = renderMarkdown(md);
+      $("execSummaryBody").setAttribute("data-raw", md);
+    }catch(err){
+      $("execSummaryBody").innerHTML = '<p style="color:var(--critical);">Não foi possível gerar o resumo: '+esc(String(err.message||err))+'</p>';
+    }
   });
   $("closeExecSummary").addEventListener("click", function(){ $("execSummaryModal").hidden = true; });
   $("copyExecSummaryBtn").addEventListener("click", function(){
