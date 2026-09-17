@@ -1274,14 +1274,17 @@
     var weekKey = weekKeyFor(currentMonday);
     var rows = TEAMS.map(function(t){ return { team:t, s: teamStats(t, weekKey) }; });
     rows.sort(function(a,b){
-      var av = a.s.avg===null ? -1 : a.s.avg, bv = b.s.avg===null ? -1 : b.s.avg;
-      return av-bv;
+      var ar = a.s.total ? (a.s.counts.ok+a.s.counts.warn)/a.s.total : -1;
+      var br = b.s.total ? (b.s.counts.ok+b.s.counts.warn)/b.s.total : -1;
+      return ar-br;
     });
     $("overviewHint").textContent = "Ordenado por quem mais precisa de atenção";
     $("teamsGrid").innerHTML = rows.map(function(r){
       var s = r.s;
-      var pctLabel = s.avg===null ? "—" : s.avg+"%";
-      var pctColor = s.avg===null ? "var(--pending)" : s.avg>=80 ? "var(--success)" : s.avg>=50 ? "var(--warning)" : "var(--critical)";
+      var realizado = s.counts.ok + s.counts.warn;
+      var ratio = s.total ? realizado/s.total : null;
+      var pctLabel = s.total ? (realizado+"/"+s.total) : "—";
+      var pctColor = ratio===null ? "var(--pending)" : ratio>=0.8 ? "var(--success)" : ratio>=0.5 ? "var(--warning)" : "var(--critical)";
       return '<button class="team-card" data-team="'+esc(r.team)+'">'+
         '<div class="row1"><span class="name">'+esc(r.team)+'</span><span class="pct tabular" style="color:'+pctColor+'">'+pctLabel+'</span></div>'+
         '<span class="count">'+s.total+' assessor'+(s.total===1?'':'es')+'</span>'+
