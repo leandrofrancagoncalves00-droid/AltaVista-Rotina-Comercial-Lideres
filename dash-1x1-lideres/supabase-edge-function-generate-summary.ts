@@ -159,7 +159,9 @@ function teamStats(weeks: WeeksIndex, equipe: string, weekKey: string) {
 }
 
 // ---------------- Handler ----------------
-Deno.serve(async (req: Request) => {
+// Formato exigido pelo editor de Edge Functions do Supabase (substitua TODO o
+// conteúdo do arquivo index.ts do template por este arquivo inteiro).
+async function handleRequest(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
 
   try {
@@ -275,4 +277,6 @@ Seja direto e conciso — este é um documento para executivos lerem em poucos m
       status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
-});
+}
+
+export default { fetch: handleRequest };
