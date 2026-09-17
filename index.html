@@ -199,6 +199,9 @@
   .advisor-head .stat-pill{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);}
   .advisor-head .stat-pill .pct{font-family:var(--font-mono);font-size:19px;font-weight:700;}
   .advisor-head .stat-pill .wk{font-size:11.5px;color:var(--ink-500);}
+  .noshow-btn{font-size:10.5px;font-weight:700;letter-spacing:.02em;color:var(--ink-500);background:none;border:1px solid var(--border);border-radius:999px;padding:2px 9px;cursor:pointer;}
+  .noshow-btn:hover{border-color:var(--critical);color:var(--critical);}
+  .noshow-btn.active{background:var(--critical);border-color:var(--critical);color:#fff;}
   .msv-head-stats{display:flex;gap:10px;}
   .msv-head-stat{display:flex;flex-direction:column;align-items:center;padding:6px 16px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);min-width:84px;}
   .msv-head-stat .mhs-label{font-size:10.5px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.03em;text-align:center;}
@@ -570,7 +573,7 @@
         <span class="status-dot" id="advisorDot"></span>
         <div>
           <div class="pct tabular" id="advisorPct">—</div>
-          <div class="wk" id="advisorWeekLabel"></div>
+          <button type="button" class="noshow-btn" id="noShowBtn">No show</button>
         </div>
       </div>
       <span class="save-flag" id="advisorSaveFlag">Salvo</span>
@@ -1142,6 +1145,7 @@
     var emptyStatus = isPastWeek ? "crit" : "pend";
     if(!entry) return { status:emptyStatus, pct:null, entry:null };
     var items = entry.items || {};
+    if(items.noShow) return { status:"crit", pct:0, entry:entry };
     var anyTouched = false, sum = 0;
     ITEM_DEFS.forEach(function(def){
       var r = itemRatio(def, items);
@@ -1374,7 +1378,7 @@
     $("advisorDot").className = "status-dot "+r.status;
     $("advisorPct").textContent = r.pct===null ? "—" : r.pct+"%";
     $("advisorPct").style.color = dotColor(r.status);
-    $("advisorWeekLabel").textContent = fmtRange(currentMonday);
+    $("noShowBtn").classList.toggle("active", !!(r.entry && r.entry.items && r.entry.items.noShow));
 
     var followUps = findOpenFollowUps(currentTeam, currentAdvisor, currentMonday).map(function(info){
       return Object.assign({}, info.data, { __weekKey: info.weekKey, __monday: info.monday });
@@ -2122,6 +2126,22 @@
     }
     $("scheduleDay").addEventListener("change", saveSchedule);
     $("scheduleTime").addEventListener("change", saveSchedule);
+
+    $("noShowBtn").addEventListener("click", function(){
+      var entry = entryFor(weekKey, equipe, nome, true);
+      entry.items = entry.items || {};
+      entry.items.noShow = !entry.items.noShow;
+      persist();
+      markRecentWrite(weekKey, equipe, nome);
+      pushEntryForWeek(weekKey);
+      var r = computeStatus(weekKey, equipe, nome);
+      $("advisorDot").className = "status-dot "+r.status;
+      $("advisorPct").textContent = r.pct===null ? "—" : r.pct+"%";
+      $("advisorPct").style.color = dotColor(r.status);
+      $("noShowBtn").classList.toggle("active", !!entry.items.noShow);
+      flashSave();
+      renderScoreboard();
+    });
 
     Array.prototype.forEach.call($("missoesBlock").querySelectorAll("input[data-missao-key]"), function(inp){
       inp.addEventListener("change", function(){
