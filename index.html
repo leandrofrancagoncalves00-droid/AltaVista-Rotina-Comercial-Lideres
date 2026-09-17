@@ -861,26 +861,20 @@
   // Procura o combinado (ata) mais recente que ainda não foi marcado como
   // realizado/não realizado, voltando semana a semana (até 1 ano) — assim ele
   // "carrega" nas semanas seguintes até o líder resolver.
-  // Combinados de semanas anteriores a esta continuam com o comportamento antigo
-  // (somem assim que Realizado/Não realizado é marcado). Só a partir desta semana
-  // o card fica aberto até o líder preencher o campo de resultado.
-  function resultadoRequiredFromWeek(){
-    var d = startOfWeek(new Date());
-    d.setDate(d.getDate()+7);
-    return weekKeyFor(d);
-  }
-
+  // Combinados marcados como Realizado/Não realizado antes deste recurso existir
+  // (sem "statusAt") continuam com o comportamento antigo: somem assim que
+  // marcados, sem pedir resultado. Qualquer marcação feita a partir de agora
+  // grava "statusAt" e só some da lista depois que o líder preencher o resultado.
   function findOpenFollowUps(equipe, nome, beforeMonday){
     var d = new Date(beforeMonday);
     var found = [];
-    var cutoff = resultadoRequiredFromWeek();
     for(var i=0;i<52;i++){
       d.setDate(d.getDate()-7);
       var wk = weekKeyFor(d);
       var entry = store.weeks[wk] && store.weeks[wk][equipe] && store.weeks[wk][equipe][nome];
       var r11 = entry && entry.items && entry.items.reuniao11;
-      var requireResult = wk >= cutoff;
-      if(r11 && r11.ata && (!r11.status || (requireResult && !r11.resultado))){
+      if(!r11 || !r11.ata) continue;
+      if(!r11.status || (r11.statusAt && !r11.resultado)){
         found.push({ weekKey: wk, monday: new Date(d), data: r11 });
       }
     }
@@ -2034,6 +2028,7 @@
         var entry = entryFor(wk, equipe, nome, true);
         entry.items.reuniao11 = entry.items.reuniao11 || { answers:[], ata:"" };
         entry.items.reuniao11.status = btn.getAttribute("data-status");
+        entry.items.reuniao11.statusAt = new Date().toISOString();
         persist();
         pushEntryForWeek(wk);
         renderAdvisor();
