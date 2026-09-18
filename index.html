@@ -202,6 +202,10 @@
   .noshow-btn{font-size:10.5px;font-weight:700;letter-spacing:.02em;color:var(--ink-500);background:none;border:1px solid var(--border);border-radius:999px;padding:2px 9px;cursor:pointer;}
   .noshow-btn:hover{border-color:var(--critical);color:var(--critical);}
   .noshow-btn.active{background:var(--critical);border-color:var(--critical);color:#fff;}
+  .noshow-count{display:block;font-size:10px;color:var(--ink-500);margin-top:3px;}
+  .noshow-block{background:var(--critical-soft);border:1px solid var(--critical);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;gap:8px;}
+  .noshow-block label{font-family:var(--font-display);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--critical);font-weight:700;}
+  .noshow-block textarea{width:100%;min-height:52px;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);font-size:12.5px;resize:vertical;font-family:inherit;}
   .msv-head-stats{display:flex;gap:10px;}
   .msv-head-stat{display:flex;flex-direction:column;align-items:center;padding:6px 16px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);min-width:84px;}
   .msv-head-stat .mhs-label{font-size:10.5px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.03em;text-align:center;}
@@ -574,11 +578,13 @@
         <div>
           <div class="pct tabular" id="advisorPct">—</div>
           <button type="button" class="noshow-btn" id="noShowBtn">No show</button>
+          <span class="noshow-count" id="noShowCount"></span>
         </div>
       </div>
       <span class="save-flag" id="advisorSaveFlag">Salvo</span>
       <span class="sync-flag" id="syncFlag"></span>
     </div>
+    <div id="noShowBlock"></div>
     <div class="quadrant-section">
       <div class="quadrant-head">
         <span class="eyebrow">Diagnóstico do time</span>
@@ -1158,6 +1164,22 @@
     return { status:status, pct:pct, entry:entry };
   }
 
+  // Conta quantas semanas dentro do mesmo mês/ano de refMonday têm items.noShow
+  // marcado para este assessor — usado no contador ao lado do botão No show.
+  function noShowCountThisMonth(equipe, nome, refMonday){
+    var refY = refMonday.getFullYear(), refM = refMonday.getMonth();
+    var count = 0;
+    Object.keys(store.weeks).forEach(function(wk){
+      var teamData = store.weeks[wk] && store.weeks[wk][equipe];
+      var entry = teamData && teamData[nome];
+      if(entry && entry.items && entry.items.noShow){
+        var monday = mondayFromWeekKey(wk);
+        if(monday.getFullYear()===refY && monday.getMonth()===refM) count++;
+      }
+    });
+    return count;
+  }
+
   function teamStats(equipe, weekKey){
     var advisors = ADVISORS.filter(function(a){ return a.equipe===equipe; });
     var counts = { ok:0, warn:0, crit:0, pend:0 };
@@ -1379,6 +1401,8 @@
     $("advisorPct").textContent = r.pct===null ? "—" : r.pct+"%";
     $("advisorPct").style.color = dotColor(r.status);
     $("noShowBtn").classList.toggle("active", !!(r.entry && r.entry.items && r.entry.items.noShow));
+    var noShowMonthCount = noShowCountThisMonth(currentTeam, currentAdvisor, currentMonday);
+    $("noShowCount").textContent = noShowMonthCount>0 ? (noShowMonthCount+"x no mês") : "";
 
     var followUps = findOpenFollowUps(currentTeam, currentAdvisor, currentMonday).map(function(info){
       return Object.assign({}, info.data, { __weekKey: info.weekKey, __monday: info.monday });
@@ -1414,6 +1438,7 @@
     renderPipeline();
     renderMsvBlock(currentAdvisor);
     renderMissoesBlock(currentTeam, currentAdvisor);
+    renderNoShowBlock();
     bindAdvisorInputs();
   }
 
@@ -1646,6 +1671,29 @@
     flashSave();
     scheduleSync();
     showToast("Ação adicionada ao plano de ação");
+  }
+
+  function renderNoShowBlock(){
+    var el = $("noShowBlock");
+    if(!el) return;
+    var weekKey = weekKeyFor(currentMonday);
+    var eq = currentTeam, nm = currentAdvisor;
+    var entry = entryFor(weekKey, eq, nm, false);
+    var items = (entry && entry.items) || {};
+    if(!items.noShow){ el.innerHTML = ""; return; }
+    var motivo = items.noShowMotivo || "";
+    el.innerHTML = '<div class="noshow-block"><label>Motivo do no show</label>'+
+      '<textarea data-noshow-motivo rows="2" placeholder="Por que o assessor não compareceu?">'+esc(motivo)+'</textarea></div>';
+    var ta = el.querySelector("textarea[data-noshow-motivo]");
+    ta.addEventListener("input", function(){
+      var e2 = entryFor(weekKey, eq, nm, true);
+      e2.items = e2.items || {};
+      e2.items.noShowMotivo = ta.value;
+      persist();
+      markRecentWrite(weekKey, eq, nm);
+      flashSave();
+    });
+    ta.addEventListener("change", function(){ pushEntryForWeek(weekKey); });
   }
 
   function renderMsvBlock(nome){
@@ -2127,7 +2175,7 @@
     $("scheduleDay").addEventListener("change", saveSchedule);
     $("scheduleTime").addEventListener("change", saveSchedule);
 
-    $("noShowBtn").addEventListener("click", function(){
+    $("noShowBtn").onclick = function(){
       var entry = entryFor(weekKey, equipe, nome, true);
       entry.items = entry.items || {};
       entry.items.noShow = !entry.items.noShow;
@@ -2139,9 +2187,14 @@
       $("advisorPct").textContent = r.pct===null ? "—" : r.pct+"%";
       $("advisorPct").style.color = dotColor(r.status);
       $("noShowBtn").classList.toggle("active", !!entry.items.noShow);
+      $("noShowCount").textContent = (function(){
+        var n = noShowCountThisMonth(equipe, nome, currentMonday);
+        return n>0 ? (n+"x no mês") : "";
+      })();
+      renderNoShowBlock();
       flashSave();
       renderScoreboard();
-    });
+    };
 
     Array.prototype.forEach.call($("missoesBlock").querySelectorAll("input[data-missao-key]"), function(inp){
       inp.addEventListener("change", function(){
