@@ -174,6 +174,7 @@
   .prontuario-wrap textarea{width:100%;min-height:120px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-size:13px;line-height:1.5;resize:vertical;color:var(--ink-900);}
 
   .followup-card{background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius-sm);padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+  .followup-card + .followup-card{margin-top:10px;}
   .followup-card .fu-label{font-family:var(--font-display);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);font-weight:700;}
   .followup-card .fu-text{font-size:12.5px;color:var(--ink-900);line-height:1.45;white-space:pre-wrap;}
   .fu-actions{display:flex;gap:8px;}
@@ -668,40 +669,47 @@
     });
   }
 
-  // Procura, indo para trás a partir da semana atual, o combinado mais recente —
-  // se ele já foi marcado (done/not_done), não há nada pendente. Se ainda não foi
-  // marcado, continua aparecendo mesmo que o diretor pule várias semanas.
-  function findPendingPlanoAcao(equipe, fromMonday, n){
+  // Procura, indo para trás a partir da semana atual, TODOS os combinados ainda
+  // não marcados (done/not_done) — se o diretor escrever um novo plano numa
+  // semana sem marcar o anterior, os dois continuam aparecendo, não só o mais
+  // recente. Só some quando marcado, mesmo que o diretor pule várias semanas.
+  function findPendingPlanoAcaoList(equipe, fromMonday, n){
     var d = new Date(fromMonday);
+    var pending = [];
     for(var i=0;i<n;i++){
       d.setDate(d.getDate()-7);
       var wk = weekKeyFor(d);
       var text = planoAcaoData[wk] && planoAcaoData[wk][equipe];
       if(text){
         var status = (planoStatusData[wk] && planoStatusData[wk][equipe]) || "";
-        return status ? null : { weekKey:wk, range:fmtRange(d), text:text };
+        if(!status) pending.push({ weekKey:wk, range:fmtRange(d), text:text });
       }
     }
-    return null;
+    return pending;
   }
 
   function renderPlanoAcaoFollowUp(){
-    var pending = findPendingPlanoAcao(currentTeam, currentMonday, 12);
+    var pendingList = findPendingPlanoAcaoList(currentTeam, currentMonday, 12);
     var el = $("planoAcaoFollowUp");
-    if(!pending){ el.innerHTML = ""; return; }
-    el.innerHTML = '<div class="followup-card">'+
-      '<span class="fu-label">Combinado de '+esc(pending.range)+' — foi realizado?</span>'+
-      '<span class="fu-text">'+esc(pending.text)+'</span>'+
-      '<div class="fu-actions">'+
-        '<button type="button" class="fu-btn fu-done" data-status="done">Realizado</button>'+
-        '<button type="button" class="fu-btn fu-notdone" data-status="not_done">Não realizado</button>'+
-      '</div>'+
-    '</div>';
-    var team = currentTeam, weekKey = pending.weekKey;
-    Array.prototype.forEach.call(el.querySelectorAll(".fu-btn"), function(btn){
-      btn.addEventListener("click", function(){
-        pushPlanoStatus(weekKey, team, btn.getAttribute("data-status"));
-        renderPlanoAcaoFollowUp();
+    if(!pendingList.length){ el.innerHTML = ""; return; }
+    var team = currentTeam;
+    el.innerHTML = pendingList.map(function(pending){
+      return '<div class="followup-card" data-week="'+esc(pending.weekKey)+'">'+
+        '<span class="fu-label">Combinado de '+esc(pending.range)+' — foi realizado?</span>'+
+        '<span class="fu-text">'+esc(pending.text)+'</span>'+
+        '<div class="fu-actions">'+
+          '<button type="button" class="fu-btn fu-done" data-status="done">Realizado</button>'+
+          '<button type="button" class="fu-btn fu-notdone" data-status="not_done">Não realizado</button>'+
+        '</div>'+
+      '</div>';
+    }).join("");
+    Array.prototype.forEach.call(el.querySelectorAll(".followup-card"), function(card){
+      var weekKey = card.getAttribute("data-week");
+      Array.prototype.forEach.call(card.querySelectorAll(".fu-btn"), function(btn){
+        btn.addEventListener("click", function(){
+          pushPlanoStatus(weekKey, team, btn.getAttribute("data-status"));
+          renderPlanoAcaoFollowUp();
+        });
       });
     });
   }
