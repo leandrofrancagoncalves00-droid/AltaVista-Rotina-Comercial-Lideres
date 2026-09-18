@@ -1051,6 +1051,14 @@
     });
   }
 
+  // Evita que o pull automático (a cada 25s) redesenhe a tela e "feche" um campo
+  // de texto que o líder está digitando naquele momento — os dados já ficam
+  // salvos por baixo (via markRecentWrite), só a repintura da tela é adiada.
+  function isTypingSomewhere(){
+    var a = document.activeElement;
+    return !!(a && (a.tagName==="TEXTAREA" || (a.tagName==="INPUT" && a.type!=="checkbox" && a.type!=="radio")));
+  }
+
   function pullAllFromSupabase(silent){
     if(!silent) setSyncFlag("syncing", "Carregando dados…");
     return Promise.all([
@@ -1105,7 +1113,7 @@
       store.pipeline = pipeline;
       store.missoesEntrega = missoesEntrega;
       persist();
-      renderAll();
+      if(!isTypingSomewhere()) renderAll();
       if(!silent) setSyncFlag("synced", "Dados atualizados");
     }).catch(function(){
       if(!silent) setSyncFlag("error", "Não foi possível carregar os dados");
