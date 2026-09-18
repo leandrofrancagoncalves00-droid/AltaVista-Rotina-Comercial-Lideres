@@ -283,7 +283,9 @@
   .fu-btn.fu-done.sel{background:var(--success);border-color:var(--success);color:#fff;}
   .fu-btn.fu-notdone.sel{background:var(--critical);border-color:var(--critical);color:#fff;}
   .fu-resultado{width:100%;min-height:52px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);font-size:12px;resize:vertical;font-family:inherit;}
-  .ph-resultado{font-size:11.5px;color:var(--ink-700);line-height:1.4;white-space:pre-wrap;margin-top:4px;display:block;}
+  .ph-resultado-label{display:block;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-500);margin:8px 0 4px;}
+  .ph-resultado-edit{width:100%;min-height:48px;padding:7px 9px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-size:12px;resize:vertical;font-family:inherit;color:var(--ink-900);}
+  .ph-resultado-edit:focus{outline:none;border-color:var(--accent);background:var(--surface);}
 
   .meeting-sections{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
   .meeting-section{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
@@ -2022,10 +2024,22 @@
         $("planHistoryList").innerHTML = list.length ? list.map(function(p){
           var badgeCls = p.status==="done" ? "done" : p.status==="not_done" ? "not_done" : "open";
           var badgeLabel = p.status==="done" ? "Realizado" : p.status==="not_done" ? "Não realizado" : "Em aberto";
-          return '<div class="ph-row"><div class="ph-top"><span class="ph-date">'+esc(fmtRange(p.monday))+'</span><span class="ph-badge '+badgeCls+'">'+badgeLabel+'</span></div><span class="ph-text">'+esc(p.ata)+'</span>'+
-            (p.resultado ? '<span class="ph-resultado"><strong>Resultado:</strong> '+esc(p.resultado)+'</span>' : '')+
+          return '<div class="ph-row" data-week="'+esc(p.weekKey)+'"><div class="ph-top"><span class="ph-date">'+esc(fmtRange(p.monday))+'</span><span class="ph-badge '+badgeCls+'">'+badgeLabel+'</span></div><span class="ph-text">'+esc(p.ata)+'</span>'+
+            (p.status ? '<label class="ph-resultado-label">Resultado</label><textarea class="ph-resultado-edit" data-ph-resultado rows="2" placeholder="Registre o resultado deste combinado">'+esc(p.resultado)+'</textarea>' : '')+
           '</div>';
         }).join("") : '<p class="desc">Nenhum plano de ação registrado ainda.</p>';
+        Array.prototype.forEach.call($("planHistoryList").querySelectorAll("textarea[data-ph-resultado]"), function(ta){
+          var wk = ta.closest(".ph-row").getAttribute("data-week");
+          ta.addEventListener("input", function(){
+            var e2 = entryFor(wk, equipe, nome, true);
+            e2.items.reuniao11 = e2.items.reuniao11 || { answers:[], ata:"" };
+            e2.items.reuniao11.resultado = ta.value;
+            persist();
+            markRecentWrite(wk, equipe, nome);
+            flashSave();
+          });
+          ta.addEventListener("change", function(){ pushEntryForWeek(wk); });
+        });
         $("planHistoryOverlay").hidden = false;
       });
     }
