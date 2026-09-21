@@ -167,6 +167,12 @@
   .trend-card .thead h3{font-size:15px;color:var(--ink-900);margin-top:2px;}
   .trend-chart{flex:1 1 260px;min-width:220px;}
 
+  .sub-team-picker{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .sub-team-picker:empty{display:none;}
+  .sub-team-label{font-size:11.5px;color:var(--ink-500);}
+  .sub-team-pill{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--ink-700);cursor:pointer;}
+  .sub-team-pill:hover{border-color:var(--accent);}
+  .sub-team-pill.sel{background:var(--accent);border-color:var(--accent);color:#fff;}
   .prontuario-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:8px;}
   .prontuario-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
   .prontuario-head label{font-size:11px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.05em;}
@@ -357,6 +363,8 @@
       <div class="trend-chart" id="trendChart"></div>
     </div>
 
+    <div id="subTeamPicker" class="sub-team-picker"></div>
+
     <div class="prontuario-wrap">
       <div class="prontuario-head">
         <label for="prontuarioArea">Prontuário da semana</label>
@@ -427,7 +435,7 @@
   "use strict";
 
   /* ---------------- Data ---------------- */
-  var ADVISORS = [{"nome":"Adilson Bonvino","equipe":"Maximus - SOR"},{"nome":"Adriano de Araujo","equipe":"Gold11 - SBC"},{"nome":"Alencar Bonifácio Leite","equipe":"Desbravadores JK - SP"},{"nome":"Alexandre Andreazzi Barnabe","equipe":"Staff"},{"nome":"Alexandre Selencovich Bandeira","equipe":"Macanudos - POA"},{"nome":"Alexanndre Kevin de Souza Puglisi","equipe":"Mesa proprietária"},{"nome":"Allan Mendes Pereira","equipe":"Nasdaq - SP"},{"nome":"Ana Lucia de Araujo Nunes","equipe":"Nasdaq - SP"},{"nome":"Andre Castro","equipe":"AV Anywhere"},{"nome":"Andre Figueiredo Siqueira Cunha","equipe":"Highlanders - SP"},{"nome":"Andre Francisco Ferreira Miguel","equipe":"Rota 100"},{"nome":"Andrea de Oliveira Nogueira Berna","equipe":"Desbravadores JK - SP"},{"nome":"Andreia Cristina Tupy","equipe":"Gold11 - SBC"},{"nome":"Ângelo de la Costa Junior","equipe":"Nasdaq - SP"},{"nome":"Apostolos Demadis","equipe":"AV Anywhere"},{"nome":"Audilene Timoteo Lima Rodrigues","equipe":"Rota 100"},{"nome":"Beatriz de Melo Spilack","equipe":"Nasdaq - SP"},{"nome":"Bruno Cauduro Maciel","equipe":"Vikings - POA"},{"nome":"Bruno dos Santos de Sa","equipe":"Mesa proprietária"},{"nome":"Bruno Mendes Augusto","equipe":"Mesa proprietária"},{"nome":"Camila Caparelli","equipe":"Maximus - SOR"},{"nome":"Carla Baima da Silva","equipe":"Zênite - SP"},{"nome":"Carlos Alexandre Golfeto Junior","equipe":"Maximus - SOR"},{"nome":"Carlos Ivan Sturzbecher","equipe":"Rota 100"},{"nome":"Carlos Roberto Figueira Junior","equipe":"Nasdaq - SP"},{"nome":"Carmen Luce Oliveira Da Silva","equipe":"Macanudos - POA"},{"nome":"Caue Glorigiano Ribeiro","equipe":"AV Anywhere"},{"nome":"Celia Maciel Marques","equipe":"Rota 100"},{"nome":"Celso Alves Gonçalves Dias","equipe":"Dendê Equity - SSA"},{"nome":"Celso Arras Minchillo","equipe":"Highlanders - SP"},{"nome":"Christiane Hoerde Manfrin","equipe":"Vikings - POA"},{"nome":"Christianne Martins Fedeli Stoll","equipe":"Rota 100"},{"nome":"Cintia Manhani di Luccio","equipe":"Nasdaq - SP"},{"nome":"Cintia Oliveira Faria Sidiropoulos","equipe":"Zênite - SP"},{"nome":"Clara Maria Ribeiro de Souza","equipe":"Gold11 - SBC"},{"nome":"Claudio Augusto Mauad","equipe":"Highlanders - SP"},{"nome":"Claudio Diogenes Ferreira de Oliveira","equipe":"Rota 100"},{"nome":"Dalécio Guimares Papim","equipe":"Rota 100"},{"nome":"Daniel Assis de Almeida","equipe":"Dendê Equity - SSA"},{"nome":"Daniel Ignacio","equipe":"Rota 100"},{"nome":"Daniel Martelozzo Otavani","equipe":"Desbravadores JK - SP"},{"nome":"Daniel Miranda de Abreu Salum","equipe":"Gold11 - SBC"},{"nome":"Daniela Ferreira Midena","equipe":"Desbravadores JK - SP"},{"nome":"Daniele Mota Rodrigues de Almeida","equipe":"Zênite - SP"},{"nome":"Danielle Martini Scroback","equipe":"Zênite - SP"},{"nome":"Denise Guimarães Printes","equipe":"Nasdaq - SP"},{"nome":"Denys Labonia Ferreira Da Luz","equipe":"Maximus - SOR"},{"nome":"Diego Chaves Franco","equipe":"Gold11 - SBC"},{"nome":"Diego Lucio Martins","equipe":"AV Anywhere"},{"nome":"Diniz Braga Pires","equipe":"Sparta - SP"},{"nome":"Diogo Alejandro Hoffmann","equipe":"Rota 100"},{"nome":"Diogo Silvestre Scariot","equipe":"Macanudos - POA"},{"nome":"Domingos Eduardo Di Pietro","equipe":"Nasdaq - SP"},{"nome":"Edgar Endo","equipe":"Desbravadores JK - SP"},{"nome":"Eduardo Nunes Tavares","equipe":"Staff"},{"nome":"Eliana Bastos Martins","equipe":"Macanudos - POA"},{"nome":"Erick Teruhiko Katayama","equipe":"Rota 100"},{"nome":"Felipe Araujo Ribeiro","equipe":"Rota 100"},{"nome":"Felipe Chamarelli Pavanelli","equipe":"Staff"},{"nome":"Felipe Galan Baptistella","equipe":"Staff"},{"nome":"Felipe Nicolau Batista","equipe":"Gold11 - SBC"},{"nome":"Fernanda Priscila Pedroso Salgado","equipe":"Highlanders - SP"},{"nome":"Fernando Marchetti Encinas","equipe":"Gold11 - SBC"},{"nome":"Fernando Svitras de Oliveira","equipe":"Gold11 - SBC"},{"nome":"Fernando Yonehara Junior","equipe":"Highlanders - SP"},{"nome":"Filipe Costa de Araujo Santos","equipe":"Dendê Equity - SSA"},{"nome":"Filipe Sales Baptista da Costa Machado","equipe":"Dendê Equity - SSA"},{"nome":"Flavio Caravieri batista","equipe":"Nasdaq - SP"},{"nome":"Gabriel Corrente De Andrade","equipe":"Staff"},{"nome":"Gabrielle Ramos Couto","equipe":"Staff"},{"nome":"Gabriel Ângelo Fuentes","equipe":"Sparta - SP"},{"nome":"Gisele Pazotti Souza","equipe":"Sparta - SP"},{"nome":"Raiane Fernanda Sassati","equipe":"Sparta - SP"},{"nome":"Rosana Muniz de Abreu","equipe":"Sparta - SP"},{"nome":"Luis Augusto","equipe":"Sparta - SP"},{"nome":"Meiriele Germano","equipe":"Sparta - SP"},{"nome":"Jessica Tomaz","equipe":"Sparta - SP"},{"nome":"Cristiane Bortolanza","equipe":"Sparta - SP"},{"nome":"Gianfranco Martini Frasson","equipe":"Vikings - POA"},{"nome":"Giovanni Avilla","equipe":"Highlanders - SP"},{"nome":"Giovanni DAngelo Guimarães Leite","equipe":"Staff"},{"nome":"Gisele Bervian Pinto Ribeiro","equipe":"Macanudos - POA"},{"nome":"Gislene Lepri de Medeiros","equipe":"Vikings - POA"},{"nome":"Gláucia de Oliveira Santos","equipe":"Gold11 - SBC"},{"nome":"Glauco Henrique Pinheiro Maciel","equipe":"Maximus - SOR"},{"nome":"Gregory de Oliveira Pagot","equipe":"Macanudos - POA"},{"nome":"Guilherme Bastos Hildebrand","equipe":"Vikings - POA"},{"nome":"Guilherme Jung Bittencourt","equipe":"Staff"},{"nome":"Guilherme Luis Bizarro dos Reis","equipe":"Macanudos - POA"},{"nome":"Gustavo Bercito Caruso","equipe":"Zênite - SP"},{"nome":"Gustavo Ferreira Soares Azevedo","equipe":"Zênite - SP"},{"nome":"Gustavo Martins Correia","equipe":"AV Anywhere"},{"nome":"Hariton Gomes Inacio Andrade","equipe":"Maximus - SOR"},{"nome":"Henrique Guedes Prohaska","equipe":"Maximus - SOR"},{"nome":"Henry Massaaki Ito","equipe":"AV Anywhere"},{"nome":"Ingrid Landgraf","equipe":"Gold11 - SBC"},{"nome":"Isaac Newton Ferreira Castelo","equipe":"Dendê Equity - SSA"},{"nome":"Ivancler Bruns Camacho","equipe":"Thunders - CX"},{"nome":"João Gilberto Martins Mello","equipe":"AV Anywhere"},{"nome":"João Lucas Albieri de Almeida","equipe":"Mesa proprietária"},{"nome":"João Lucas da Silva","equipe":"Rota 100"},{"nome":"João Paulo Teixeira Cardoso","equipe":"Maximus - SOR"},{"nome":"José Luciano Costa Maia","equipe":"Zênite - SP"},{"nome":"Juliana Honda Domingues","equipe":"Desbravadores JK - SP"},{"nome":"Kaio Henrique Colone Rodrigues","equipe":"Maximus - SOR"},{"nome":"Karine Urack Krug","equipe":"Vikings - POA"},{"nome":"Keilla Gomes","equipe":"AV Anywhere"},{"nome":"Laura Figueiredo Vieira","equipe":"Staff"},{"nome":"Leandro Hirt Rassier","equipe":"Macanudos - POA"},{"nome":"Leonardo Governo Faviere","equipe":"Nasdaq - SP"},{"nome":"Leontina Fernandes Codesseira","equipe":"Rota 100"},{"nome":"Lincoln de Lucio Medeiros","equipe":"Rota 100"},{"nome":"Lisiane Nitschke","equipe":"Vikings - POA"},{"nome":"Luan Gustavo Schmidt","equipe":"AV Anywhere"},{"nome":"Lucas Rodrigues Coura Junior","equipe":"Vikings - POA"},{"nome":"Luciane Andrade Prado Ribeiro","equipe":"Desbravadores JK - SP"},{"nome":"Lucio Beiersdorf Flor","equipe":"Vikings - POA"},{"nome":"Luiz Fernando Da Silva Guimarães","equipe":"Vikings - POA"},{"nome":"Luiz Pedro da Cunha Albornoz","equipe":"Zênite - SP"},{"nome":"Maikon Souza Oliveira","equipe":"Vikings - POA"},{"nome":"Manoel Soares de Gouveia Horta Neto","equipe":"Rota 100"},{"nome":"Marcelo Roth Kunzler","equipe":"Macanudos - POA"},{"nome":"Marcelo Santiago","equipe":"Nasdaq - SP"},{"nome":"Marcelo Sartor","equipe":"Thunders - CX"},{"nome":"Marcelo Serrano","equipe":"Maximus - SOR"},{"nome":"Marcos Corte Campos","equipe":"Highlanders - SP"},{"nome":"Mariana Sena Brito Gonçalves","equipe":"Dendê Equity - SSA"},{"nome":"Mariano Michalska Pereira Scalco","equipe":"Macanudos - POA"},{"nome":"Marisa de Oliveira","equipe":"Desbravadores JK - SP"},{"nome":"Marisa Feijo de Fraga","equipe":"Vikings - POA"},{"nome":"Matheus Gonçalo Antunes","equipe":"Staff"},{"nome":"Matheus Vargas Martins","equipe":"Vikings - POA"},{"nome":"Mauricio Manfron Santos","equipe":"Macanudos - POA"},{"nome":"Michael Martins da Silva","equipe":"Vikings - POA"},{"nome":"Miriam Reiko Takara","equipe":"Staff"},{"nome":"Murilo dos Santos Medeiros","equipe":"Desbravadores JK - SP"},{"nome":"Murilo Godoi Vecchi","equipe":"Gold11 - SBC"},{"nome":"Murilo Simões Gonçalves de Sousa","equipe":"Mesa proprietária"},{"nome":"Nataly Ferreira da Silva Sothe","equipe":"Zênite - SP"},{"nome":"Nelson Nicastro Jnior","equipe":"Rota 100"},{"nome":"Paloma Aparecida Pinheiro Brito","equipe":"Staff"},{"nome":"Patrick de Lima Rodrigues","equipe":"Macanudos - POA"},{"nome":"Paula Ribeiro Campos","equipe":"Rota 100"},{"nome":"Paulo André Bertone Faneco","equipe":"AV Anywhere"},{"nome":"Paulo Marcus Kudler","equipe":"Rota 100"},{"nome":"Paulo Rogerio Chrispim de Oliveira","equipe":"Rota 100"},{"nome":"Pedro Serravalle de Sá","equipe":"Dendê Equity - SSA"},{"nome":"Piero Boschi","equipe":"Nasdaq - SP"},{"nome":"Rafael Carini","equipe":"Thunders - CX"},{"nome":"Rafael de Freitas Costa","equipe":"Dendê Equity - SSA"},{"nome":"Rafael Girardi Fassarella","equipe":"Nasdaq - SP"},{"nome":"Rafael Papp Pereira","equipe":"Desbravadores JK - SP"},{"nome":"Rafael Quintana Da Rosa","equipe":"Macanudos - POA"},{"nome":"Rafael Ramalho De Souza","equipe":"Thunders - CX"},{"nome":"Ramiro Inocencio Filho","equipe":"Staff"},{"nome":"Renan Nogueira Hoffmann","equipe":"Maximus - SOR"},{"nome":"Renato de Almeida Silva","equipe":"Maximus - SOR"},{"nome":"Renato Jun Yoshioka","equipe":"Nasdaq - SP"},{"nome":"Renato Tavares Vulcano","equipe":"Maximus - SOR"},{"nome":"Rene Almeida Sampaio Santos","equipe":"Zênite - SP"},{"nome":"Ricardo Antonello","equipe":"AV Anywhere"},{"nome":"Riuji Augusto Kiyohara","equipe":"Highlanders - SP"},{"nome":"Roberta Tronco Nunes","equipe":"Thunders - CX"},{"nome":"Roberto Pedroso Garcia","equipe":"Nasdaq - SP"},{"nome":"Rodrigo de Oliveira Mascher","equipe":"Gold11 - SBC"},{"nome":"Rodrigo Mota Mello Rodriguez","equipe":"Staff"},{"nome":"Rômulo Arpini da Rosa","equipe":"Vikings - POA"},{"nome":"Ronie Silva De Carvalho","equipe":"Rota 100"},{"nome":"Roselene Mello Milani","equipe":"Zênite - SP"},{"nome":"Sabrina Roberta Stefani","equipe":"Maximus - SOR"},{"nome":"Silmara Pires de Sousa","equipe":"Maximus - SOR"},{"nome":"Tamires Angelica Vidal","equipe":"Desbravadores JK - SP"},{"nome":"Thiago Vicente Rentz","equipe":"Thunders - CX"},{"nome":"Thiago Vicentin Pereira","equipe":"AV Anywhere"},{"nome":"Tiago Camilo Teixeira","equipe":"Maximus - SOR"},{"nome":"Tiago Sigillo Pellegrini","equipe":"Highlanders - SP"},{"nome":"Victor Dib","equipe":"Maximus - SOR"},{"nome":"Victor Gomes Delfini","equipe":"Vikings - POA"},{"nome":"Victor Romano","equipe":"Staff"},{"nome":"Vinícius Torres Carnelós","equipe":"Rota 100"},{"nome":"Vinicius Xavier Parra","equipe":"Zênite - SP"},{"nome":"Vitor Fernando Matioli Guerra","equipe":"Desbravadores JK - SP"}].filter(function(a){ return a.equipe !== "Staff"; });
+  var ADVISORS = [{"nome":"Adilson Bonvino","equipe":"Maximus - SOR"},{"nome":"Adriano de Araujo","equipe":"Gold11 - SBC"},{"nome":"Alencar Bonifácio Leite","equipe":"Desbravadores JK - SP"},{"nome":"Alexandre Andreazzi Barnabe","equipe":"Staff"},{"nome":"Alexandre Selencovich Bandeira","equipe":"Macanudos - POA"},{"nome":"Alexanndre Kevin de Souza Puglisi","equipe":"Mesa proprietária"},{"nome":"Allan Mendes Pereira","equipe":"Nasdaq - SP"},{"nome":"Ana Lucia de Araujo Nunes","equipe":"Nasdaq - SP"},{"nome":"Andre Castro","equipe":"AV Anywhere"},{"nome":"Andre Figueiredo Siqueira Cunha","equipe":"Highlanders - SP"},{"nome":"Andre Francisco Ferreira Miguel","equipe":"AV Anywhere"},{"nome":"Andrea de Oliveira Nogueira Berna","equipe":"Desbravadores JK - SP"},{"nome":"Andreia Cristina Tupy","equipe":"Gold11 - SBC"},{"nome":"Ângelo de la Costa Junior","equipe":"Nasdaq - SP"},{"nome":"Apostolos Demadis","equipe":"AV Anywhere"},{"nome":"Audilene Timoteo Lima Rodrigues","equipe":"Rota 100"},{"nome":"Beatriz de Melo Spilack","equipe":"Nasdaq - SP"},{"nome":"Bruno Cauduro Maciel","equipe":"Vikings - POA"},{"nome":"Bruno dos Santos de Sa","equipe":"Mesa proprietária"},{"nome":"Bruno Mendes Augusto","equipe":"Mesa proprietária"},{"nome":"Camila Caparelli","equipe":"Maximus - SOR"},{"nome":"Carla Baima da Silva","equipe":"Zênite - SP"},{"nome":"Carlos Alexandre Golfeto Junior","equipe":"Maximus - SOR"},{"nome":"Carlos Ivan Sturzbecher","equipe":"Rota 100"},{"nome":"Carlos Roberto Figueira Junior","equipe":"Nasdaq - SP"},{"nome":"Carmen Luce Oliveira Da Silva","equipe":"Macanudos - POA"},{"nome":"Caue Glorigiano Ribeiro","equipe":"AV Anywhere"},{"nome":"Celia Maciel Marques","equipe":"Rota 100"},{"nome":"Celso Alves Gonçalves Dias","equipe":"Dendê Equity - SSA"},{"nome":"Celso Arras Minchillo","equipe":"Highlanders - SP"},{"nome":"Christiane Hoerde Manfrin","equipe":"Vikings - POA"},{"nome":"Christianne Martins Fedeli Stoll","equipe":"Rota 100"},{"nome":"Cintia Manhani di Luccio","equipe":"Nasdaq - SP"},{"nome":"Cintia Oliveira Faria Sidiropoulos","equipe":"Zênite - SP"},{"nome":"Clara Maria Ribeiro de Souza","equipe":"Gold11 - SBC"},{"nome":"Claudio Augusto Mauad","equipe":"Highlanders - SP"},{"nome":"Claudio Diogenes Ferreira de Oliveira","equipe":"Rota 100"},{"nome":"Dalécio Guimares Papim","equipe":"Rota 100"},{"nome":"Daniel Assis de Almeida","equipe":"Dendê Equity - SSA"},{"nome":"Daniel Ignacio","equipe":"Rota 100"},{"nome":"Daniel Martelozzo Otavani","equipe":"Desbravadores JK - SP"},{"nome":"Daniel Miranda de Abreu Salum","equipe":"Gold11 - SBC"},{"nome":"Daniela Ferreira Midena","equipe":"Desbravadores JK - SP"},{"nome":"Daniele Mota Rodrigues de Almeida","equipe":"Zênite - SP"},{"nome":"Danielle Martini Scroback","equipe":"Zênite - SP"},{"nome":"Denise Guimarães Printes","equipe":"Nasdaq - SP"},{"nome":"Denys Labonia Ferreira Da Luz","equipe":"Maximus - SOR"},{"nome":"Diego Chaves Franco","equipe":"Gold11 - SBC"},{"nome":"Diego Lucio Martins","equipe":"AV Anywhere"},{"nome":"Diniz Braga Pires","equipe":"Sparta - SP"},{"nome":"Diogo Alejandro Hoffmann","equipe":"Rota 100"},{"nome":"Diogo Silvestre Scariot","equipe":"Macanudos - POA"},{"nome":"Domingos Eduardo Di Pietro","equipe":"Nasdaq - SP"},{"nome":"Edgar Endo","equipe":"Desbravadores JK - SP"},{"nome":"Eduardo Nunes Tavares","equipe":"Staff"},{"nome":"Eliana Bastos Martins","equipe":"Macanudos - POA"},{"nome":"Erick Teruhiko Katayama","equipe":"Rota 100"},{"nome":"Felipe Araujo Ribeiro","equipe":"Rota 100"},{"nome":"Felipe Chamarelli Pavanelli","equipe":"Staff"},{"nome":"Felipe Galan Baptistella","equipe":"Staff"},{"nome":"Felipe Nicolau Batista","equipe":"Gold11 - SBC"},{"nome":"Fernanda Priscila Pedroso Salgado","equipe":"Highlanders - SP"},{"nome":"Fernando Marchetti Encinas","equipe":"Gold11 - SBC"},{"nome":"Fernando Svitras de Oliveira","equipe":"Gold11 - SBC"},{"nome":"Fernando Yonehara Junior","equipe":"Highlanders - SP"},{"nome":"Filipe Costa de Araujo Santos","equipe":"Dendê Equity - SSA"},{"nome":"Filipe Sales Baptista da Costa Machado","equipe":"Dendê Equity - SSA"},{"nome":"Flavio Caravieri batista","equipe":"Nasdaq - SP"},{"nome":"Gabriel Corrente De Andrade","equipe":"Staff"},{"nome":"Gabrielle Ramos Couto","equipe":"Staff"},{"nome":"Gabriel Ângelo Fuentes","equipe":"Sparta - SP"},{"nome":"Gisele Pazotti Souza","equipe":"Sparta - SP"},{"nome":"Raiane Fernanda Sassati","equipe":"Sparta - SP"},{"nome":"Rosana Muniz de Abreu","equipe":"Sparta - SP"},{"nome":"Luis Augusto","equipe":"Sparta - SP"},{"nome":"Meiriele Germano","equipe":"Sparta - SP"},{"nome":"Jessica Tomaz","equipe":"Sparta - SP"},{"nome":"Cristiane Bortolanza","equipe":"Sparta - SP"},{"nome":"Gianfranco Martini Frasson","equipe":"Vikings - POA"},{"nome":"Giovanni Avilla","equipe":"Highlanders - SP"},{"nome":"Giovanni DAngelo Guimarães Leite","equipe":"Staff"},{"nome":"Gisele Bervian Pinto Ribeiro","equipe":"Macanudos - POA"},{"nome":"Gislene Lepri de Medeiros","equipe":"Vikings - POA"},{"nome":"Gláucia de Oliveira Santos","equipe":"Gold11 - SBC"},{"nome":"Glauco Henrique Pinheiro Maciel","equipe":"Maximus - SOR"},{"nome":"Gregory de Oliveira Pagot","equipe":"Macanudos - POA"},{"nome":"Guilherme Bastos Hildebrand","equipe":"Vikings - POA"},{"nome":"Guilherme Jung Bittencourt","equipe":"Staff"},{"nome":"Guilherme Luis Bizarro dos Reis","equipe":"Macanudos - POA"},{"nome":"Gustavo Bercito Caruso","equipe":"Zênite - SP"},{"nome":"Gustavo Ferreira Soares Azevedo","equipe":"Zênite - SP"},{"nome":"Gustavo Martins Correia","equipe":"AV Anywhere"},{"nome":"Hariton Gomes Inacio Andrade","equipe":"Maximus - SOR"},{"nome":"Henrique Guedes Prohaska","equipe":"Maximus - SOR"},{"nome":"Henry Massaaki Ito","equipe":"AV Anywhere"},{"nome":"Ingrid Landgraf","equipe":"Gold11 - SBC"},{"nome":"Isaac Newton Ferreira Castelo","equipe":"Dendê Equity - SSA"},{"nome":"Ivancler Bruns Camacho","equipe":"Thunders - CX"},{"nome":"João Gilberto Martins Mello","equipe":"AV Anywhere"},{"nome":"João Lucas Albieri de Almeida","equipe":"Mesa proprietária"},{"nome":"João Lucas da Silva","equipe":"Rota 100"},{"nome":"João Paulo Teixeira Cardoso","equipe":"Maximus - SOR"},{"nome":"José Luciano Costa Maia","equipe":"Zênite - SP"},{"nome":"Juliana Honda Domingues","equipe":"Desbravadores JK - SP"},{"nome":"Kaio Henrique Colone Rodrigues","equipe":"Maximus - SOR"},{"nome":"Karine Urack Krug","equipe":"Vikings - POA"},{"nome":"Keilla Gomes","equipe":"AV Anywhere"},{"nome":"Laura Figueiredo Vieira","equipe":"Staff"},{"nome":"Leandro Hirt Rassier","equipe":"Macanudos - POA"},{"nome":"Leonardo Governo Faviere","equipe":"Nasdaq - SP"},{"nome":"Leontina Fernandes Codesseira","equipe":"Rota 100"},{"nome":"Lincoln de Lucio Medeiros","equipe":"Rota 100"},{"nome":"Lisiane Nitschke","equipe":"Vikings - POA"},{"nome":"Luan Gustavo Schmidt","equipe":"AV Anywhere"},{"nome":"Lucas Rodrigues Coura Junior","equipe":"Vikings - POA"},{"nome":"Luciane Andrade Prado Ribeiro","equipe":"Desbravadores JK - SP"},{"nome":"Lucio Beiersdorf Flor","equipe":"Vikings - POA"},{"nome":"Luiz Fernando Da Silva Guimarães","equipe":"Vikings - POA"},{"nome":"Luiz Pedro da Cunha Albornoz","equipe":"Zênite - SP"},{"nome":"Maikon Souza Oliveira","equipe":"Vikings - POA"},{"nome":"Manoel Soares de Gouveia Horta Neto","equipe":"Rota 100"},{"nome":"Marcelo Roth Kunzler","equipe":"Macanudos - POA"},{"nome":"Marcelo Santiago","equipe":"Nasdaq - SP"},{"nome":"Marcelo Sartor","equipe":"Thunders - CX"},{"nome":"Marcelo Serrano","equipe":"Maximus - SOR"},{"nome":"Marcos Corte Campos","equipe":"Highlanders - SP"},{"nome":"Mariana Sena Brito Gonçalves","equipe":"Dendê Equity - SSA"},{"nome":"Mariano Michalska Pereira Scalco","equipe":"Macanudos - POA"},{"nome":"Marisa de Oliveira","equipe":"Desbravadores JK - SP"},{"nome":"Marisa Feijo de Fraga","equipe":"Vikings - POA"},{"nome":"Matheus Gonçalo Antunes","equipe":"Staff"},{"nome":"Matheus Vargas Martins","equipe":"Vikings - POA"},{"nome":"Mauricio Manfron Santos","equipe":"Macanudos - POA"},{"nome":"Michael Martins da Silva","equipe":"Vikings - POA"},{"nome":"Miriam Reiko Takara","equipe":"Staff"},{"nome":"Murilo dos Santos Medeiros","equipe":"Desbravadores JK - SP"},{"nome":"Murilo Godoi Vecchi","equipe":"Gold11 - SBC"},{"nome":"Murilo Simões Gonçalves de Sousa","equipe":"Mesa proprietária"},{"nome":"Nataly Ferreira da Silva Sothe","equipe":"Zênite - SP"},{"nome":"Nelson Nicastro Jnior","equipe":"Rota 100"},{"nome":"Paloma Aparecida Pinheiro Brito","equipe":"Staff"},{"nome":"Patrick de Lima Rodrigues","equipe":"Macanudos - POA"},{"nome":"Paula Ribeiro Campos","equipe":"Rota 100"},{"nome":"Paulo André Bertone Faneco","equipe":"AV Anywhere"},{"nome":"Paulo Marcus Kudler","equipe":"Rota 100"},{"nome":"Paulo Rogerio Chrispim de Oliveira","equipe":"Rota 100"},{"nome":"Pedro Serravalle de Sá","equipe":"Dendê Equity - SSA"},{"nome":"Piero Boschi","equipe":"Nasdaq - SP"},{"nome":"Rafael Carini","equipe":"Thunders - CX"},{"nome":"Rafael de Freitas Costa","equipe":"Dendê Equity - SSA"},{"nome":"Rafael Girardi Fassarella","equipe":"Nasdaq - SP"},{"nome":"Rafael Papp Pereira","equipe":"Desbravadores JK - SP"},{"nome":"Rafael Quintana Da Rosa","equipe":"Macanudos - POA"},{"nome":"Rafael Ramalho De Souza","equipe":"Thunders - CX"},{"nome":"Ramiro Inocencio Filho","equipe":"Staff"},{"nome":"Renan Nogueira Hoffmann","equipe":"Maximus - SOR"},{"nome":"Renato de Almeida Silva","equipe":"Maximus - SOR"},{"nome":"Renato Jun Yoshioka","equipe":"Nasdaq - SP"},{"nome":"Renato Tavares Vulcano","equipe":"Maximus - SOR"},{"nome":"Rene Almeida Sampaio Santos","equipe":"Zênite - SP"},{"nome":"Ricardo Antonello","equipe":"AV Anywhere"},{"nome":"Riuji Augusto Kiyohara","equipe":"Highlanders - SP"},{"nome":"Roberta Tronco Nunes","equipe":"Thunders - CX"},{"nome":"Roberto Pedroso Garcia","equipe":"Nasdaq - SP"},{"nome":"Rodrigo de Oliveira Mascher","equipe":"Gold11 - SBC"},{"nome":"Rodrigo Mota Mello Rodriguez","equipe":"Staff"},{"nome":"Rômulo Arpini da Rosa","equipe":"Vikings - POA"},{"nome":"Ronie Silva De Carvalho","equipe":"Rota 100"},{"nome":"Roselene Mello Milani","equipe":"Zênite - SP"},{"nome":"Sabrina Roberta Stefani","equipe":"Maximus - SOR"},{"nome":"Silmara Pires de Sousa","equipe":"Maximus - SOR"},{"nome":"Tamires Angelica Vidal","equipe":"Desbravadores JK - SP"},{"nome":"Thiago Vicente Rentz","equipe":"Thunders - CX"},{"nome":"Thiago Vicentin Pereira","equipe":"AV Anywhere"},{"nome":"Tiago Camilo Teixeira","equipe":"Maximus - SOR"},{"nome":"Tiago Sigillo Pellegrini","equipe":"Highlanders - SP"},{"nome":"Victor Dib","equipe":"Maximus - SOR"},{"nome":"Victor Gomes Delfini","equipe":"Vikings - POA"},{"nome":"Victor Romano","equipe":"Staff"},{"nome":"Vinícius Torres Carnelós","equipe":"Rota 100"},{"nome":"Vinicius Xavier Parra","equipe":"Zênite - SP"},{"nome":"Vitor Fernando Matioli Guerra","equipe":"Desbravadores JK - SP"}].filter(function(a){ return a.equipe !== "Staff"; });
 
   var MEETING_SECTIONS = [
     { items:["a","b","c","d","e"] },
@@ -519,6 +527,25 @@
     "Vikings - POA": "Julio Alberto Passos Baez"
   };
   function liderFor(equipe){ return LIDER_MAP[equipe] || ""; }
+
+  // Um líder pode gerir mais de uma equipe (ex.: George cobre Sparta - SP e
+  // Mesa proprietária) — aqui elas viram um único grupo no painel. Times sem
+  // líder, ou cujo líder gerencia só um time, viram grupos de 1 equipe.
+  var LEADER_GROUPS = (function(){
+    var byLider = {};
+    TEAMS.forEach(function(t){
+      var lider = LIDER_MAP[t];
+      var key = lider || ("__" + t);
+      byLider[key] = byLider[key] || { lider: lider || "", equipes: [] };
+      byLider[key].equipes.push(t);
+    });
+    return Object.keys(byLider).map(function(k){ return byLider[k]; }).sort(function(a,b){
+      return (a.lider || a.equipes[0]).localeCompare(b.lider || b.equipes[0], "pt-BR");
+    });
+  })();
+  function leaderGroupFor(equipe){
+    return LEADER_GROUPS.filter(function(g){ return g.equipes.indexOf(equipe) !== -1; })[0];
+  }
 
   /* ---------------- Week helpers ---------------- */
   function pad2(n){ return String(n).padStart(2,"0"); }
@@ -625,9 +652,9 @@
     prontuarioSyncTimer = setTimeout(pushProntuario, 900);
   }
   function pushProntuario(){
-    if(!currentTeam) return;
+    if(!currentSubTeam) return;
     var weekKey = weekKeyFor(currentMonday);
-    var team = currentTeam;
+    var team = currentSubTeam;
     var text = $("prontuarioArea").value;
     setSyncFlag("prontuarioSyncFlag", "syncing", "Salvando…");
     fetch(sbUrl("leader_weekly_notes?on_conflict=equipe,week_key"), {
@@ -650,9 +677,9 @@
     planoAcaoSyncTimer = setTimeout(pushPlanoAcao, 900);
   }
   function pushPlanoAcao(){
-    if(!currentTeam) return;
+    if(!currentSubTeam) return;
     var weekKey = weekKeyFor(currentMonday);
-    var team = currentTeam;
+    var team = currentSubTeam;
     var text = $("planoAcaoArea").value;
     setSyncFlag("planoAcaoSyncFlag", "syncing", "Salvando…");
     fetch(sbUrl("leader_weekly_notes?on_conflict=equipe,week_key"), {
@@ -689,10 +716,10 @@
   }
 
   function renderPlanoAcaoFollowUp(){
-    var pendingList = findPendingPlanoAcaoList(currentTeam, currentMonday, 12);
+    var pendingList = findPendingPlanoAcaoList(currentSubTeam, currentMonday, 12);
     var el = $("planoAcaoFollowUp");
     if(!pendingList.length){ el.innerHTML = ""; return; }
-    var team = currentTeam;
+    var team = currentSubTeam;
     el.innerHTML = pendingList.map(function(pending){
       return '<div class="followup-card" data-week="'+esc(pending.weekKey)+'">'+
         '<span class="fu-label">Combinado de '+esc(pending.range)+' — foi realizado?</span>'+
@@ -727,7 +754,8 @@
   }
 
   var currentMonday = startOfWeek(new Date());
-  var currentTeam = null;
+  var currentTeams = null;   // array de equipes do grupo aberto (1 ou mais, quando o líder acumula times)
+  var currentSubTeam = null; // equipe específica ativa para prontuário/plano de ação (um por vez)
 
   /* ---------------- Ratio / status ---------------- */
   function itemRatio(def, items){
@@ -756,8 +784,9 @@
     var status = pct>=80 ? "ok" : pct>=50 ? "warn" : "crit";
     return { status:status, pct:pct, entry:entry };
   }
-  function teamStats(equipe, weekKey){
-    var advisors = ADVISORS.filter(function(a){ return a.equipe===equipe; });
+  function teamStats(equipeOrList, weekKey){
+    var list = Array.isArray(equipeOrList) ? equipeOrList : [equipeOrList];
+    var advisors = ADVISORS.filter(function(a){ return list.indexOf(a.equipe) !== -1; });
     var counts = { ok:0, warn:0, crit:0, pend:0 };
     var sum = 0, withData = 0;
     advisors.forEach(function(a){
@@ -869,15 +898,15 @@
 
   function renderScoreboard(){
     var weekKey = weekKeyFor(currentMonday);
-    var rows = TEAMS.map(function(t){ return teamStats(t, weekKey); });
+    var rows = LEADER_GROUPS.map(function(g){ return teamStats(g.equipes, weekKey); });
     var counts = { ok:0, warn:0, crit:0, pend:0 };
     rows.forEach(function(s){
       var st = s.avg===null ? "pend" : s.avg>=80 ? "ok" : s.avg>=50 ? "warn" : "crit";
       counts[st]++;
     });
-    $("scoreboardScope").textContent = currentTeam ? currentTeam : "Todos os líderes";
+    $("scoreboardScope").textContent = currentTeams ? currentTeams.join(" + ") : "Todos os líderes";
     $("scoreboard").innerHTML =
-      '<div class="stat total"><span class="n tabular">'+TEAMS.length+'</span><span class="l">Líderes</span></div>'+
+      '<div class="stat total"><span class="n tabular">'+LEADER_GROUPS.length+'</span><span class="l">Líderes</span></div>'+
       '<div class="stat ok"><span class="n tabular">'+counts.ok+'</span><span class="l">Em dia</span></div>'+
       '<div class="stat warn"><span class="n tabular">'+counts.warn+'</span><span class="l">Atenção</span></div>'+
       '<div class="stat crit"><span class="n tabular">'+counts.crit+'</span><span class="l">Crítico</span></div>'+
@@ -887,18 +916,18 @@
   function renderOverview(){
     var weekKey = weekKeyFor(currentMonday);
     var weekKeys = lastNWeeks(currentMonday, 6);
-    var rows = TEAMS.map(function(t){
-      var s = teamStats(t, weekKey);
-      var history = weekKeys.map(function(wk){ return teamStats(t, wk).avg; });
+    var rows = LEADER_GROUPS.map(function(g){
+      var s = teamStats(g.equipes, weekKey);
+      var history = weekKeys.map(function(wk){ return teamStats(g.equipes, wk).avg; });
       var prevAvg = history[history.length-2];
-      return { team:t, s:s, history:history, prevAvg: (prevAvg===undefined?null:prevAvg) };
+      return { group:g, s:s, history:history, prevAvg: (prevAvg===undefined?null:prevAvg) };
     });
     rows.sort(function(a,b){
       var av = a.s.avg===null ? -1 : a.s.avg, bv = b.s.avg===null ? -1 : b.s.avg;
       return av-bv;
     });
     $("leadersGrid").innerHTML = rows.map(function(r){
-      var s = r.s;
+      var s = r.s, g = r.group;
       var pctLabel = s.avg===null ? "—" : s.avg+"%";
       var pctColor = pctColorRaw(s.avg);
       var deltaHtml = "";
@@ -908,10 +937,9 @@
         var sign = d>0 ? "+" : "";
         deltaHtml = '<span class="delta '+cls+'">'+sign+d+'pp</span>';
       }
-      var lider = liderFor(r.team);
-      var nameLabel = lider || r.team;
-      var teamTag = lider ? esc(r.team) : "líder não cadastrado";
-      return '<button class="leader-card" data-team="'+esc(r.team)+'">'+
+      var nameLabel = g.lider || g.equipes[0];
+      var teamTag = g.lider ? esc(g.equipes.join(" + ")) : "líder não cadastrado";
+      return '<button class="leader-card" data-teams="'+esc(g.equipes.join("||"))+'">'+
         '<div class="row1"><span class="name">'+esc(nameLabel)+'</span>'+sparklineSvg(r.history,72,24)+'</div>'+
         '<span class="team-tag">'+teamTag+'</span>'+
         '<div class="pctwrap"><span class="pct tabular" style="color:'+pctColor+'">'+pctLabel+'</span>'+deltaHtml+'</div>'+
@@ -921,34 +949,37 @@
       '</button>';
     }).join("");
     Array.prototype.forEach.call($("leadersGrid").querySelectorAll(".leader-card"), function(btn){
-      btn.addEventListener("click", function(){ showLeader(btn.getAttribute("data-team")); });
+      btn.addEventListener("click", function(){ showLeader(btn.getAttribute("data-teams").split("||")); });
     });
   }
 
   function renderLeader(){
     var weekKey = weekKeyFor(currentMonday);
-    var s = teamStats(currentTeam, weekKey);
-    var lider = liderFor(currentTeam);
-    $("leaderTitle").textContent = lider || currentTeam;
-    $("leaderSummary").textContent = (lider ? "Equipe "+currentTeam+" · " : "") + s.total+" assessor"+(s.total===1?"":"es")+" · aderência média de "+(s.avg===null?"—":s.avg+"%")+" na semana de "+fmtRange(currentMonday);
+    var s = teamStats(currentTeams, weekKey);
+    var lider = liderFor(currentTeams[0]);
+    var multi = currentTeams.length > 1;
+    $("leaderTitle").textContent = lider || currentTeams.join(" + ");
+    $("leaderSummary").textContent = (lider ? "Equipe"+(multi?"s ":" ")+currentTeams.join(" + ")+" · " : "") + s.total+" assessor"+(s.total===1?"":"es")+" · aderência média de "+(s.avg===null?"—":s.avg+"%")+" na semana de "+fmtRange(currentMonday);
 
     var weekKeys = lastNWeeks(currentMonday, 8);
-    var history = weekKeys.map(function(wk){ return teamStats(currentTeam, wk).avg; });
+    var history = weekKeys.map(function(wk){ return teamStats(currentTeams, wk).avg; });
     $("trendChart").innerHTML = bigTrendChart(history, weekKeys);
+
+    renderSubTeamPicker();
 
     var prontuarioArea = $("prontuarioArea");
     if(document.activeElement !== prontuarioArea && !prontuarioSyncTimer){
-      prontuarioArea.value = (prontuarioData[weekKey] && prontuarioData[weekKey][currentTeam]) || "";
+      prontuarioArea.value = (prontuarioData[weekKey] && prontuarioData[weekKey][currentSubTeam]) || "";
       $("prontuarioSyncFlag").className = "sync-flag";
     }
     var planoAcaoArea = $("planoAcaoArea");
     if(document.activeElement !== planoAcaoArea && !planoAcaoSyncTimer){
-      planoAcaoArea.value = (planoAcaoData[weekKey] && planoAcaoData[weekKey][currentTeam]) || "";
+      planoAcaoArea.value = (planoAcaoData[weekKey] && planoAcaoData[weekKey][currentSubTeam]) || "";
       $("planoAcaoSyncFlag").className = "sync-flag";
     }
     renderPlanoAcaoFollowUp();
 
-    var advisors = ADVISORS.filter(function(a){ return a.equipe===currentTeam; });
+    var advisors = ADVISORS.filter(function(a){ return currentTeams.indexOf(a.equipe) !== -1; });
     var order = { crit:0, pend:1, warn:2, ok:3 };
     var rows = advisors.map(function(a){
       var r = computeStatus(weekKey, a.equipe, a.nome);
@@ -967,11 +998,12 @@
       var pctLabel = r.pct===null ? "—" : r.pct+"%";
       var quad = quadrantById(quadrantData[row.a.equipe+"|"+row.a.nome]);
       var badge = quad ? '<span class="quadrant-badge" style="background:'+quad.accent+'" title="'+esc(quad.name)+'">'+quad.id+'</span>' : '';
+      var teamBadge = multi ? '<span class="advisor-sched">'+esc(row.a.equipe)+'</span>' : '';
       var noteHtml = row.notes ? '<span class="advisor-note">'+esc(row.notes)+'</span>' : '<span class="advisor-note empty">sem observações registradas</span>';
       var expanded = expandedAdvisor === row.a.nome;
-      var html = '<button type="button" class="advisor-row'+(expanded?' expanded':'')+'" data-nome="'+esc(row.a.nome)+'">'+
+      var html = '<button type="button" class="advisor-row'+(expanded?' expanded':'')+'" data-nome="'+esc(row.a.nome)+'" data-equipe="'+esc(row.a.equipe)+'">'+
         '<span class="status-dot '+r.status+'"></span>'+
-        '<span class="advisor-name-wrap"><span class="advisor-name-line">'+badge+'<span class="advisor-name">'+esc(row.a.nome)+'</span></span></span>'+
+        '<span class="advisor-name-wrap"><span class="advisor-name-line">'+badge+'<span class="advisor-name">'+esc(row.a.nome)+'</span></span>'+teamBadge+'</span>'+
         '<span class="advisor-pct tabular" style="color:'+dotColor(r.status)+'">'+pctLabel+'</span>'+
         noteHtml+
       '</button>';
@@ -982,6 +1014,21 @@
       btn.addEventListener("click", function(){
         var nome = btn.getAttribute("data-nome");
         expandedAdvisor = (expandedAdvisor === nome) ? null : nome;
+        renderLeader();
+      });
+    });
+  }
+
+  function renderSubTeamPicker(){
+    var el = $("subTeamPicker");
+    if(currentTeams.length <= 1){ el.innerHTML = ""; return; }
+    el.innerHTML = '<span class="sub-team-label">Prontuário/plano de:</span>' + currentTeams.map(function(t){
+      return '<button type="button" class="sub-team-pill'+(t===currentSubTeam?' sel':'')+'" data-equipe="'+esc(t)+'">'+esc(t)+'</button>';
+    }).join("");
+    Array.prototype.forEach.call(el.querySelectorAll(".sub-team-pill"), function(btn){
+      btn.addEventListener("click", function(){
+        flushProntuarioIfPending();
+        currentSubTeam = btn.getAttribute("data-equipe");
         renderLeader();
       });
     });
@@ -1028,10 +1075,11 @@
     if(planoAcaoSyncTimer){ clearTimeout(planoAcaoSyncTimer); planoAcaoSyncTimer = null; pushPlanoAcao(); }
   }
 
-  function showLeader(team){
+  function showLeader(teams){
     flushProntuarioIfPending();
     expandedAdvisor = null;
-    currentTeam = team;
+    currentTeams = Array.isArray(teams) ? teams : [teams];
+    currentSubTeam = currentTeams[0];
     $("overviewView").hidden = true;
     $("leaderView").hidden = false;
     renderScoreboard();
@@ -1040,7 +1088,8 @@
   }
   function showOverview(){
     flushProntuarioIfPending();
-    currentTeam = null;
+    currentTeams = null;
+    currentSubTeam = null;
     $("leaderView").hidden = true;
     $("overviewView").hidden = false;
     renderScoreboard();
@@ -1050,7 +1099,7 @@
   function renderAll(){
     renderWeekLabel();
     renderScoreboard();
-    if(currentTeam){ renderLeader(); } else { renderOverview(); }
+    if(currentTeams){ renderLeader(); } else { renderOverview(); }
   }
 
   /* ---------------- Search ---------------- */
@@ -1058,29 +1107,29 @@
     q = q.trim().toLowerCase();
     var results = $("searchResults");
     if(!q){ results.hidden = true; results.innerHTML=""; return; }
-    var teamMatches = TEAMS.filter(function(t){
-      var lider = liderFor(t);
-      return t.toLowerCase().indexOf(q)!==-1 || (lider && lider.toLowerCase().indexOf(q)!==-1);
+    var groupMatches = LEADER_GROUPS.filter(function(g){
+      return g.equipes.some(function(t){ return t.toLowerCase().indexOf(q)!==-1; }) || (g.lider && g.lider.toLowerCase().indexOf(q)!==-1);
     }).slice(0,5);
     var advisorMatches = ADVISORS.filter(function(a){ return a.nome.toLowerCase().indexOf(q)!==-1; }).slice(0,6);
-    if(!teamMatches.length && !advisorMatches.length){
+    if(!groupMatches.length && !advisorMatches.length){
       results.innerHTML = '<div class="search-empty">Nada encontrado</div>';
       results.hidden = false;
       return;
     }
     var html = "";
-    teamMatches.forEach(function(t){
-      var lider = liderFor(t);
-      html += '<button data-team="'+esc(t)+'"><span>'+esc(lider||t)+'</span><span class="tag">'+esc(t)+'</span></button>';
+    groupMatches.forEach(function(g){
+      html += '<button data-teams="'+esc(g.equipes.join("||"))+'"><span>'+esc(g.lider||g.equipes[0])+'</span><span class="tag">'+esc(g.equipes.join(" + "))+'</span></button>';
     });
     advisorMatches.forEach(function(a){
-      html += '<button data-team="'+esc(a.equipe)+'"><span>'+esc(a.nome)+'</span><span class="tag">'+esc(a.equipe)+'</span></button>';
+      var g = leaderGroupFor(a.equipe);
+      var teams = g ? g.equipes : [a.equipe];
+      html += '<button data-teams="'+esc(teams.join("||"))+'"><span>'+esc(a.nome)+'</span><span class="tag">'+esc(a.equipe)+'</span></button>';
     });
     results.innerHTML = html;
     results.hidden = false;
     Array.prototype.forEach.call(results.querySelectorAll("button"), function(btn){
       btn.addEventListener("click", function(){
-        showLeader(btn.getAttribute("data-team"));
+        showLeader(btn.getAttribute("data-teams").split("||"));
         $("searchInput").value = "";
         results.hidden = true;
       });
@@ -1090,8 +1139,8 @@
   /* ---------------- Copy summary ---------------- */
   function buildSummaryText(){
     var weekKey = weekKeyFor(currentMonday);
-    var s = teamStats(currentTeam, weekKey);
-    var advisors = ADVISORS.filter(function(a){ return a.equipe===currentTeam; });
+    var s = teamStats(currentTeams, weekKey);
+    var advisors = ADVISORS.filter(function(a){ return currentTeams.indexOf(a.equipe) !== -1; });
     var order = { crit:0, pend:1, warn:2, ok:3 };
     var rows = advisors.map(function(a){
       var r = computeStatus(weekKey, a.equipe, a.nome);
@@ -1103,22 +1152,23 @@
       var px = x.r.pct===null?999:x.r.pct, py = y.r.pct===null?999:y.r.pct;
       return px-py;
     });
-    var lider = liderFor(currentTeam);
+    var lider = liderFor(currentTeams[0]);
+    var teamsLabel = currentTeams.join(" + ");
     var lines = [];
-    lines.push("1x1 — " + (lider ? lider + " (" + currentTeam + ")" : currentTeam));
+    lines.push("1x1 — " + (lider ? lider + " (" + teamsLabel + ")" : teamsLabel));
     lines.push("Semana de " + fmtRange(currentMonday));
     lines.push("Aderência média: " + (s.avg===null?"—":s.avg+"%") + " (" + s.total + " assessores)");
     lines.push("Em dia: " + s.counts.ok + " · Atenção: " + s.counts.warn + " · Crítico: " + s.counts.crit + " · Sem dados: " + s.counts.pend);
-    var prontuario = (prontuarioData[weekKey] && prontuarioData[weekKey][currentTeam]) || "";
+    var prontuario = (prontuarioData[weekKey] && prontuarioData[weekKey][currentSubTeam]) || "";
     if(prontuario){
       lines.push("");
-      lines.push("Prontuário da semana:");
+      lines.push("Prontuário da semana (" + currentSubTeam + "):");
       lines.push(prontuario);
     }
-    var planoAcao = (planoAcaoData[weekKey] && planoAcaoData[weekKey][currentTeam]) || "";
+    var planoAcao = (planoAcaoData[weekKey] && planoAcaoData[weekKey][currentSubTeam]) || "";
     if(planoAcao){
       lines.push("");
-      lines.push("Plano de ação:");
+      lines.push("Plano de ação (" + currentSubTeam + "):");
       lines.push(planoAcao);
     }
     lines.push("");
@@ -1157,7 +1207,7 @@
 
   $("copySummaryBtn").addEventListener("click", function(){
     var text = buildSummaryText();
-    $("textModalTitle").textContent = "Resumo para o 1x1 — " + (liderFor(currentTeam) || currentTeam);
+    $("textModalTitle").textContent = "Resumo para o 1x1 — " + (liderFor(currentTeams[0]) || currentTeams.join(" + "));
     $("textModalDesc").textContent = "Copie e cole na sua agenda ou mensagem para preparar a conversa.";
     $("textModalArea").value = text;
     $("textModal").hidden = false;
