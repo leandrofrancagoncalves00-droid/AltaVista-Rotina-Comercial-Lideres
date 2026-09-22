@@ -445,6 +445,26 @@
   #linkInput{width:100%;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-family:var(--font-mono);font-size:12px;color:var(--ink-900);}
   .modal-textarea{width:100%;min-height:180px;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-family:var(--font-mono);font-size:11.5px;color:var(--ink-900);resize:vertical;}
 
+  .panel-wide{max-width:760px;}
+  #playbookSearch{width:100%;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-size:12.5px;color:var(--ink-900);}
+  .playbook-list{display:flex;flex-direction:column;gap:12px;max-height:58vh;overflow-y:auto;}
+  .pb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;align-items:start;}
+  .pb-cat{border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);}
+  .pb-cat-head{padding:9px 12px;display:flex;flex-direction:column;gap:1px;}
+  .pb-cat-title{font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;}
+  .pb-cat-sub{font-size:10px;opacity:.85;}
+  .pb-table{width:100%;border-collapse:collapse;background:var(--surface);}
+  .pb-row{cursor:pointer;}
+  .pb-row:hover{background:var(--accent-soft);}
+  .pb-row.added{background:var(--success-soft);}
+  .pb-table td{padding:7px 9px;font-size:11px;border-bottom:1px solid var(--border);vertical-align:top;}
+  .pb-row:last-child td{border-bottom:none;}
+  .pb-num{font-family:var(--font-mono);font-weight:700;color:var(--ink-500);width:20px;}
+  .pb-titulo{display:block;font-weight:600;color:var(--ink-900);font-size:11.5px;}
+  .pb-row.added .pb-titulo:after{content:" ✓";color:var(--success);}
+  .pb-combinar{display:block;color:var(--ink-700);font-size:10.5px;margin-top:1px;}
+  .pb-meta{color:var(--ink-500);font-size:9.5px;white-space:nowrap;text-align:right;}
+
   #statusPanelList{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;}
   .plan-history-list{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow-y:auto;}
   .ph-row{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;background:var(--surface-2);display:flex;flex-direction:column;gap:5px;}
@@ -671,6 +691,18 @@
     <div id="planHistoryList" class="plan-history-list"></div>
     <div class="panel-actions">
       <button class="btn primary" id="closePlanHistory">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="playbookOverlay" hidden>
+  <div class="panel panel-wide">
+    <h3 id="playbookTitle">Playbook de planos de ação</h3>
+    <p class="desc">Escolha 1 a 2 planos prioritários com o assessor. Clique num plano para adicionar ao plano de ação combinado.</p>
+    <input type="text" id="playbookSearch" placeholder="Buscar plano de ação…" autocomplete="off">
+    <div id="playbookList" class="playbook-list"></div>
+    <div class="panel-actions">
+      <button class="btn primary" id="closePlaybook">Fechar</button>
     </div>
   </div>
 </div>
@@ -1945,6 +1977,136 @@
       pergunta:"Quais clientes precisam de uma ação agora e qual oportunidade existe aí?" }
   ];
 
+  // Playbook Comercial · Planos de Ação para Captação 2.0 (AltaVista)
+  var CAPTACAO_PLAYBOOK = [
+    { cat:"Base atual", sub:"Ativar, aprofundar e fazer crescer", items:[
+      {num:1, titulo:"Clientes sem aporte há 12 meses", combinar:"Selecionar 20 clientes e fazer contato com proposta de reunião.", meta:"20 contatos / 5 reuniões"},
+      {num:2, titulo:"Clientes de maior PL com baixo share of wallet", combinar:"Mapear clientes com potencial e apresentar soluções complementares.", meta:"10 contatos / 3 reuniões"},
+      {num:3, titulo:"Clientes com AuC baixo", combinar:"Identificar clientes com saldos abaixo do potencial e propor revisão.", meta:"15 contatos / 5 reuniões"},
+      {num:4, titulo:"Recuperação dos maiores resgates", combinar:"Listar 10 clientes que resgataram e reativar relacionamento.", meta:"10 contatos / 3 reuniões"},
+      {num:5, titulo:"Revisão de carteira (XPerformance)", combinar:"Agendar reuniões de revisão de carteira com foco na realocação.", meta:"10 revisões"},
+      {num:6, titulo:"Clientes com concentração em produtos de banco", combinar:"Levantar concentração e propor migração / diversificação.", meta:"10 contatos / 3 reuniões"},
+      {num:7, titulo:"Clientes com liquidez parada", combinar:"Mapear recursos em conta corrente e propor alocação.", meta:"15 contatos / 5 reuniões"},
+      {num:8, titulo:"Vencimentos próximos (RF, previdência, etc.)", combinar:"Listar vencimentos dos próximos 6 meses e agendar reuniões.", meta:"10 contatos / 3 reuniões"}
+    ]},
+    { cat:"Dinheiro fora", sub:"Conquistar patrimônio que ainda não está conosco", items:[
+      {num:9, titulo:"Mapear patrimônio externo", combinar:"Identificar clientes com investimentos em outras instituições.", meta:"10 clientes / 5 reuniões"},
+      {num:10, titulo:"Open Investment (migração de ativos)", combinar:"Apresentar proposta de migração com comparativo de benefícios.", meta:"5 ativações / 3 reuniões"},
+      {num:11, titulo:"Previdência externa e portabilidade", combinar:"Mapear apólices externas e propor portabilidade.", meta:"10 clientes / 5 reuniões"},
+      {num:12, titulo:"Conta em outras instituições", combinar:"Identificar onde o cliente tem conta e propor centralização.", meta:"10 contatos / 5 reuniões"},
+      {num:13, titulo:"Investimentos internacionais", combinar:"Apoiar o cliente na diversificação internacional.", meta:"5 diagnósticos / 3 reuniões"},
+      {num:14, titulo:"Imóveis e ativos não financeiros", combinar:"Mapear imóveis/ativos e propor estratégia de alocação.", meta:"10 contatos / 3 reuniões"},
+      {num:15, titulo:"Concentração em uma instituição", combinar:"Apresentar proposta de diversificação institucional.", meta:"10 contatos / 5 reuniões"},
+      {num:16, titulo:"Recursos no exterior para retorno ao Brasil", combinar:"Mapear clientes com recursos fora e discutir oportunidades.", meta:"5 diagnósticos / 3 reuniões"}
+    ]},
+    { cat:"Prospecção", sub:"Trazer novos clientes e ampliar a base", items:[
+      {num:17, titulo:"Top 20 prospects (alvo qualificado)", combinar:"Selecionar 20 prospects e iniciar abordagem ativa.", meta:"20 abordagens / 5 reuniões"},
+      {num:18, titulo:"Indicações de clientes", combinar:"Pedir 5 indicações qualificadas a clientes estratégicos.", meta:"5 pedidos / 3 reuniões"},
+      {num:19, titulo:"Financial Planning (com prospects)", combinar:"Oferecer diagnóstico financeiro com proposta de valor clara.", meta:"10 abordagens / 3 reuniões"},
+      {num:20, titulo:"Reativação de leads antigos", combinar:"Contatar leads da base e reagendar reuniões.", meta:"10 contatos / 3 reuniões"},
+      {num:21, titulo:"Ex-clientes", combinar:"Retomar relacionamento e entender oportunidades de retorno.", meta:"5 contatos / 3 reuniões"},
+      {num:22, titulo:"Networking pessoal e institucional", combinar:"Participar de eventos e ativar rede de contatos.", meta:"3 novos contatos relevantes/semana"},
+      {num:23, titulo:"LinkedIn / Social Selling", combinar:"Publicar conteúdo e abordar prospects qualificados.", meta:"5 interações / 3 abordagens"},
+      {num:24, titulo:"SDR / Leads inbound", combinar:"Trabalhar leads recebidos com abordagem estruturada.", meta:"10 contatos / 3 reuniões"}
+    ]},
+    { cat:"Pipeline", sub:"Foco nas maiores oportunidades", items:[
+      {num:25, titulo:"Top 5 oportunidades de captação", combinar:"Definir plano de ação para cada oportunidade e avançar nas etapas.", meta:"5 oportunidades em andamento"},
+      {num:26, titulo:"Pipeline 30/60/90 dias", combinar:"Atualizar e qualificar todo o pipeline com probabilidade.", meta:"100% atualizado"},
+      {num:27, titulo:"Follow-up de propostas", combinar:"Retomar propostas enviadas e buscar fechamento.", meta:"10 follow-ups / 3 fechamentos"},
+      {num:28, titulo:"Reuniões sem próximo passo", combinar:"Reagendar reuniões realizadas sem evolução.", meta:"10 contatos / 3 reuniões"},
+      {num:29, titulo:"Prospects parados", combinar:"Reativar prospects sem movimento nos últimos 60 dias.", meta:"10 contatos / 3 reuniões"},
+      {num:30, titulo:"Negócios perdidos", combinar:"Revisitar oportunidades perdidas e entender objeções.", meta:"10 contatos / 2 reuniões"},
+      {num:31, titulo:"Cross sell / Up sell", combinar:"Identificar oportunidades de novos produtos e serviços.", meta:"10 contatos / 3 oportunidades"},
+      {num:32, titulo:"Ticket médio", combinar:"Trabalhar aumento de ticket nas propostas em andamento.", meta:"3 propostas com upgrade"}
+    ]},
+    { cat:"COIs e parcerias", sub:"Multiplicar através de relacionamentos estratégicos", items:[
+      {num:33, titulo:"Contadores", combinar:"Mapear 5 contadores e agendar reuniões de apresentação.", meta:"5 reuniões"},
+      {num:34, titulo:"Advogados", combinar:"Mapear 5 advogados e apresentar o modelo de parceria.", meta:"5 reuniões"},
+      {num:35, titulo:"M&A boutiques e assessores de venda", combinar:"Conectar e apresentar para clientes em processo de venda.", meta:"3 reuniões"},
+      {num:36, titulo:"Brokers de seguros", combinar:"Estabelecer parceria e fluxo de indicações.", meta:"3 reuniões"},
+      {num:37, titulo:"Imobiliárias premium", combinar:"Criar relacionamento e receber indicações qualificadas.", meta:"3 reuniões"},
+      {num:38, titulo:"Consultores empresariais", combinar:"Apresentar a AltaVista e construir pipeline conjunto.", meta:"3 reuniões"},
+      {num:39, titulo:"Escritórios tributários e sucessórios", combinar:"Parceria para planejamento sucessório e tributário.", meta:"3 reuniões"},
+      {num:40, titulo:"Geração de eventos com COIs", combinar:"Realizar ou participar de 1 evento com COIs no trimestre.", meta:"1 evento/trimestre"}
+    ]},
+    { cat:"Empresários e PJ", sub:"Explorar oportunidades no segmento empresarial", items:[
+      {num:41, titulo:"PJ → PF (distribuição de lucros)", combinar:"Mapear empresas e propor planejamento para sócios.", meta:"5 empresários / 3 reuniões"},
+      {num:42, titulo:"PF → PJ (conquista de caixa)", combinar:"Identificar clientes PF com empresas e estruturar soluções.", meta:"5 diagnósticos / 3 reuniões"},
+      {num:43, titulo:"Gestão de caixa empresarial", combinar:"Apresentar soluções de caixa e rentabilidade.", meta:"5 empresas / 3 conversas"},
+      {num:44, titulo:"Venda de empresa (liquidez)", combinar:"Mapear empresas em processo de venda e atuar na estruturação.", meta:"3 diagnósticos / 2 oportunidades"},
+      {num:45, titulo:"Planejamento sucessório (empresários)", combinar:"Oferecer estrutura de sucessão patrimonial e societária.", meta:"3 diagnósticos"},
+      {num:46, titulo:"Executivos e sócios (chave)", combinar:"Mapear executivos e propor planejamento individual.", meta:"5 contatos"},
+      {num:47, titulo:"Programa financeiro para funcionários", combinar:"Apresentar soluções de educação financeira para empresas.", meta:"2 apresentações / 3 oportunidades"},
+      {num:48, titulo:"Ecossistema de empresas (parceiros e fornecedores)", combinar:"Ativar rede de fornecedores e parceiros de empresários.", meta:"5 contatos"}
+    ]},
+    { cat:"Eventos de liquidez", sub:"Atuar em momentos de grande potencial", items:[
+      {num:49, titulo:"Venda de empresa", combinar:"Identificar clientes com processo de venda e atuar desde o início.", meta:"5 casos / 3 oportunidades"},
+      {num:50, titulo:"Venda de imóvel", combinar:"Mapear clientes com imóveis e propor investimento.", meta:"5 casos / 3 reuniões"},
+      {num:51, titulo:"Bônus / PLR", combinar:"Antecipar e abordar clientes com expectativa de recebimento.", meta:"10 clientes / 3 reuniões"},
+      {num:52, titulo:"Dividendos expressivos", combinar:"Listar empresas e propor distribuição relevante.", meta:"10 clientes / 3 reuniões"},
+      {num:53, titulo:"Herança / Inventário", combinar:"Mapear e propor planejamento de sucessão.", meta:"10 famílias / 3 reuniões"},
+      {num:54, titulo:"Precatórios / Ações judiciais", combinar:"Identificar clientes recebíveis e propor planejamento.", meta:"5 casos / 3 reuniões"},
+      {num:55, titulo:"Vencimentos relevantes", combinar:"Mapear vencimentos de valores expressivos.", meta:"10 clientes / 3 oportunidades"},
+      {num:56, titulo:"Distribuição extraordinária de lucros", combinar:"Antecipar empresas com eventos extraordinários.", meta:"3 propostas com upgrade"}
+    ]},
+    { cat:"Verticais e segmentos", sub:"Atuar em mercados com grande potencial", items:[
+      {num:57, titulo:"Médicos e profissionais da saúde", combinar:"Mapear 10 médicos e apresentar a proposta de valor.", meta:"10 contatos / 3 reuniões"},
+      {num:58, titulo:"Agro e agronegócio", combinar:"Ativar rede e propor soluções para o setor.", meta:"10 contatos / 3 reuniões"},
+      {num:59, titulo:"Tecnologia e startups", combinar:"Mapear founders e investidores.", meta:"10 contatos / 3 reuniões"},
+      {num:60, titulo:"Profissionais liberais (alto padrão)", combinar:"Selecionar 10 profissionais e oferecer planejamento.", meta:"10 contatos / 3 reuniões"},
+      {num:61, titulo:"Executivos C-level", combinar:"Mapear executivos e propor soluções personalizadas.", meta:"10 contatos / 3 reuniões"},
+      {num:62, titulo:"NextGen / herdeiros", combinar:"Ativar relacionamento com filhos e sucessores.", meta:"10 contatos / 3 reuniões"},
+      {num:63, titulo:"Setor público (altos cargos)", combinar:"Mapear e abordar oportunidades com discrição e compliance.", meta:"5 contatos / 3 reuniões"},
+      {num:64, titulo:"Economia criativa (influenciadores, atletas, etc.)", combinar:"Mapear perfis e apresentar planejamento patrimonial.", meta:"5 clientes / 3 reuniões"}
+    ]},
+    { cat:"Internacional", sub:"Captar e diversificar além do Brasil", items:[
+      {num:65, titulo:"Patrimônio internacional", combinar:"Mapear clientes com interesse e propor estratégia.", meta:"5 diagnósticos / 3 reuniões"},
+      {num:66, titulo:"Estruturas offshore", combinar:"Apresentar alternativas de estruturação internacional.", meta:"3 oportunidades / 2 fechamentos"},
+      {num:67, titulo:"Executive relocation (expatriados)", combinar:"Atender executivos em processo de mudança.", meta:"5 casos / 3 reuniões"},
+      {num:68, titulo:"Educação internacional (família / filhos)", combinar:"Mapear necessidades e propor soluções.", meta:"5 diagnósticos / 3 reuniões"}
+    ]}
+  ];
+
+  var PLAYBOOKS = { captacao: CAPTACAO_PLAYBOOK };
+
+  var PB_CAT_COLORS = {
+    "Base atual": {bg:"#1f3a63", fg:"#dce6ff"},
+    "Dinheiro fora": {bg:"#1f6b4a", fg:"#dcf5e8"},
+    "Prospecção": {bg:"#a9721a", fg:"#fbeed1"},
+    "Pipeline": {bg:"#a3372c", fg:"#fbe0dc"},
+    "COIs e parcerias": {bg:"#5b3a94", fg:"#e9defd"},
+    "Empresários e PJ": {bg:"#b5651d", fg:"#fbe6d2"},
+    "Eventos de liquidez": {bg:"#1f4fa8", fg:"#dbe7ff"},
+    "Verticais e segmentos": {bg:"#a84a24", fg:"#fbe2d4"},
+    "Internacional": {bg:"#152238", fg:"#d8e0f0"}
+  };
+
+  function playbookHtml(key, filterText){
+    var cats = PLAYBOOKS[key];
+    if(!cats) return "";
+    var q = (filterText||"").trim().toLowerCase();
+    var catsHtml = cats.map(function(c){
+      var items = c.items.filter(function(it){
+        if(!q) return true;
+        return (c.cat+" "+it.titulo+" "+it.combinar).toLowerCase().indexOf(q) !== -1;
+      });
+      if(!items.length) return "";
+      var col = PB_CAT_COLORS[c.cat] || {bg:"#3a3a3a", fg:"#fff"};
+      var rows = items.map(function(it){
+        return '<tr class="pb-row" data-added-text="'+esc(it.titulo+": "+it.combinar)+'">'+
+          '<td class="pb-num tabular">'+it.num+'</td>'+
+          '<td><span class="pb-titulo">'+esc(it.titulo)+'</span><span class="pb-combinar">'+esc(it.combinar)+'</span></td>'+
+          '<td class="pb-meta">'+esc(it.meta)+'</td>'+
+        '</tr>';
+      }).join("");
+      return '<div class="pb-cat">'+
+        '<div class="pb-cat-head" style="background:'+col.bg+';color:'+col.fg+'"><span class="pb-cat-title">'+esc(c.cat)+'</span><span class="pb-cat-sub">'+esc(c.sub)+'</span></div>'+
+        '<table class="pb-table"><tbody>'+rows+'</tbody></table>'+
+      '</div>';
+    }).join("");
+    return '<div class="pb-grid">'+catsHtml+'</div>';
+  }
+
   function pilaresGapHtml(obj){
     var gaps = obj.gaps || [];
     var chips = PILARES_1X1.map(function(p){
@@ -1953,8 +2115,20 @@
         '<span class="pnum">'+p.num+'</span><span>'+esc(p.label)+'</span></button>';
     }).join("");
     var details = PILARES_1X1.filter(function(p){ return gaps.indexOf(p.key) !== -1; }).map(function(p){
-      return '<div class="pilar-detail"><p class="pilar-detail-olhar"><strong>O que olhar:</strong> '+esc(p.olhar.join(", "))+'.</p>'+
-        '<p class="pilar-detail-pergunta" data-pilar-pergunta title="Clique para adicionar ao plano de ação">"'+esc(p.pergunta)+'"</p></div>';
+      var playbook = PLAYBOOKS[p.key];
+      var bodyHtml;
+      if(playbook){
+        var totalItems = playbook.reduce(function(n,c){ return n+c.items.length; }, 0);
+        bodyHtml = '<button type="button" class="btn playbook-open-btn" data-playbook-key="'+p.key+'">Ver playbook completo de planos de ação ('+totalItems+' opções)</button>';
+      } else {
+        var olharHtml = p.olhar.map(function(o){ return '<li>'+esc(o)+'</li>'; }).join("");
+        bodyHtml = '<p class="msv-actions-label">Planos de ação que você pode sugerir <span class="hint">(clique para adicionar ao plano de ação)</span></p>'+
+          '<ol class="msv-actions-list pilar-olhar-list">'+olharHtml+'</ol>';
+      }
+      return '<div class="pilar-detail">'+
+        '<p class="pilar-detail-pergunta" data-pilar-pergunta title="Clique para adicionar ao plano de ação">"'+esc(p.pergunta)+'"</p>'+
+        bodyHtml+
+      '</div>';
     }).join("");
     return '<div class="pilares-gap">'+
       '<div class="pilares-gap-head"><span class="eyebrow">Principais gaps da semana</span><span class="hint">Selecione até 2</span></div>'+
@@ -2179,6 +2353,22 @@
 
     Array.prototype.forEach.call(grid.querySelectorAll("[data-pilar-pergunta]"), function(p){
       p.addEventListener("click", function(){ addActionToAta(p.textContent.replace(/^"|"$/g,"")); });
+    });
+
+    Array.prototype.forEach.call(grid.querySelectorAll(".pilar-olhar-list li"), function(li){
+      li.addEventListener("click", function(){ addActionToAta(li.textContent); });
+    });
+
+    Array.prototype.forEach.call(grid.querySelectorAll(".playbook-open-btn"), function(btn){
+      btn.addEventListener("click", function(){
+        var key = btn.getAttribute("data-playbook-key");
+        var pilar = PILARES_1X1.filter(function(p){ return p.key===key; })[0];
+        $("playbookTitle").textContent = "Playbook de planos de ação — "+(pilar?pilar.label:"");
+        $("playbookSearch").value = "";
+        $("playbookSearch").setAttribute("data-playbook-key", key);
+        $("playbookList").innerHTML = playbookHtml(key, "");
+        $("playbookOverlay").hidden = false;
+      });
     });
 
     $("generalNotes").addEventListener("input", function(){
@@ -2442,6 +2632,18 @@
     $("linkInput").select();
   });
   $("closePlanHistory").addEventListener("click", function(){ $("planHistoryOverlay").hidden = true; });
+
+  $("closePlaybook").addEventListener("click", function(){ $("playbookOverlay").hidden = true; });
+  $("playbookSearch").addEventListener("input", function(){
+    var key = $("playbookSearch").getAttribute("data-playbook-key");
+    $("playbookList").innerHTML = playbookHtml(key, $("playbookSearch").value);
+  });
+  $("playbookList").addEventListener("click", function(e){
+    var row = e.target.closest(".pb-row");
+    if(!row) return;
+    addActionToAta(row.getAttribute("data-added-text"));
+    row.classList.add("added");
+  });
   $("planHistoryOverlay").addEventListener("click", function(e){ if(e.target===this) this.hidden = true; });
   $("closeLinkPanel").addEventListener("click", function(){ $("linkOverlay").hidden = true; });
   $("linkOverlay").addEventListener("click", function(e){ if(e.target===this) this.hidden = true; });
