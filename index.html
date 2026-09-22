@@ -2093,7 +2093,7 @@
       if(!items.length) return "";
       var col = PB_CAT_COLORS[c.cat] || {bg:"#3a3a3a", fg:"#fff"};
       var rows = items.map(function(it){
-        return '<tr class="pb-row" data-added-text="'+esc(it.titulo+": "+it.combinar)+'">'+
+        return '<tr class="pb-row" data-added-text="'+esc(it.titulo+": "+it.combinar+" (Meta: "+it.meta+")")+'">'+
           '<td class="pb-num tabular">'+it.num+'</td>'+
           '<td><span class="pb-titulo">'+esc(it.titulo)+'</span><span class="pb-combinar">'+esc(it.combinar)+'</span></td>'+
           '<td class="pb-meta">'+esc(it.meta)+'</td>'+
