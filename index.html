@@ -1856,7 +1856,7 @@
       var tipoCurto = m.tipo.replace("Missões ","").replace("Portabilidade","Portabilidade");
       return '<div class="missao-item">'+
         '<div class="value-row"><span class="qtext missao-toggle" data-missao-toggle>'+esc(m.produto)+' <span class="mtipo">· '+esc(m.tipo)+'</span></span>'+
-        '<div class="value-input"><input type="number" step="0.01" inputmode="decimal" data-missao-key="'+esc(missaoKey)+'" value="'+esc(v)+'" placeholder="Entregue"></div></div>'+
+        '<div class="value-input"><input type="number" step="0.01" inputmode="decimal" data-missao-key="'+esc(missaoKey)+'" value="'+esc(v)+'" placeholder="Quanto fez?"></div></div>'+
         missaoRacionalHtml(m.produto, tipoCurto)+
       '</div>';
     }).join("");
