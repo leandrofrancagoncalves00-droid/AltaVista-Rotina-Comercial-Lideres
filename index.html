@@ -212,6 +212,8 @@
   .msv-head-stat .mhs-value{font-family:var(--font-mono);font-size:26px;font-weight:700;line-height:1.2;}
   .msv-head-stat.msv .mhs-value{color:var(--accent-ink);}
   .msv-head-stat.saude .mhs-value{color:var(--warning);}
+  .msv-head-stat.combo{background:var(--success-soft);border-color:var(--success);}
+  .msv-head-stat.combo .mhs-value{color:var(--success);}
   .mhs-trend{display:block;font-size:10.5px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;}
   .mhs-trend.up{color:var(--success);}
   .mhs-trend.down{color:var(--critical);}
@@ -1843,13 +1845,23 @@
       if(data){
         var msvScore = data.score!==undefined && data.score!==null ? Math.round(data.score) : null;
         var saudeIdx = data.saude_idx!==undefined && data.saude_idx!==null ? Math.round(data.saude_idx) : null;
+        var combo = weightedMsvSaude(data.score, data.saude_idx);
+        var comboPrev = weightedMsvSaude(data.score_prev, data.saude_idx_prev);
         head.innerHTML =
           '<div class="msv-head-stat msv"><span class="mhs-label">Modelo de servir</span><span class="mhs-value tabular">'+(msvScore===null?"—":msvScore+"%")+'</span>'+msvTrendHtml(msvScore, data.score_prev)+'</div>'+
-          '<div class="msv-head-stat saude"><span class="mhs-label">Saúde do cliente</span><span class="mhs-value tabular">'+(saudeIdx===null?"—":saudeIdx+"%")+'</span>'+msvTrendHtml(saudeIdx, data.saude_idx_prev)+'</div>';
+          '<div class="msv-head-stat saude"><span class="mhs-label">Saúde do cliente</span><span class="mhs-value tabular">'+(saudeIdx===null?"—":saudeIdx+"%")+'</span>'+msvTrendHtml(saudeIdx, data.saude_idx_prev)+'</div>'+
+          '<div class="msv-head-stat combo" title="Modelo de Servir (80%) + Saúde do Cliente (20%)"><span class="mhs-label">Nota final (80/20)</span><span class="mhs-value tabular">'+(combo===null?"—":combo+"%")+'</span>'+msvTrendHtml(combo, comboPrev)+'</div>';
       } else {
         head.innerHTML = "";
       }
     }
+  }
+
+  // Média ponderada: Modelo de Servir (80%) + Saúde do Cliente (20%).
+  // Só calcula se os dois índices estiverem disponíveis.
+  function weightedMsvSaude(msv, saude){
+    if(msv===undefined || msv===null || saude===undefined || saude===null) return null;
+    return Math.round(msv*0.8 + saude*0.2);
   }
 
   var MISSOES_RACIONAL = {
