@@ -34,8 +34,13 @@ create table if not exists advisor_meta (
 create table if not exists app_notices (
   key text primary key,
   value text default '',
+  expires_at date,
   updated_at timestamptz not null default now()
 );
+
+-- Migracao (2026-09): se a tabela app_notices ja existia antes desta coluna,
+-- rode so esta linha no SQL Editor do Supabase para adiciona-la sem perder dados:
+-- alter table app_notices add column if not exists expires_at date;
 
 create table if not exists pipeline_deals (
   id bigint generated always as identity primary key,

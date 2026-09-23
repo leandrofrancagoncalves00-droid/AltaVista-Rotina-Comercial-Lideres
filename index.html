@@ -434,9 +434,13 @@
 
   .reminder-banner{background:var(--warning-soft);border:1px solid var(--warning);border-radius:var(--radius);padding:10px 14px;display:flex;align-items:flex-start;gap:10px;margin:2px 0 14px;}
   .reminder-banner svg{flex:none;color:var(--warning);margin-top:2px;}
-  .reminder-banner textarea{flex:1;width:100%;min-height:20px;padding:2px 0;border:none;background:transparent;font-size:12.5px;color:var(--ink-900);line-height:1.5;resize:vertical;font-family:var(--font-body);}
+  .reminder-banner-body{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;}
+  .reminder-banner textarea{width:100%;min-height:20px;padding:2px 0;border:none;background:transparent;font-size:12.5px;color:var(--ink-900);line-height:1.5;resize:none;overflow:hidden;font-family:var(--font-body);}
   .reminder-banner textarea:focus{outline:none;}
   .reminder-banner textarea::placeholder{color:var(--warning);opacity:.75;font-style:italic;}
+  .reminder-banner-foot{display:flex;align-items:center;gap:6px;}
+  .reminder-banner-foot label{font-size:10px;color:var(--warning);text-transform:uppercase;letter-spacing:.04em;font-weight:700;}
+  .reminder-banner-foot input[type=date]{border:1px solid var(--warning);border-radius:5px;background:var(--surface);color:var(--ink-900);font-size:11px;padding:2px 6px;font-family:var(--font-body);}
 
   /* ---------- Footer / toolbar ---------- */
   .toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
@@ -579,7 +583,13 @@
     </div>
     <div class="reminder-banner" id="reminderBanner">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <textarea id="reminderText" rows="2" placeholder="Aviso para os líderes desta semana… (ex: oferta da Cyrela, direcionar alocação)"></textarea>
+      <div class="reminder-banner-body">
+        <textarea id="reminderText" rows="2" placeholder="Aviso para os líderes desta semana… (ex: oferta da Cyrela, direcionar alocação)"></textarea>
+        <div class="reminder-banner-foot">
+          <label for="reminderExpires">Válido até</label>
+          <input type="date" id="reminderExpires">
+        </div>
+      </div>
     </div>
     <h2 class="title" id="teamTitle"></h2>
     <p class="team-summary" id="teamSummary"></p>
@@ -963,6 +973,7 @@
 
   /* ---------------- Week helpers ---------------- */
   function pad2(n){ return String(n).padStart(2,"0"); }
+  function todayDateStr(){ var d = new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
   function startOfWeek(d){
     var x = new Date(d);
     var day = (x.getDay()+6)%7;
@@ -1080,15 +1091,15 @@
   function scheduleReminderSync(){
     reminderRecentWrite = Date.now();
     clearTimeout(reminderSyncTimer);
-    reminderSyncTimer = setTimeout(function(){ pushReminder(store.reminderText || ""); }, 900);
+    reminderSyncTimer = setTimeout(function(){ pushReminder(store.reminderText || "", store.reminderExpiresAt || ""); }, 900);
   }
-  function pushReminder(text){
+  function pushReminder(text, expiresAt){
     reminderRecentWrite = Date.now();
     setSyncFlag("syncing", "Sincronizando…");
     fetch(sbUrl("app_notices?on_conflict=key"), {
       method: "POST",
       headers: sbHeaders({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
-      body: JSON.stringify([{ key: "team_reminder", value: text, updated_at: new Date().toISOString() }])
+      body: JSON.stringify([{ key: "team_reminder", value: text, expires_at: expiresAt || null, updated_at: new Date().toISOString() }])
     }).then(function(r){
       if(!r.ok) throw new Error("http " + r.status);
       setSyncFlag("synced", "Sincronizado");
@@ -1189,7 +1200,11 @@
 
       var noticeRow = notices.filter(function(n){ return n.key==="team_reminder"; })[0];
       var reminderText = noticeRow ? (noticeRow.value || "") : "";
-      if(Date.now() - reminderRecentWrite < 10000) reminderText = store.reminderText || "";
+      var reminderExpiresAt = noticeRow ? (noticeRow.expires_at || "") : "";
+      if(Date.now() - reminderRecentWrite < 10000){
+        reminderText = store.reminderText || "";
+        reminderExpiresAt = store.reminderExpiresAt || "";
+      }
 
       store.weeks = weeks;
       store.quadrant = quadrant;
@@ -1197,6 +1212,7 @@
       store.pipeline = pipeline;
       store.missoesEntrega = missoesEntrega;
       store.reminderText = reminderText;
+      store.reminderExpiresAt = reminderExpiresAt;
       persist();
       if(!isTypingSomewhere()) renderAll();
       if(!silent) setSyncFlag("synced", "Dados atualizados");
@@ -1298,6 +1314,11 @@
     return String(s).replace(/[&<>"']/g, function(c){
       return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
     });
+  }
+  function autoGrowTextarea(el){
+    if(!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
   }
 
   function renderWeekLabel(){
@@ -1455,9 +1476,19 @@
     var s = teamStats(currentTeam, weekKey);
     $("teamTitle").textContent = currentTeam;
     $("teamSummary").textContent = s.total+" assessor"+(s.total===1?"":"es")+" · "+s.did1a1+" de "+s.total+" fizeram a 1:1 ("+(s.avg===null?"—":s.avg+"%")+") na semana de "+fmtRange(currentMonday);
-    if(document.activeElement !== $("reminderText")) $("reminderText").value = store.reminderText || "";
+    var reminderExpired = !!(store.reminderExpiresAt && store.reminderExpiresAt < todayDateStr());
+    if(document.activeElement !== $("reminderText")) $("reminderText").value = reminderExpired ? "" : (store.reminderText || "");
+    if(document.activeElement !== $("reminderExpires")) $("reminderExpires").value = reminderExpired ? "" : (store.reminderExpiresAt || "");
+    autoGrowTextarea($("reminderText"));
     $("reminderText").oninput = function(){
       store.reminderText = $("reminderText").value;
+      if(reminderExpired) store.reminderExpiresAt = $("reminderExpires").value || "";
+      persist();
+      scheduleReminderSync();
+      autoGrowTextarea($("reminderText"));
+    };
+    $("reminderExpires").onchange = function(){
+      store.reminderExpiresAt = $("reminderExpires").value || "";
       persist();
       scheduleReminderSync();
     };
