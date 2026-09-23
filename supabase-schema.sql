@@ -27,6 +27,16 @@ create table if not exists advisor_meta (
 -- rode so esta linha no SQL Editor do Supabase para adiciona-la sem perder dados:
 -- alter table advisor_meta add column if not exists missoes_entregue jsonb;
 
+-- Avisos/lembretes do gestor para os lideres, exibidos no topo da pagina da
+-- equipe (ex: "estamos com oferta da Cyrela, direcionar alocacao"). Hoje so
+-- existe uma linha (key = 'team_reminder'), mas a tabela ja fica generica
+-- (key/value) caso surjam outros avisos no futuro.
+create table if not exists app_notices (
+  key text primary key,
+  value text default '',
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists pipeline_deals (
   id bigint generated always as identity primary key,
   deal_id text not null unique,
@@ -49,6 +59,7 @@ create table if not exists pipeline_deals (
 alter table weekly_entries enable row level security;
 alter table advisor_meta enable row level security;
 alter table pipeline_deals enable row level security;
+alter table app_notices enable row level security;
 
 create policy "anon full access" on weekly_entries
   for all using (true) with check (true);
@@ -57,4 +68,7 @@ create policy "anon full access" on advisor_meta
   for all using (true) with check (true);
 
 create policy "anon full access" on pipeline_deals
+  for all using (true) with check (true);
+
+create policy "anon full access" on app_notices
   for all using (true) with check (true);
