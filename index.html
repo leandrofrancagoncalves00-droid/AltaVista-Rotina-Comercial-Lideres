@@ -282,7 +282,8 @@
   .fu-btn:hover{border-color:var(--accent);}
   .fu-btn.fu-done.sel{background:var(--success);border-color:var(--success);color:#fff;}
   .fu-btn.fu-notdone.sel{background:var(--critical);border-color:var(--critical);color:#fff;}
-  .fu-resultado{width:100%;min-height:52px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);font-size:12px;resize:vertical;font-family:inherit;}
+  .fu-resultado,.fu-ata-edit{width:100%;min-height:52px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);font-size:12px;resize:vertical;font-family:inherit;}
+  .fu-ata-edit{font-size:12.5px;line-height:1.45;}
   .ph-resultado-label{display:block;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-500);margin:8px 0 4px;}
   .ph-resultado-edit{width:100%;min-height:48px;padding:7px 9px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-size:12px;resize:vertical;font-family:inherit;color:var(--ink-900);}
   .ph-resultado-edit:focus{outline:none;border-color:var(--accent);background:var(--surface);}
@@ -2108,7 +2109,7 @@
       : "O que não foi possível e por quê? Registre para fechar este combinado.";
     return '<div class="followup-card'+stateCls+'" data-week="'+esc(followUp.__weekKey||"")+'">'+
       '<span class="fu-label">Combinado de '+esc(dateLabel)+' — foi realizado?</span>'+
-      '<span class="fu-text">'+esc(followUp.ata)+'</span>'+
+      '<textarea class="fu-ata-edit" data-fu-ata rows="3">'+esc(followUp.ata)+'</textarea>'+
       '<div class="fu-actions">'+
         '<button type="button" class="fu-btn fu-done'+(status==="done"?" sel":"")+'" data-status="done">Realizado</button>'+
         '<button type="button" class="fu-btn fu-notdone'+(status==="not_done"?" sel":"")+'" data-status="not_done">Não realizado</button>'+
@@ -2457,6 +2458,20 @@
         var entry = entryFor(wk, equipe, nome, true);
         entry.items.reuniao11 = entry.items.reuniao11 || { answers:[], ata:"" };
         entry.items.reuniao11.resultado = ta.value;
+        persist();
+        markRecentWrite(wk, equipe, nome);
+        flashSave();
+      });
+      ta.addEventListener("change", function(){ pushEntryForWeek(wk); });
+    });
+
+    Array.prototype.forEach.call(grid.querySelectorAll("textarea[data-fu-ata]"), function(ta){
+      var wk = ta.closest(".followup-card").getAttribute("data-week");
+      if(!wk) return;
+      ta.addEventListener("input", function(){
+        var entry = entryFor(wk, equipe, nome, true);
+        entry.items.reuniao11 = entry.items.reuniao11 || { answers:[], ata:"" };
+        entry.items.reuniao11.ata = ta.value;
         persist();
         markRecentWrite(wk, equipe, nome);
         flashSave();
