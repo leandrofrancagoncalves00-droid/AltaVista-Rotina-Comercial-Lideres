@@ -1850,7 +1850,7 @@
         head.innerHTML =
           '<div class="msv-head-stat msv"><span class="mhs-label">Modelo de servir</span><span class="mhs-value tabular">'+(msvScore===null?"—":msvScore+"%")+'</span>'+msvTrendHtml(msvScore, data.score_prev)+'</div>'+
           '<div class="msv-head-stat saude"><span class="mhs-label">Saúde do cliente</span><span class="mhs-value tabular">'+(saudeIdx===null?"—":saudeIdx+"%")+'</span>'+msvTrendHtml(saudeIdx, data.saude_idx_prev)+'</div>'+
-          '<div class="msv-head-stat combo" title="Modelo de Servir (80%) + Saúde do Cliente (20%)"><span class="mhs-label">Nota final (80/20)</span><span class="mhs-value tabular">'+(combo===null?"—":combo+"%")+'</span>'+msvTrendHtml(combo, comboPrev)+'</div>';
+          '<div class="msv-head-stat combo" title="Modelo de Servir (80%) + Saúde do Cliente (20%)"><span class="mhs-label">Índice de Excelência XP</span><span class="mhs-value tabular">'+(combo===null?"—":combo+"%")+'</span>'+msvTrendHtml(combo, comboPrev)+'</div>';
       } else {
         head.innerHTML = "";
       }
