@@ -1991,6 +1991,13 @@
     persist();
   }
 
+  // Separador de milhar (ponto) enquanto o líder digita o valor do negócio.
+  function formatValorDigits(digits){
+    digits = String(digits||"").replace(/^0+(?=\d)/, "");
+    if(!digits) return "";
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
   function renderPipeline(){
     var list = getPipeline(currentTeam, currentAdvisor);
     var box = $("pipelineList");
@@ -2012,7 +2019,7 @@
             TYPE_OPTIONS.map(function(t){ return '<option value="'+esc(t)+'"'+(tipo===t?' selected':'')+'>'+esc(t)+'</option>'; }).join("")+
           '</select></label>'+
           (showOther ? '<label>Qual?<input type="text" data-deal-field="tipoOutro" placeholder="Especifique" value="'+esc(d.tipoOutro||"")+'"></label>' : '')+
-          '<label>Valor<input type="number" step="0.01" data-deal-field="valor" placeholder="R$ mil" value="'+valor+'"></label>'+
+          '<label>Valor<input type="text" inputmode="decimal" data-deal-field="valor" placeholder="R$ mil" value="'+(valor===""?"":formatValorDigits(String(valor)))+'"></label>'+
           '<label>Estágio<select data-deal-field="estagio">'+
             STAGE_OPTIONS.map(function(s){ return '<option value="'+esc(s)+'"'+(d.estagio===s?' selected':'')+'>'+esc(s)+'</option>'; }).join("")+
           '</select></label>'+
@@ -2028,7 +2035,13 @@
         el.addEventListener(evt, function(){
           var field = el.getAttribute("data-deal-field");
           var list2 = getPipeline(currentTeam, currentAdvisor);
-          list2[idx][field] = el.value;
+          if(field==="valor"){
+            var digits = el.value.replace(/\D/g,"");
+            el.value = formatValorDigits(digits);
+            list2[idx][field] = digits;
+          } else {
+            list2[idx][field] = el.value;
+          }
           setPipeline(currentTeam, currentAdvisor, list2);
           flashSave();
           schedulePipelineSync();
@@ -2793,7 +2806,7 @@
 
   $("addDealBtn").addEventListener("click", function(){
     var list = getPipeline(currentTeam, currentAdvisor);
-    list.push({ id: genId(), cliente:"", tipo:TYPE_OPTIONS[0], valor:"", estagio:STAGE_OPTIONS[0], previsao:"" });
+    list.unshift({ id: genId(), cliente:"", tipo:TYPE_OPTIONS[0], valor:"", estagio:STAGE_OPTIONS[0], previsao:"" });
     setPipeline(currentTeam, currentAdvisor, list);
     renderPipeline();
     pushPipeline(currentTeam, currentAdvisor);
