@@ -259,6 +259,7 @@
   .meeting-top .eyebrow{font-family:var(--font-display);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);}
   .meeting-top h3{font-size:16.5px;color:var(--ink-900);margin-top:2px;}
   .meeting-top .tagline{font-size:12px;color:var(--ink-500);font-style:italic;margin-top:2px;}
+  .meeting-prompt{font-size:12.5px;color:var(--accent-ink);font-style:italic;text-align:right;max-width:230px;line-height:1.35;}
   .meeting-progress{display:flex;align-items:center;gap:10px;}
   .meeting-progress .frac{font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--ink-900);}
   .meeting-progress .bar{width:90px;height:6px;border-radius:999px;background:var(--pending-soft);overflow:hidden;}
@@ -2370,6 +2371,7 @@
         '<div class="titles">'+ICONS[def.key]+
           '<div><div class="eyebrow">Rotina</div><h3>'+esc(def.label)+'</h3><div class="tagline">'+esc(def.tagline)+'</div></div>'+
         '</div>'+
+        (def.key==="indicadoresResultado" ? '<div class="meeting-prompt">Que bom negócio você fez na semana que passou?</div>' : '')+
         (def.hasModelo ? '<div class="meeting-indicator"><label>Modelo de servir</label><div class="row"><input type="number" min="1" max="100" inputmode="numeric" data-meeting-modelo value="'+modelo+'" placeholder="—"><span class="of">/ 100</span></div></div>' : '')+
         (def.hasAta ? meetingHistoryHtml(actionPlanHistory(currentTeam, currentAdvisor, weekKeyFor(currentMonday))) : '')+
       '</div>'+
