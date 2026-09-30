@@ -491,7 +491,7 @@
   .pb-num{font-family:var(--font-mono);font-weight:700;color:var(--ink-500);width:20px;}
   .pb-titulo{display:block;font-weight:600;color:var(--ink-900);font-size:11.5px;}
   .pb-row.added .pb-titulo:after{content:" ✓";color:var(--success);}
-  .pb-combinar{display:block;color:var(--ink-700);font-size:10.5px;margin-top:1px;}
+  .pb-combinar{display:block;color:var(--ink-700);font-size:10.5px;margin-top:1px;white-space:pre-line;line-height:1.4;}
   .pb-meta{color:var(--ink-500);font-size:9.5px;white-space:nowrap;text-align:right;}
 
   #statusPanelList{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;}
@@ -2265,48 +2265,23 @@
 
   // Playbook Comercial · Modelo de Servir 2.0 (AltaVista)
   var MODELO_SERVIR_PLAYBOOK = [
-    { cat:"Financial Planning", sub:"Conhecer o cliente em profundidade e construir um plano de vida (25 pontos)", items:[
-      {num:1, titulo:"Financial Planning atualizado", combinar:"Realizar o Financial Planning ou atualizar o existente.", meta:"25 pontos"},
-      {num:2, titulo:"Objetivos e perfil de risco", combinar:"Entender objetivos de vida e perfil de risco.", meta:"25 pontos"},
-      {num:3, titulo:"Capacidade de aporte", combinar:"Identificar capacidade de aporte e horizonte de investimento.", meta:"25 pontos"},
-      {num:4, titulo:"Patrimônio total mapeado", combinar:"Mapear patrimônio total (com e sem XP).", meta:"25 pontos"},
-      {num:5, titulo:"Plano de ação com próximos passos", combinar:"Construir plano de ação com próximos passos.", meta:"25 pontos"}
+    { cat:"Financial Planning", sub:"Entender objetivos, perfil de risco e necessidades de longo prazo para orientar decisões e aumentar a alocação (25 pontos)", items:[
+      {num:1, titulo:"Selecionar e abordar clientes para Financial Planning", combinar:"Selecionar clientes prioritários (mudança de vida, patrimônio externo ou necessidade de planejamento) e realizar abordagens para agendar e executar o Financial Planning.\nQuando: seleção na 2ª feira; contatos e agendamentos durante a semana.\nEntrega: clientes selecionados, contatos realizados, reuniões realizadas, FPs concluídos e R$ de oportunidades geradas.", meta:"25 pontos"}
     ]},
-    { cat:"Open Investment", sub:"Ampliar o conhecimento sobre o patrimônio total do cliente e identificar oportunidades de consolidação (25 pontos)", items:[
-      {num:6, titulo:"Compartilhamento via Open Finance", combinar:"Solicitar o compartilhamento dos investimentos via Open Finance.", meta:"25 pontos"},
-      {num:7, titulo:"Benefícios do compartilhamento", combinar:"Explicar os benefícios do compartilhamento de dados.", meta:"25 pontos"},
-      {num:8, titulo:"Patrimônio externo comparado", combinar:"Analisar o patrimônio externo e comparar com a carteira atual.", meta:"25 pontos"},
-      {num:9, titulo:"Portabilidade de vencimentos", combinar:"Identificar vencimentos e oportunidades de portabilidade.", meta:"25 pontos"},
-      {num:10, titulo:"Proposta de consolidação", combinar:"Construir proposta de consolidação e estratégia.", meta:"25 pontos"}
+    { cat:"Open Investment", sub:"Mapear investimentos fora da XP e identificar oportunidades de consolidação (25 pontos)", items:[
+      {num:2, titulo:"Mapear patrimônio externo via Open Finance", combinar:"Escolher clientes com baixo share of wallet, solicitar Open Finance, analisar o patrimônio externo e comparar com a carteira atual, e apresentar proposta de consolidação.\nQuando: mapeamento na 2ª feira; abordagem até 4ª feira; follow-up até 6ª feira.\nEntrega: clientes mapeados, Open Finance solicitados e concluídos, patrimônio externo identificado e em negociação.", meta:"25 pontos"}
     ]},
-    { cat:"Conta acessada no Hub", sub:"Acompanhar a conta do cliente regularmente e identificar oportunidades de atuação (15 pontos)", items:[
-      {num:11, titulo:"Acesso semanal no Hub", combinar:"Acessar a conta do cliente no Hub semanalmente.", meta:"15 pontos"},
-      {num:12, titulo:"Saldos e movimentações", combinar:"Analisar saldos, posições e movimentações.", meta:"15 pontos"},
-      {num:13, titulo:"Recursos de baixa eficiência", combinar:"Identificar recursos em conta corrente ou aplicações de baixa eficiência.", meta:"15 pontos"},
-      {num:14, titulo:"Vencimentos e oportunidades", combinar:"Mapear vencimentos e oportunidades de investimento.", meta:"15 pontos"},
-      {num:15, titulo:"Registro no CRM", combinar:"Registrar insights e ações no CRM.", meta:"15 pontos"}
+    { cat:"Conta acessada no Hub", sub:"Acessar a conta regularmente, conhecer suas posições e identificar oportunidades de serviço e investimento (15 pontos)", items:[
+      {num:3, titulo:"Revisar a conta do cliente no Hub", combinar:"Acessar a conta do cliente no Hub, analisar saldos, posições, vencimentos e movimentações, identificar oportunidades e registrar tudo no CRM.\nQuando: acompanhamento semanal, com foco na carteira de clientes prioritários.\nEntrega: contas analisadas, oportunidades identificadas, R$ de pipeline criado e reuniões geradas.", meta:"15 pontos"}
     ]},
     { cat:"XPerformance", sub:"Revisar a performance da carteira e gerar insights para realocação e novos investimentos (10 pontos)", items:[
-      {num:16, titulo:"Relatório XPerformance", combinar:"Enviar o relatório XPerformance periodicamente.", meta:"10 pontos"},
-      {num:17, titulo:"Resultado da carteira explicado", combinar:"Apresentar e explicar o resultado da carteira.", meta:"10 pontos"},
-      {num:18, titulo:"Comparação com benchmarks", combinar:"Comparar com benchmarks adequados.", meta:"10 pontos"},
-      {num:19, titulo:"Oportunidades de melhoria", combinar:"Identificar oportunidades de melhoria.", meta:"10 pontos"},
-      {num:20, titulo:"Ajustes de alocação", combinar:"Discutir ajustes de alocação e rebalanceamento.", meta:"10 pontos"}
+      {num:4, titulo:"Enviar e discutir o relatório XPerformance", combinar:"Enviar mensalmente o relatório de XPerformance com mensagem personalizada, explicando o resultado, comparativos e oportunidades de realocação, e agendar reunião de revisão para discutir recomendações e próximos passos.\nQuando: envio mensal, entre o 1º e o 5º dia útil do mês; follow-up e agendamento de reuniões na mesma semana.\nEntrega: relatórios enviados, reuniões realizadas, propostas de realocação e R$ movimentado.", meta:"10 pontos"}
     ]},
-    { cat:"Ordem enviada e aprovada", sub:"Garantir que as recomendações sejam executadas, com envio e aprovação de ordens (25 pontos)", items:[
-      {num:21, titulo:"Recomendações personalizadas", combinar:"Apresentar recomendações personalizadas ao cliente.", meta:"25 pontos"},
-      {num:22, titulo:"Ordem enviada e acompanhada", combinar:"Enviar a ordem e acompanhar a aprovação.", meta:"25 pontos"},
-      {num:23, titulo:"Novas aplicações direcionadas", combinar:"Direcionar novas aplicações (RF, RV, Fundos, Previdência, COE).", meta:"25 pontos"},
-      {num:24, titulo:"Vencimentos para realocação", combinar:"Aproveitar vencimentos para realocação de recursos.", meta:"25 pontos"},
-      {num:25, titulo:"Racional e follow-up registrados", combinar:"Registrar o racional da recomendação e o follow-up.", meta:"25 pontos"}
+    { cat:"Ordem enviada e aprovada", sub:"Garantir que as recomendações sejam executadas, com envio e aprovação de ordens de investimento (25 pontos)", items:[
+      {num:5, titulo:"Recomendar, enviar e acompanhar a ordem", combinar:"Apresentar recomendações personalizadas ao cliente, explicar o racional, enviar a ordem e acompanhar a aprovação; em caso de não execução, registrar o motivo e o próximo passo no CRM.\nQuando: acompanhamento durante a semana.\nEntrega: recomendações apresentadas, ordens enviadas e aprovadas, ordens executadas e taxa de conversão.", meta:"25 pontos"}
     ]},
-    { cat:"Atividade de Relacionamento", sub:"Manter o cliente ativo e engajado, com Expert Allocation e ações de relacionamento (25 pontos, extra)", items:[
-      {num:26, titulo:"Expert Allocation por perfil", combinar:"Realizar atividades de Expert Allocation com foco no perfil do cliente.", meta:"25 pontos (extra)"},
-      {num:27, titulo:"Atividades críticas de conversão", combinar:"Executar atividades críticas com foco em conversão.", meta:"25 pontos (extra)"},
-      {num:28, titulo:"Contatos proativos", combinar:"Fazer contatos proativos (e-mail, telefone, reunião).", meta:"25 pontos (extra)"},
-      {num:29, titulo:"Boas-vindas a novos clientes", combinar:"Dar boas-vindas para novos clientes.", meta:"25 pontos (extra)"},
-      {num:30, titulo:"Gatilhos de conversa", combinar:"Utilizar gatilhos de conversa (vencimentos, notícias, eventos).", meta:"25 pontos (extra)"},
-      {num:31, titulo:"Interações registradas no CRM", combinar:"Registrar interações no CRM.", meta:"25 pontos (extra)"}
+    { cat:"Atividade de Relacionamento", sub:"Gerar proximidade, engajamento e novas oportunidades de negócio (25 pontos, extra)", items:[
+      {num:6, titulo:"Atuar diariamente no CRM e no Expert Allocation", combinar:"Acessar o CRM diariamente e atuar nas atividades críticas e nas atividades de Expert Allocation, realizando contatos proativos com pauta definida (revisão, vencimento, notícia, indicação ou nova oportunidade) para gerar relacionamento e novos negócios.\nQuando: acesso diário ao CRM; execução das atividades ao longo da semana.\nEntrega: atividades realizadas, clientes contatados, reuniões geradas, indicações e R$ de pipeline.", meta:"25 pontos (extra)"}
     ]}
   ];
 
