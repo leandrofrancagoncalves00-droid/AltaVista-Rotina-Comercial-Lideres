@@ -2443,7 +2443,9 @@
       var quemHtml = c.quem.map(function(t){
         return '<li class="pb-row pb-pick-item" data-added-text="'+esc(c.cat+" — Quem: "+t)+'">'+esc(t)+'</li>';
       }).join("");
-      var entregaHtml = c.entrega.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join("");
+      var entregaHtml = c.entrega.map(function(t){
+        return '<li class="pb-row pb-pick-item" data-added-text="'+esc(c.cat+" — Entrega: "+t)+'">'+esc(t)+'</li>';
+      }).join("");
       return '<div class="pb-cat">'+
         '<div class="pb-cat-head" style="background:'+col.bg+';color:'+col.fg+'"><span class="pb-cat-title">'+esc(c.cat)+'</span><span class="pb-cat-pts">'+esc(c.pontos)+'</span></div>'+
         '<div class="pb-rich-body">'+
@@ -2451,7 +2453,7 @@
           '<div class="pb-subsec"><span class="pb-subsec-label">Quem trabalhar (clique para combinar)</span><ul class="pb-pick-list">'+quemHtml+'</ul></div>'+
           '<div class="pb-subsec"><span class="pb-subsec-label">Como executar (clique para combinar)</span><div class="pb-como-list">'+comoRows+'</div></div>'+
           '<div class="pb-subsec"><span class="pb-subsec-label">Quando executar (clique para combinar)</span><p class="pb-row pb-pick-item pb-quando-text" data-added-text="'+esc(c.cat+" — Quando: "+c.quando)+'">'+esc(c.quando)+'</p></div>'+
-          '<div class="pb-subsec"><span class="pb-subsec-label">O que entregar no 1x1</span><ul>'+entregaHtml+'</ul></div>'+
+          '<div class="pb-subsec"><span class="pb-subsec-label">O que entregar no 1x1 (clique para combinar)</span><ul class="pb-pick-list">'+entregaHtml+'</ul></div>'+
           '<div class="pb-subsec"><span class="pb-subsec-label">Principais indicadores</span><p class="pb-indicadores">'+esc(c.indicadores.join(" · "))+'</p></div>'+
         '</div>'+
       '</div>';
