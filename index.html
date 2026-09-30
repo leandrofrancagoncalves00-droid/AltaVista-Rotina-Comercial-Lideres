@@ -501,7 +501,14 @@
   .pb-subsec-label{display:block;font-family:var(--font-display);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-500);margin-bottom:4px;}
   .pb-subsec ul{margin:0;padding-left:16px;font-size:11px;color:var(--ink-700);line-height:1.55;}
   .pb-subsec ul li{margin-bottom:1px;}
-  .pb-quando-text{font-size:11px;color:var(--ink-700);line-height:1.5;margin:0;}
+  .pb-pick-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+  .pb-pick-list .pb-pick-item{padding:5px 6px;border-bottom:1px solid var(--border);margin:0;}
+  .pb-pick-list .pb-pick-item:last-child{border-bottom:none;}
+  .pb-pick-item{font-size:11px;color:var(--ink-700);line-height:1.5;cursor:pointer;}
+  .pb-pick-item:hover{background:var(--accent-soft);}
+  .pb-pick-item.added{background:var(--success-soft);}
+  .pb-pick-item.added:after{content:" ✓";color:var(--success);font-weight:700;}
+  .pb-quando-text{margin:0;padding:5px 6px;border-radius:4px;}
   .pb-indicadores{font-size:10.5px;color:var(--ink-500);line-height:1.55;margin:0;}
   .pb-como-list{display:flex;flex-direction:column;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
   .pb-como-row{display:flex;gap:9px;align-items:flex-start;padding:6px 2px;border-bottom:1px solid var(--border);cursor:pointer;}
@@ -2428,20 +2435,22 @@
       if(!como.length) return "";
       var col = PB_CAT_COLORS[c.cat] || {bg:"#3a3a3a", fg:"#fff"};
       var comoRows = como.map(function(it){
-        return '<div class="pb-row pb-como-row" data-added-text="'+esc(c.cat+" — "+it.text+" (Meta: "+c.pontos+")")+'">'+
+        return '<div class="pb-row pb-como-row" data-added-text="'+esc(c.cat+" — Como: "+it.text)+'">'+
           '<span class="pb-como-num tabular">'+it.num+'</span>'+
           '<span class="pb-como-text">'+esc(it.text)+'</span>'+
         '</div>';
       }).join("");
-      var quemHtml = c.quem.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join("");
+      var quemHtml = c.quem.map(function(t){
+        return '<li class="pb-row pb-pick-item" data-added-text="'+esc(c.cat+" — Quem: "+t)+'">'+esc(t)+'</li>';
+      }).join("");
       var entregaHtml = c.entrega.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join("");
       return '<div class="pb-cat">'+
         '<div class="pb-cat-head" style="background:'+col.bg+';color:'+col.fg+'"><span class="pb-cat-title">'+esc(c.cat)+'</span><span class="pb-cat-pts">'+esc(c.pontos)+'</span></div>'+
         '<div class="pb-rich-body">'+
           '<p class="pb-objetivo">'+esc(c.objetivo)+'</p>'+
-          '<div class="pb-subsec"><span class="pb-subsec-label">Quem trabalhar</span><ul>'+quemHtml+'</ul></div>'+
+          '<div class="pb-subsec"><span class="pb-subsec-label">Quem trabalhar (clique para combinar)</span><ul class="pb-pick-list">'+quemHtml+'</ul></div>'+
           '<div class="pb-subsec"><span class="pb-subsec-label">Como executar (clique para combinar)</span><div class="pb-como-list">'+comoRows+'</div></div>'+
-          '<div class="pb-subsec"><span class="pb-subsec-label">Quando executar</span><p class="pb-quando-text">'+esc(c.quando)+'</p></div>'+
+          '<div class="pb-subsec"><span class="pb-subsec-label">Quando executar (clique para combinar)</span><p class="pb-row pb-pick-item pb-quando-text" data-added-text="'+esc(c.cat+" — Quando: "+c.quando)+'">'+esc(c.quando)+'</p></div>'+
           '<div class="pb-subsec"><span class="pb-subsec-label">O que entregar no 1x1</span><ul>'+entregaHtml+'</ul></div>'+
           '<div class="pb-subsec"><span class="pb-subsec-label">Principais indicadores</span><p class="pb-indicadores">'+esc(c.indicadores.join(" · "))+'</p></div>'+
         '</div>'+
