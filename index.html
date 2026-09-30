@@ -2263,7 +2263,54 @@
     ]}
   ];
 
-  var PLAYBOOKS = { captacao: CAPTACAO_PLAYBOOK };
+  // Playbook Comercial · Modelo de Servir 2.0 (AltaVista)
+  var MODELO_SERVIR_PLAYBOOK = [
+    { cat:"Financial Planning", sub:"Conhecer o cliente em profundidade e construir um plano de vida (25 pontos)", items:[
+      {num:1, titulo:"Financial Planning atualizado", combinar:"Realizar o Financial Planning ou atualizar o existente.", meta:"25 pontos"},
+      {num:2, titulo:"Objetivos e perfil de risco", combinar:"Entender objetivos de vida e perfil de risco.", meta:"25 pontos"},
+      {num:3, titulo:"Capacidade de aporte", combinar:"Identificar capacidade de aporte e horizonte de investimento.", meta:"25 pontos"},
+      {num:4, titulo:"Patrimônio total mapeado", combinar:"Mapear patrimônio total (com e sem XP).", meta:"25 pontos"},
+      {num:5, titulo:"Plano de ação com próximos passos", combinar:"Construir plano de ação com próximos passos.", meta:"25 pontos"}
+    ]},
+    { cat:"Open Investment", sub:"Ampliar o conhecimento sobre o patrimônio total do cliente e identificar oportunidades de consolidação (25 pontos)", items:[
+      {num:6, titulo:"Compartilhamento via Open Finance", combinar:"Solicitar o compartilhamento dos investimentos via Open Finance.", meta:"25 pontos"},
+      {num:7, titulo:"Benefícios do compartilhamento", combinar:"Explicar os benefícios do compartilhamento de dados.", meta:"25 pontos"},
+      {num:8, titulo:"Patrimônio externo comparado", combinar:"Analisar o patrimônio externo e comparar com a carteira atual.", meta:"25 pontos"},
+      {num:9, titulo:"Portabilidade de vencimentos", combinar:"Identificar vencimentos e oportunidades de portabilidade.", meta:"25 pontos"},
+      {num:10, titulo:"Proposta de consolidação", combinar:"Construir proposta de consolidação e estratégia.", meta:"25 pontos"}
+    ]},
+    { cat:"Conta acessada no Hub", sub:"Acompanhar a conta do cliente regularmente e identificar oportunidades de atuação (15 pontos)", items:[
+      {num:11, titulo:"Acesso semanal no Hub", combinar:"Acessar a conta do cliente no Hub semanalmente.", meta:"15 pontos"},
+      {num:12, titulo:"Saldos e movimentações", combinar:"Analisar saldos, posições e movimentações.", meta:"15 pontos"},
+      {num:13, titulo:"Recursos de baixa eficiência", combinar:"Identificar recursos em conta corrente ou aplicações de baixa eficiência.", meta:"15 pontos"},
+      {num:14, titulo:"Vencimentos e oportunidades", combinar:"Mapear vencimentos e oportunidades de investimento.", meta:"15 pontos"},
+      {num:15, titulo:"Registro no CRM", combinar:"Registrar insights e ações no CRM.", meta:"15 pontos"}
+    ]},
+    { cat:"XPerformance", sub:"Revisar a performance da carteira e gerar insights para realocação e novos investimentos (10 pontos)", items:[
+      {num:16, titulo:"Relatório XPerformance", combinar:"Enviar o relatório XPerformance periodicamente.", meta:"10 pontos"},
+      {num:17, titulo:"Resultado da carteira explicado", combinar:"Apresentar e explicar o resultado da carteira.", meta:"10 pontos"},
+      {num:18, titulo:"Comparação com benchmarks", combinar:"Comparar com benchmarks adequados.", meta:"10 pontos"},
+      {num:19, titulo:"Oportunidades de melhoria", combinar:"Identificar oportunidades de melhoria.", meta:"10 pontos"},
+      {num:20, titulo:"Ajustes de alocação", combinar:"Discutir ajustes de alocação e rebalanceamento.", meta:"10 pontos"}
+    ]},
+    { cat:"Ordem enviada e aprovada", sub:"Garantir que as recomendações sejam executadas, com envio e aprovação de ordens (25 pontos)", items:[
+      {num:21, titulo:"Recomendações personalizadas", combinar:"Apresentar recomendações personalizadas ao cliente.", meta:"25 pontos"},
+      {num:22, titulo:"Ordem enviada e acompanhada", combinar:"Enviar a ordem e acompanhar a aprovação.", meta:"25 pontos"},
+      {num:23, titulo:"Novas aplicações direcionadas", combinar:"Direcionar novas aplicações (RF, RV, Fundos, Previdência, COE).", meta:"25 pontos"},
+      {num:24, titulo:"Vencimentos para realocação", combinar:"Aproveitar vencimentos para realocação de recursos.", meta:"25 pontos"},
+      {num:25, titulo:"Racional e follow-up registrados", combinar:"Registrar o racional da recomendação e o follow-up.", meta:"25 pontos"}
+    ]},
+    { cat:"Atividade de Relacionamento", sub:"Manter o cliente ativo e engajado, com Expert Allocation e ações de relacionamento (25 pontos, extra)", items:[
+      {num:26, titulo:"Expert Allocation por perfil", combinar:"Realizar atividades de Expert Allocation com foco no perfil do cliente.", meta:"25 pontos (extra)"},
+      {num:27, titulo:"Atividades críticas de conversão", combinar:"Executar atividades críticas com foco em conversão.", meta:"25 pontos (extra)"},
+      {num:28, titulo:"Contatos proativos", combinar:"Fazer contatos proativos (e-mail, telefone, reunião).", meta:"25 pontos (extra)"},
+      {num:29, titulo:"Boas-vindas a novos clientes", combinar:"Dar boas-vindas para novos clientes.", meta:"25 pontos (extra)"},
+      {num:30, titulo:"Gatilhos de conversa", combinar:"Utilizar gatilhos de conversa (vencimentos, notícias, eventos).", meta:"25 pontos (extra)"},
+      {num:31, titulo:"Interações registradas no CRM", combinar:"Registrar interações no CRM.", meta:"25 pontos (extra)"}
+    ]}
+  ];
+
+  var PLAYBOOKS = { captacao: CAPTACAO_PLAYBOOK, modelo_servir: MODELO_SERVIR_PLAYBOOK };
 
   var PB_CAT_COLORS = {
     "Base atual": {bg:"#1f3a63", fg:"#dce6ff"},
@@ -2274,7 +2321,13 @@
     "Empresários e PJ": {bg:"#b5651d", fg:"#fbe6d2"},
     "Eventos de liquidez": {bg:"#1f4fa8", fg:"#dbe7ff"},
     "Verticais e segmentos": {bg:"#a84a24", fg:"#fbe2d4"},
-    "Internacional": {bg:"#152238", fg:"#d8e0f0"}
+    "Internacional": {bg:"#152238", fg:"#d8e0f0"},
+    "Financial Planning": {bg:"#1f3a63", fg:"#dce6ff"},
+    "Open Investment": {bg:"#1f6b4a", fg:"#dcf5e8"},
+    "Conta acessada no Hub": {bg:"#1f5f8b", fg:"#dcf0fb"},
+    "XPerformance": {bg:"#a9721a", fg:"#fbeed1"},
+    "Ordem enviada e aprovada": {bg:"#1f4fa8", fg:"#dbe7ff"},
+    "Atividade de Relacionamento": {bg:"#5b3a94", fg:"#e9defd"}
   };
 
   function playbookHtml(key, filterText){
