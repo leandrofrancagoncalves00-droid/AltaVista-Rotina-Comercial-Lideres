@@ -494,6 +494,24 @@
   .pb-combinar{display:block;color:var(--ink-700);font-size:10.5px;margin-top:1px;white-space:pre-line;line-height:1.4;}
   .pb-meta{color:var(--ink-500);font-size:9.5px;white-space:nowrap;text-align:right;}
 
+  .pb-grid-rich{display:flex;flex-direction:column;gap:14px;}
+  .pb-cat-pts{font-size:10px;opacity:.85;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+  .pb-rich-body{background:var(--surface);padding:11px 13px 13px;display:flex;flex-direction:column;gap:10px;}
+  .pb-objetivo{font-size:11.5px;color:var(--ink-700);line-height:1.45;margin:0;}
+  .pb-subsec-label{display:block;font-family:var(--font-display);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-500);margin-bottom:4px;}
+  .pb-subsec ul{margin:0;padding-left:16px;font-size:11px;color:var(--ink-700);line-height:1.55;}
+  .pb-subsec ul li{margin-bottom:1px;}
+  .pb-quando-text{font-size:11px;color:var(--ink-700);line-height:1.5;margin:0;}
+  .pb-indicadores{font-size:10.5px;color:var(--ink-500);line-height:1.55;margin:0;}
+  .pb-como-list{display:flex;flex-direction:column;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+  .pb-como-row{display:flex;gap:9px;align-items:flex-start;padding:6px 2px;border-bottom:1px solid var(--border);cursor:pointer;}
+  .pb-como-row:last-child{border-bottom:none;}
+  .pb-como-row:hover{background:var(--accent-soft);}
+  .pb-como-row.added{background:var(--success-soft);}
+  .pb-como-num{font-family:var(--font-mono);font-weight:700;font-size:11px;color:var(--ink-500);flex:none;width:16px;padding-top:1px;}
+  .pb-como-text{font-size:11.5px;color:var(--ink-900);line-height:1.4;}
+  .pb-como-row.added .pb-como-text:after{content:" ✓";color:var(--success);font-weight:700;}
+
   #statusPanelList{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;}
   .plan-history-list{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow-y:auto;}
   .ph-row{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;background:var(--surface-2);display:flex;flex-direction:column;gap:5px;}
@@ -2265,24 +2283,90 @@
 
   // Playbook Comercial · Modelo de Servir 2.0 (AltaVista)
   var MODELO_SERVIR_PLAYBOOK = [
-    { cat:"Financial Planning", sub:"Entender objetivos, perfil de risco e necessidades de longo prazo para orientar decisões e aumentar a alocação (25 pontos)", items:[
-      {num:1, titulo:"Selecionar e abordar clientes para Financial Planning", combinar:"Selecionar clientes prioritários (mudança de vida, patrimônio externo ou necessidade de planejamento) e realizar abordagens para agendar e executar o Financial Planning.\nQuando: seleção na 2ª feira; contatos e agendamentos durante a semana.\nEntrega: clientes selecionados, contatos realizados, reuniões realizadas, FPs concluídos e R$ de oportunidades geradas.", meta:"25 pontos"}
-    ]},
-    { cat:"Open Investment", sub:"Mapear investimentos fora da XP e identificar oportunidades de consolidação (25 pontos)", items:[
-      {num:2, titulo:"Mapear patrimônio externo via Open Finance", combinar:"Escolher clientes com baixo share of wallet, solicitar Open Finance, analisar o patrimônio externo e comparar com a carteira atual, e apresentar proposta de consolidação.\nQuando: mapeamento na 2ª feira; abordagem até 4ª feira; follow-up até 6ª feira.\nEntrega: clientes mapeados, Open Finance solicitados e concluídos, patrimônio externo identificado e em negociação.", meta:"25 pontos"}
-    ]},
-    { cat:"Conta acessada no Hub", sub:"Acessar a conta regularmente, conhecer suas posições e identificar oportunidades de serviço e investimento (15 pontos)", items:[
-      {num:3, titulo:"Revisar a conta do cliente no Hub", combinar:"Acessar a conta do cliente no Hub, analisar saldos, posições, vencimentos e movimentações, identificar oportunidades e registrar tudo no CRM.\nQuando: acompanhamento semanal, com foco na carteira de clientes prioritários.\nEntrega: contas analisadas, oportunidades identificadas, R$ de pipeline criado e reuniões geradas.", meta:"15 pontos"}
-    ]},
-    { cat:"XPerformance", sub:"Revisar a performance da carteira e gerar insights para realocação e novos investimentos (10 pontos)", items:[
-      {num:4, titulo:"Enviar e discutir o relatório XPerformance", combinar:"Enviar mensalmente o relatório de XPerformance com mensagem personalizada, explicando o resultado, comparativos e oportunidades de realocação, e agendar reunião de revisão para discutir recomendações e próximos passos.\nQuando: envio mensal, entre o 1º e o 5º dia útil do mês; follow-up e agendamento de reuniões na mesma semana.\nEntrega: relatórios enviados, reuniões realizadas, propostas de realocação e R$ movimentado.", meta:"10 pontos"}
-    ]},
-    { cat:"Ordem enviada e aprovada", sub:"Garantir que as recomendações sejam executadas, com envio e aprovação de ordens de investimento (25 pontos)", items:[
-      {num:5, titulo:"Recomendar, enviar e acompanhar a ordem", combinar:"Apresentar recomendações personalizadas ao cliente, explicar o racional, enviar a ordem e acompanhar a aprovação; em caso de não execução, registrar o motivo e o próximo passo no CRM.\nQuando: acompanhamento durante a semana.\nEntrega: recomendações apresentadas, ordens enviadas e aprovadas, ordens executadas e taxa de conversão.", meta:"25 pontos"}
-    ]},
-    { cat:"Atividade de Relacionamento", sub:"Gerar proximidade, engajamento e novas oportunidades de negócio (25 pontos, extra)", items:[
-      {num:6, titulo:"Atuar diariamente no CRM e no Expert Allocation", combinar:"Acessar o CRM diariamente e atuar nas atividades críticas e nas atividades de Expert Allocation, realizando contatos proativos com pauta definida (revisão, vencimento, notícia, indicação ou nova oportunidade) para gerar relacionamento e novos negócios.\nQuando: acesso diário ao CRM; execução das atividades ao longo da semana.\nEntrega: atividades realizadas, clientes contatados, reuniões geradas, indicações e R$ de pipeline.", meta:"25 pontos (extra)"}
-    ]}
+    { cat:"Financial Planning", pontos:"25 pontos",
+      objetivo:"Entender objetivos, perfil de risco e necessidades de longo prazo para orientar decisões e aumentar a alocação, a proteção e a recorrência.",
+      quem:["Clientes sem FP atualizado.","Clientes com mudança de vida (casamento, filhos, venda de empresa).","Clientes com patrimônio relevante ou potencial de aporte.","Clientes com baixa diversificação ou sem planejamento sucessório."],
+      como:[
+        {num:1, text:"Selecionar lista de clientes prioritários."},
+        {num:2, text:"Preparar a reunião (dados, objetivos, cenário familiar e patrimonial)."},
+        {num:3, text:"Realizar/atualizar o Financial Planning."},
+        {num:4, text:"Identificar oportunidades de alocação, proteção e consolidação."},
+        {num:5, text:"Registrar no CRM e definir próximos passos comerciais."}
+      ],
+      quando:"Seleção na 2ª feira. Contatos até 3ª feira. Reuniões durante a semana. Follow-up até 48h.",
+      entrega:["Lista de clientes trabalhados.","Reuniões realizadas.","FPs concluídos/atualizados.","Oportunidades registradas no CRM.","R$ de oportunidades geradas."],
+      indicadores:["Clientes selecionados","Contatos","Reuniões","FPs concluídos","R$ de oportunidades","R$ convertido"]
+    },
+    { cat:"Open Investment", pontos:"25 pontos",
+      objetivo:"Mapear investimentos fora da XP, identificar oportunidades de consolidação e aumentar a alocação.",
+      quem:["Clientes com baixo share of wallet.","Clientes com patrimônio relevante.","Clientes que utilizam outras instituições.","Clientes com vencimentos relevantes em outras casas."],
+      como:[
+        {num:6, text:"Selecionar clientes prioritários."},
+        {num:7, text:"Solicitar Open Finance e explicar os benefícios da consolidação."},
+        {num:8, text:"Analisar o patrimônio externo (produtos, prazos, taxas, concentração)."},
+        {num:9, text:"Comparar com a carteira atual e identificar oportunidades."},
+        {num:10, text:"Apresentar proposta de consolidação e registrar no CRM."}
+      ],
+      quando:"Mapeamento na 2ª feira. Solicitar Open Finance até 4ª feira. Análise e follow-up até 6ª feira.",
+      entrega:["Lista de clientes mapeados.","Open Finance solicitados e concluídos.","Patrimônio externo identificado.","Propostas apresentadas.","R$ de oportunidades e negociações."],
+      indicadores:["Clientes mapeados","Compartilhamentos","Propostas","R$ em pipeline","R$ captado"]
+    },
+    { cat:"Conta acessada no Hub", pontos:"15 pontos",
+      objetivo:"Acompanhar a conta do cliente regularmente, conhecer a situação atual e identificar oportunidades de serviço e investimento.",
+      quem:["Carteira de clientes prioritários.","Clientes com movimentação recente ou saldo parado.","Clientes com vencimentos próximos.","Clientes com produtos inadequados ou baixa eficiência."],
+      como:[
+        {num:11, text:"Acessar a conta do cliente no Hub."},
+        {num:12, text:"Analisar saldo, posições, movimentações, vencimentos e rentabilidade."},
+        {num:13, text:"Identificar produtos de baixa eficiência e oportunidades."},
+        {num:14, text:"Contatar o cliente e apresentar insights."},
+        {num:15, text:"Registrar a oportunidade no CRM."}
+      ],
+      quando:"Acompanhamento semanal da carteira definida no 1x1. Toda oportunidade identificada deve receber contato na mesma semana.",
+      entrega:["Contas analisadas.","Oportunidades identificadas.","Contatos realizados.","Reuniões agendadas.","R$ de pipeline criado."],
+      indicadores:["Contas acessadas","Oportunidades","Clientes contatados","Reuniões","R$ de pipeline","R$ convertido"]
+    },
+    { cat:"XPerformance", pontos:"10 pontos",
+      objetivo:"Revisar a performance da carteira e gerar insights para realocação e novos investimentos.",
+      quem:["Toda a base de clientes (envio mensal).","Priorizar clientes com maior patrimônio.","Clientes com necessidade de revisão.","Clientes com oportunidades ou de rebalanceamento."],
+      como:[
+        {num:16, text:"Enviar mensalmente o relatório de XPerformance para todos os clientes (entre o 1º e o 5º dia útil)."},
+        {num:17, text:"Acompanhar com mensagem personalizada explicando o resultado."},
+        {num:18, text:"Selecionar clientes com oportunidade de revisão de carteira."},
+        {num:19, text:"Realizar reunião para discutir benchmark, realocação e novos investimentos."},
+        {num:20, text:"Registrar recomendações e oportunidades no CRM."}
+      ],
+      quando:"Envio mensal: 1º ao 5º dia útil do mês. Follow-up e agendamento de reuniões na mesma semana.",
+      entrega:["Relatórios enviados.","Clientes que responderam.","Reuniões realizadas.","Propostas de realocação.","R$ de realocação e novos aportes."],
+      indicadores:["% da base que recebeu","Respostas","Reuniões","Propostas","R$ de novos aportes","R$ convertido"]
+    },
+    { cat:"Ordem enviada e aprovada", pontos:"25 pontos",
+      objetivo:"Garantir que as recomendações sejam executadas, com envio e aprovação de ordens de investimento.",
+      quem:["Clientes com recomendações pendentes.","Clientes com vencimentos de produtos.","Clientes com oportunidades identificadas no Hub, XPerformance ou FP.","Clientes com perfil adequado para produtos em andamento."],
+      como:[
+        {num:21, text:"Revisar recomendações pendentes."},
+        {num:22, text:"Apresentar o racional, risco e adequação."},
+        {num:23, text:"Enviar a ordem e acompanhar aprovação."},
+        {num:24, text:"Para não executadas, registrar o motivo e o próximo passo."},
+        {num:25, text:"Aproveitar vencimentos e revisões para novas recomendações."}
+      ],
+      quando:"Acompanhamento diário das pendências. Revisão consolidada no fim da semana.",
+      entrega:["Recomendações apresentadas.","Ordens enviadas.","Ordens aprovadas.","Ordens não aprovadas (com motivo).","R$ executado."],
+      indicadores:["Recomendações","Ordens enviadas","Ordens aprovadas","Taxa de conversão","R$ executado"]
+    },
+    { cat:"Atividade de Relacionamento", pontos:"25 pontos (extra)",
+      objetivo:"Gerar proximidade, engajamento e novos negócios, utilizando as atividades críticas e o Expert Allocation.",
+      quem:["Clientes indicados nas atividades críticas.","Clientes sugeridos no Expert Allocation.","Clientes sem contato recente.","Clientes com potencial comercial (planejamento, vencimento, produto, patrimônio externo, indicação)."],
+      como:[
+        {num:26, text:"Acessar o CRM diariamente."},
+        {num:27, text:"Atuar nas Atividades Críticas e no Expert Allocation."},
+        {num:28, text:"Realizar contato proativo com pauta definida (revisão, vencimento, notícia, evento, indicação ou nova oportunidade)."},
+        {num:29, text:"Registrar a interação e o próximo passo no CRM."},
+        {num:30, text:"Transformar os contatos em reuniões e oportunidades."}
+      ],
+      quando:"Execução diária, com acompanhamento semanal no 1x1.",
+      entrega:["Atividades críticas tratadas.","Expert Allocation executado.","Clientes contatados.","Reuniões geradas.","Oportunidades registradas e R$ de pipeline."],
+      indicadores:["Atividades críticas","Expert Allocation","Clientes contatados","Reuniões","Oportunidades","R$ de pipeline"]
+    }
   ];
 
   var PLAYBOOKS = { captacao: CAPTACAO_PLAYBOOK, modelo_servir: MODELO_SERVIR_PLAYBOOK };
@@ -2309,6 +2393,8 @@
     var cats = PLAYBOOKS[key];
     if(!cats) return "";
     var q = (filterText||"").trim().toLowerCase();
+    var isRich = !!cats[0].como;
+    if(isRich) return playbookRichHtml(cats, q);
     var catsHtml = cats.map(function(c){
       var items = c.items.filter(function(it){
         if(!q) return true;
@@ -2331,6 +2417,39 @@
     return '<div class="pb-grid">'+catsHtml+'</div>';
   }
 
+  // Playbooks "ricos" (por pilar): objetivo + quem trabalhar + passo a passo
+  // (clicável, vira o combinado) + quando + entrega no 1x1 + indicadores.
+  function playbookRichHtml(cats, q){
+    var catsHtml = cats.map(function(c){
+      var como = c.como.filter(function(it){
+        if(!q) return true;
+        return (c.cat+" "+it.text).toLowerCase().indexOf(q) !== -1;
+      });
+      if(!como.length) return "";
+      var col = PB_CAT_COLORS[c.cat] || {bg:"#3a3a3a", fg:"#fff"};
+      var comoRows = como.map(function(it){
+        return '<div class="pb-row pb-como-row" data-added-text="'+esc(c.cat+" — "+it.text+" (Meta: "+c.pontos+")")+'">'+
+          '<span class="pb-como-num tabular">'+it.num+'</span>'+
+          '<span class="pb-como-text">'+esc(it.text)+'</span>'+
+        '</div>';
+      }).join("");
+      var quemHtml = c.quem.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join("");
+      var entregaHtml = c.entrega.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join("");
+      return '<div class="pb-cat">'+
+        '<div class="pb-cat-head" style="background:'+col.bg+';color:'+col.fg+'"><span class="pb-cat-title">'+esc(c.cat)+'</span><span class="pb-cat-pts">'+esc(c.pontos)+'</span></div>'+
+        '<div class="pb-rich-body">'+
+          '<p class="pb-objetivo">'+esc(c.objetivo)+'</p>'+
+          '<div class="pb-subsec"><span class="pb-subsec-label">Quem trabalhar</span><ul>'+quemHtml+'</ul></div>'+
+          '<div class="pb-subsec"><span class="pb-subsec-label">Como executar (clique para combinar)</span><div class="pb-como-list">'+comoRows+'</div></div>'+
+          '<div class="pb-subsec"><span class="pb-subsec-label">Quando executar</span><p class="pb-quando-text">'+esc(c.quando)+'</p></div>'+
+          '<div class="pb-subsec"><span class="pb-subsec-label">O que entregar no 1x1</span><ul>'+entregaHtml+'</ul></div>'+
+          '<div class="pb-subsec"><span class="pb-subsec-label">Principais indicadores</span><p class="pb-indicadores">'+esc(c.indicadores.join(" · "))+'</p></div>'+
+        '</div>'+
+      '</div>';
+    }).join("");
+    return '<div class="pb-grid-rich">'+catsHtml+'</div>';
+  }
+
   function pilaresGapHtml(obj){
     var gaps = obj.gaps || [];
     var chips = PILARES_1X1.map(function(p){
@@ -2342,7 +2461,7 @@
       var playbook = PLAYBOOKS[p.key];
       var bodyHtml;
       if(playbook){
-        var totalItems = playbook.reduce(function(n,c){ return n+c.items.length; }, 0);
+        var totalItems = playbook.reduce(function(n,c){ return n+(c.como?c.como.length:c.items.length); }, 0);
         bodyHtml = '<button type="button" class="btn playbook-open-btn" data-playbook-key="'+p.key+'">Ver playbook completo de planos de ação ('+totalItems+' opções)</button>';
       } else {
         var olharHtml = p.olhar.map(function(o){ return '<li>'+esc(o)+'</li>'; }).join("");
