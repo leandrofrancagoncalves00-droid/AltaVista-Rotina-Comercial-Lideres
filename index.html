@@ -2376,7 +2376,81 @@
     }
   ];
 
-  var PLAYBOOKS = { captacao: CAPTACAO_PLAYBOOK, modelo_servir: MODELO_SERVIR_PLAYBOOK };
+  // Playbook Comercial · Saúde do Cliente 2.0 (AltaVista)
+  var SAUDE_CLIENTE_PLAYBOOK = [
+    { cat:"Contribuição Recorrente", pontos:"Cliente que investe sempre",
+      objetivo:"Aumentar a disciplina de aportes e a recorrência de investimentos, fortalecendo o planejamento de longo prazo do cliente.",
+      quem:["Clientes sem aportes recorrentes.","Clientes há mais de 4 meses sem entrada.","Clientes com renda alta e baixo esforço de aporte.","Clientes com eventos de liquidez futuros (bônus, venda de ativos, recebíveis)."],
+      como:[
+        {num:1, text:"Gerar lista de clientes sem aporte recorrente no CRM/XPerformance."},
+        {num:2, text:"Entender capacidade de poupança e objetivos."},
+        {num:3, text:"Apresentar proposta de plano de aportes (recorrente ou por objetivo)."},
+        {num:4, text:"Formalizar o plano e registrar no CRM."},
+        {num:5, text:"Acompanhar execução e reforçar periodicamente."}
+      ],
+      quando:"Mapeamento: 2ª feira. Contatos: até 4ª feira. Reuniões: durante a semana. Follow-up: em até 48h.",
+      entrega:["Lista de clientes trabalhados.","Contatos realizados.","Reuniões de planejamento.","Planos de aporte estruturados.","R$ de aportes identificados e R$ captado."],
+      indicadores:["Clientes com aporte recorrente","Valor médio de aporte","Nº de novos planos de aporte","R$ captado via recorrência"]
+    },
+    { cat:"Crescimento de AuC", pontos:"Mais patrimônio consolidado",
+      objetivo:"Aumentar o patrimônio total do cliente na Alta Vista, identificando recursos externos, vencimentos e novas oportunidades de alocação.",
+      quem:["Clientes que não cresceram 20%+ nos últimos 12 meses.","Clientes com patrimônio relevante fora da XP.","Clientes com vencimentos relevantes de RF.","Clientes com baixo share of wallet."],
+      como:[
+        {num:6, text:"Identificar clientes com baixo crescimento de AuC."},
+        {num:7, text:"Solicitar Open Finance e mapear patrimônio externo."},
+        {num:8, text:"Analisar concentração, vencimentos e oportunidades."},
+        {num:9, text:"Apresentar proposta de consolidação."},
+        {num:10, text:"Acompanhar o processo até a alocação."}
+      ],
+      quando:"Mapeamento: 2ª feira. Solicitar Open Finance: até 4ª feira. Análise e propostas: até 6ª feira. Follow-up: semanal.",
+      entrega:["Clientes trabalhados.","Open Finance solicitado/concluído.","Patrimônio externo identificado.","Propostas apresentadas.","R$ em pipeline e R$ captado."],
+      indicadores:["Clientes com crescimento de AuC","R$ patrimônio externo identificado","R$ de propostas","R$ captado e % de conversão"]
+    },
+    { cat:"Rentabilidade da Carteira", pontos:"Carteira mais eficiente",
+      objetivo:"Garantir que a carteira esteja alinhada aos objetivos do cliente, com boa performance e gestão de risco adequada.",
+      quem:["Clientes abaixo do benchmark esperado.","Clientes com concentração em poucos ativos.","Clientes com produtos de baixa eficiência.","Clientes que não revisaram a carteira nos últimos 6 meses."],
+      como:[
+        {num:11, text:"Enviar o XPerformance e analisar o resultado."},
+        {num:12, text:"Identificar desvios de performance e risco."},
+        {num:13, text:"Realizar reunião de revisão de carteira."},
+        {num:14, text:"Apresentar recomendações de realocação."},
+        {num:15, text:"Acompanhar ordens e execução."}
+      ],
+      quando:"Envio do XPerformance: 1º ao 5º dia útil de cada mês. Reuniões e follow-up: na mesma semana. Revisão de casos críticos: mensal.",
+      entrega:["Relatórios enviados.","Clientes que responderam.","Reuniões de revisão realizadas.","Recomendações apresentadas.","R$ realocado e R$ de novos aportes."],
+      indicadores:["% de clientes no benchmark","R$ de realocação","Nº de recomendações executadas","Performance vs. benchmark"]
+    },
+    { cat:"Cross Sell", pontos:"Mais soluções para o cliente",
+      objetivo:"Atender as necessidades do cliente, ampliando o uso de soluções da XP e parceiros, gerando mais valor e receita.",
+      quem:["Clientes com menos de 4 soluções elegíveis.","Clientes com necessidades de proteção, crédito, internacional, banking ou consórcio.","Clientes em fase de mudança de vida.","Clientes que ainda não conhecem soluções."],
+      como:[
+        {num:16, text:"Revisar as soluções já contratadas no CRM."},
+        {num:17, text:"Identificar necessidades reais do cliente."},
+        {num:18, text:"Apresentar soluções adequadas (conta digital, cartão, seguros, crédito, consórcio, XP Internacional, etc)."},
+        {num:19, text:"Formalizar a proposta e acompanhar adesão."},
+        {num:20, text:"Registrar no CRM e acompanhar a ativação."}
+      ],
+      quando:"Mapeamento: 2ª feira. Abordagens: durante a semana. Acompanhamento de propostas: contínuo. Revisão da base: mensal.",
+      entrega:["Clientes trabalhados.","Necessidades identificadas.","Propostas apresentadas.","Produtos contratados.","Receita gerada (fee, comissão ou parceria)."],
+      indicadores:["Nº de soluções por cliente","Produtos contratados","Receita gerada por cross sell","% de clientes com 4+ soluções"]
+    },
+    { cat:"Aderência da Carteira", pontos:"Estratégia alinhada ao perfil",
+      objetivo:"Garantir que a carteira esteja adequada ao perfil de risco, objetivos e horizonte de investimento do cliente.",
+      quem:["Clientes com aderência abaixo de 80%.","Clientes com mudanças de perfil ou objetivo.","Clientes com concentração fora da estratégia.","Clientes com vencimentos relevantes."],
+      como:[
+        {num:21, text:"Identificar clientes com baixa aderência."},
+        {num:22, text:"Revisar perfil de risco e objetivos."},
+        {num:23, text:"Analisar a carteira atual e os desvios."},
+        {num:24, text:"Apresentar recomendações de adequação."},
+        {num:25, text:"Acompanhar ordens e monitorar a nova aderência."}
+      ],
+      quando:"Mapeamento: 2ª feira. Reuniões: durante a semana. Acompanhamento da execução: contínuo. Revisão da aderência: mensal.",
+      entrega:["Clientes trabalhados.","Reuniões de adequação realizadas.","Recomendações apresentadas.","Ordens executadas.","Evolução da aderência (antes e depois)."],
+      indicadores:["% de clientes com aderência ≥ 80%","Nº de carteiras revisadas","R$ de realocação","% de ordens executadas"]
+    }
+  ];
+
+  var PLAYBOOKS = { captacao: CAPTACAO_PLAYBOOK, modelo_servir: MODELO_SERVIR_PLAYBOOK, saude_cliente: SAUDE_CLIENTE_PLAYBOOK };
 
   var PB_CAT_COLORS = {
     "Base atual": {bg:"#1f3a63", fg:"#dce6ff"},
@@ -2393,7 +2467,12 @@
     "Conta acessada no Hub": {bg:"#1f5f8b", fg:"#dcf0fb"},
     "XPerformance": {bg:"#a9721a", fg:"#fbeed1"},
     "Ordem enviada e aprovada": {bg:"#1f4fa8", fg:"#dbe7ff"},
-    "Atividade de Relacionamento": {bg:"#5b3a94", fg:"#e9defd"}
+    "Atividade de Relacionamento": {bg:"#5b3a94", fg:"#e9defd"},
+    "Contribuição Recorrente": {bg:"#1f5f70", fg:"#d7f0f5"},
+    "Crescimento de AuC": {bg:"#1f6b4a", fg:"#dcf5e8"},
+    "Rentabilidade da Carteira": {bg:"#a9721a", fg:"#fbeed1"},
+    "Cross Sell": {bg:"#5b3a94", fg:"#e9defd"},
+    "Aderência da Carteira": {bg:"#1f4fa8", fg:"#dbe7ff"}
   };
 
   function playbookHtml(key, filterText){
