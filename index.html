@@ -2725,6 +2725,7 @@
         $("playbookSearch").value = "";
         $("playbookSearch").setAttribute("data-playbook-key", key);
         $("playbookList").innerHTML = playbookHtml(key, "");
+        $("playbookList").scrollTop = 0;
         $("playbookOverlay").hidden = false;
       });
     });
