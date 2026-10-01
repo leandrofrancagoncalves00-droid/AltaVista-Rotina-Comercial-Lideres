@@ -163,6 +163,8 @@
   .back-btn:hover{border-color:var(--accent);color:var(--accent-ink);}
   .team-detail h2.title{font-family:var(--font-display);font-size:19px;color:var(--on-bg);}
   .team-summary{font-size:12.5px;color:var(--on-bg-muted);}
+  #leaderPlanoBlock{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  #leaderPlanoBlock:empty{display:none;}
 
   .advisor-list{display:flex;flex-direction:column;gap:7px;}
   .advisor-row{
@@ -624,6 +626,7 @@
     </div>
     <h2 class="title" id="teamTitle"></h2>
     <p class="team-summary" id="teamSummary"></p>
+    <div id="leaderPlanoBlock"></div>
     <div class="advisor-list" id="advisorList"></div>
   </section>
 
@@ -989,6 +992,24 @@
     return found;
   }
 
+  // Combinados que a diretoria fez com o líder desta equipe (dash-1x1-lideres),
+  // ainda sem status (done/not_done) -- mostrados aqui só como lembrete; quem
+  // marca Realizado/Não realizado é a diretoria, na outra ferramenta.
+  function findPendingLeaderPlanos(equipe, fromMonday, n){
+    var d = new Date(fromMonday);
+    var pending = [];
+    for(var i=0;i<n;i++){
+      d.setDate(d.getDate()-7);
+      var wk = weekKeyFor(d);
+      var row = store.leaderPlanos && store.leaderPlanos[wk] && store.leaderPlanos[wk][equipe];
+      if(row && row.text && !row.status){
+        pending.push({ weekKey: wk, monday: new Date(d), text: row.text });
+      }
+    }
+    pending.sort(function(a,b){ return a.monday - b.monday; });
+    return pending;
+  }
+
   // Procura a observação geral registrada mais recente antes da semana atual,
   // voltando semana a semana até achar uma preenchida (ou esgotar 1 ano).
   function findLastNotes(equipe, nome, beforeMonday){
@@ -1186,9 +1207,10 @@
       fetch(sbUrl("weekly_entries?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }),
       fetch(sbUrl("advisor_meta?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }),
       fetch(sbUrl("pipeline_deals?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }),
-      fetch(sbUrl("app_notices?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }).catch(function(){ return []; })
+      fetch(sbUrl("app_notices?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }).catch(function(){ return []; }),
+      fetch(sbUrl("leader_weekly_notes?select=equipe,week_key,plano_acao,plano_status"), { headers: sbHeaders() }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; })
     ]).then(function(results){
-      var entries = results[0] || [], metas = results[1] || [], deals = results[2] || [], notices = results[3] || [];
+      var entries = results[0] || [], metas = results[1] || [], deals = results[2] || [], notices = results[3] || [], leaderNotes = results[4] || [];
       var weeks = {};
       entries.forEach(function(row){
         weeks[row.week_key] = weeks[row.week_key] || {};
@@ -1237,6 +1259,13 @@
         reminderExpiresAt = store.reminderExpiresAt || "";
       }
 
+      var leaderPlanos = {};
+      leaderNotes.forEach(function(row){
+        if(!row.plano_acao) return;
+        leaderPlanos[row.week_key] = leaderPlanos[row.week_key] || {};
+        leaderPlanos[row.week_key][row.equipe] = { text: row.plano_acao, status: row.plano_status || "" };
+      });
+
       store.weeks = weeks;
       store.quadrant = quadrant;
       store.schedule = schedule;
@@ -1244,6 +1273,7 @@
       store.missoesEntrega = missoesEntrega;
       store.reminderText = reminderText;
       store.reminderExpiresAt = reminderExpiresAt;
+      store.leaderPlanos = leaderPlanos;
       persist();
       if(!isTypingSomewhere()) renderAll();
       if(!silent) setSyncFlag("synced", "Dados atualizados");
@@ -1523,6 +1553,14 @@
       persist();
       scheduleReminderSync();
     };
+
+    var pendingLeaderPlanos = findPendingLeaderPlanos(currentTeam, currentMonday, 12);
+    $("leaderPlanoBlock").innerHTML = pendingLeaderPlanos.map(function(p){
+      return '<div class="followup-card">'+
+        '<span class="fu-label">Combinado com a diretoria de '+esc(fmtRange(p.monday))+'</span>'+
+        '<span class="fu-text">'+esc(p.text)+'</span>'+
+      '</div>';
+    }).join("");
 
     var advisors = ADVISORS.filter(function(a){ return a.equipe===currentTeam; })
       .sort(function(a,b){ return a.nome.localeCompare(b.nome,"pt-BR"); });
