@@ -163,8 +163,15 @@
   .back-btn:hover{border-color:var(--accent);color:var(--accent-ink);}
   .team-detail h2.title{font-family:var(--font-display);font-size:19px;color:var(--on-bg);}
   .team-summary{font-size:12.5px;color:var(--on-bg-muted);}
-  #leaderPlanoBlock{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  #leaderPlanoBlock{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
   #leaderPlanoBlock:empty{display:none;}
+  .leader-plano-alert{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:11px 14px;border-radius:var(--radius);background:var(--warning-soft);border:1px solid var(--warning);color:var(--warning);font-size:12.5px;font-weight:700;cursor:pointer;}
+  .leader-plano-alert .lpa-icon{font-size:15px;flex:none;}
+  .leader-plano-alert .lpa-text{flex:1;}
+  .leader-plano-alert .lpa-chevron{flex:none;transition:transform .15s ease;}
+  .leader-plano-alert.open .lpa-chevron{transform:rotate(90deg);}
+  .leader-plano-cards{display:flex;flex-direction:column;gap:10px;}
+  .leader-plano-cards.collapsed{display:none;}
 
   .advisor-list{display:flex;flex-direction:column;gap:7px;}
   .advisor-row{
@@ -1555,12 +1562,29 @@
     };
 
     var pendingLeaderPlanos = findPendingLeaderPlanos(currentTeam, currentMonday, 12);
-    $("leaderPlanoBlock").innerHTML = pendingLeaderPlanos.map(function(p){
-      return '<div class="followup-card">'+
-        '<span class="fu-label">Combinado com a diretoria de '+esc(fmtRange(p.monday))+'</span>'+
-        '<span class="fu-text">'+esc(p.text)+'</span>'+
-      '</div>';
-    }).join("");
+    if(!pendingLeaderPlanos.length){
+      $("leaderPlanoBlock").innerHTML = "";
+    } else {
+      var cardsHtml = pendingLeaderPlanos.map(function(p){
+        return '<div class="followup-card">'+
+          '<span class="fu-label">Combinado com a diretoria de '+esc(fmtRange(p.monday))+'</span>'+
+          '<span class="fu-text">'+esc(p.text)+'</span>'+
+        '</div>';
+      }).join("");
+      var n = pendingLeaderPlanos.length;
+      $("leaderPlanoBlock").innerHTML =
+        '<button type="button" class="leader-plano-alert" id="leaderPlanoToggle">'+
+          '<span class="lpa-icon">⚠</span>'+
+          '<span class="lpa-text">'+n+' combinado'+(n===1?"":"s")+' pendente'+(n===1?"":"s")+' com a diretoria — clique para ver</span>'+
+          '<svg class="lpa-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>'+
+        '</button>'+
+        '<div class="leader-plano-cards collapsed" id="leaderPlanoCards">'+cardsHtml+'</div>';
+      $("leaderPlanoToggle").onclick = function(){
+        var cards = $("leaderPlanoCards");
+        var open = cards.classList.toggle("collapsed") === false;
+        $("leaderPlanoToggle").classList.toggle("open", open);
+      };
+    }
 
     var advisors = ADVISORS.filter(function(a){ return a.equipe===currentTeam; })
       .sort(function(a,b){ return a.nome.localeCompare(b.nome,"pt-BR"); });
