@@ -1101,27 +1101,71 @@
   }
 
   var recentWrites = {};
+  // "Pendente" = alteração local ainda não confirmada pelo servidor. Fica salva no
+  // navegador, é preservada nos pulls e reenviada até o Supabase confirmar —
+  // assim o líder não perde o que preencheu (queda de rede, cota, aba fechada).
+  function markDirty(kind, key){
+    store.dirty = store.dirty || {};
+    store.dirty[kind] = store.dirty[kind] || {};
+    store.dirty[kind][key] = Date.now();
+    return store.dirty[kind][key];
+  }
+  function clearDirty(kind, key, ts){
+    var d = store.dirty && store.dirty[kind];
+    if(d && d[key] === ts){ delete d[key]; persist(); }
+  }
   function markRecentWrite(weekKey, equipe, nome){
-    recentWrites[weekKey+"|"+equipe+"|"+nome] = Date.now();
+    var key = weekKey+"|"+equipe+"|"+nome;
+    recentWrites[key] = Date.now();
+    markDirty("entries", key);
+  }
+
+  function pushEntryRaw(weekKey, equipe, nome){
+    var key = weekKey+"|"+equipe+"|"+nome;
+    var entry = entryFor(weekKey, equipe, nome, false);
+    var ts = store.dirty && store.dirty.entries && store.dirty.entries[key];
+    if(!entry){ if(ts) clearDirty("entries", key, ts); return Promise.resolve(); }
+    var items = entry.items || {};
+    var notes = entry.notes || "";
+    setSyncFlag("syncing", "Sincronizando…");
+    return fetch(sbUrl("weekly_entries?on_conflict=equipe,nome,week_key"), {
+      method: "POST",
+      keepalive: true,
+      headers: sbHeaders({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
+      body: JSON.stringify([{ equipe: equipe, nome: nome, week_key: weekKey, items: items, notes: notes, updated_at: new Date().toISOString() }])
+    }).then(function(r){
+      if(!r.ok) throw new Error("http " + r.status);
+      if(ts) clearDirty("entries", key, ts);
+      setSyncFlag("synced", "Sincronizado");
+    }).catch(function(){
+      setSyncFlag("error", "Falha ao sincronizar — será reenviado");
+    });
   }
 
   function pushEntryForWeek(weekKey){
     if(!currentTeam || !currentAdvisor) return;
     markRecentWrite(weekKey, currentTeam, currentAdvisor);
-    var entry = entryFor(weekKey, currentTeam, currentAdvisor, false);
-    var items = (entry && entry.items) || {};
-    var notes = (entry && entry.notes) || "";
-    setSyncFlag("syncing", "Sincronizando…");
-    fetch(sbUrl("weekly_entries?on_conflict=equipe,nome,week_key"), {
-      method: "POST",
-      headers: sbHeaders({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
-      body: JSON.stringify([{ equipe: currentTeam, nome: currentAdvisor, week_key: weekKey, items: items, notes: notes, updated_at: new Date().toISOString() }])
-    }).then(function(r){
-      if(!r.ok) throw new Error("http " + r.status);
-      setSyncFlag("synced", "Sincronizado");
-    }).catch(function(){
-      setSyncFlag("error", "Falha ao sincronizar");
+    pushEntryRaw(weekKey, currentTeam, currentAdvisor);
+  }
+
+  // Reenvia tudo que ainda está pendente (chamado após cada atualização e quando
+  // a aba é fechada/escondida). force=true ignora a espera de 3s pós-edição.
+  function flushDirty(force){
+    var d = store.dirty || {};
+    function due(ts){ return force || (Date.now() - ts) > 3000; }
+    Object.keys(d.entries || {}).forEach(function(k){
+      if(!due(d.entries[k])) return;
+      var p = k.split("|"); pushEntryRaw(p[0], p[1], p[2]);
     });
+    Object.keys(d.meta || {}).forEach(function(k){
+      if(!due(d.meta[k])) return;
+      var p = k.split("|"); pushAdvisorMeta(p[0], p[1]);
+    });
+    Object.keys(d.pipe || {}).forEach(function(k){
+      if(!due(d.pipe[k])) return;
+      var p = k.split("|"); pushPipeline(p[0], p[1]);
+    });
+    if(d.reminder && d.reminder.team && due(d.reminder.team)) pushReminder(store.reminderText || "", store.reminderExpiresAt || "");
   }
 
   function pushCurrentEntry(){
@@ -1129,19 +1173,23 @@
   }
 
   function pushAdvisorMeta(equipe, nome){
+    var key = equipe + "|" + nome;
+    var ts = markDirty("meta", key);
     var sched = getSchedule(equipe, nome);
     var quad = getQuadrant(equipe, nome);
     var missoes = (store.missoesEntrega && store.missoesEntrega[scheduleKey(equipe,nome)]) || null;
     setSyncFlag("syncing", "Sincronizando…");
     fetch(sbUrl("advisor_meta?on_conflict=equipe,nome"), {
       method: "POST",
+      keepalive: true,
       headers: sbHeaders({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
       body: JSON.stringify([{ equipe: equipe, nome: nome, quadrant: quad || null, schedule_day: sched.day || null, schedule_time: sched.time || null, missoes_entregue: missoes, updated_at: new Date().toISOString() }])
     }).then(function(r){
       if(!r.ok) throw new Error("http " + r.status);
+      clearDirty("meta", key, ts);
       setSyncFlag("synced", "Sincronizado");
     }).catch(function(){
-      setSyncFlag("error", "Falha ao sincronizar");
+      setSyncFlag("error", "Falha ao sincronizar — será reenviado");
     });
   }
 
@@ -1149,25 +1197,31 @@
   var reminderSyncTimer = null;
   function scheduleReminderSync(){
     reminderRecentWrite = Date.now();
+    markDirty("reminder", "team");
     clearTimeout(reminderSyncTimer);
     reminderSyncTimer = setTimeout(function(){ pushReminder(store.reminderText || "", store.reminderExpiresAt || ""); }, 900);
   }
   function pushReminder(text, expiresAt){
     reminderRecentWrite = Date.now();
+    var ts = markDirty("reminder", "team");
     setSyncFlag("syncing", "Sincronizando…");
     fetch(sbUrl("app_notices?on_conflict=key"), {
       method: "POST",
+      keepalive: true,
       headers: sbHeaders({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
       body: JSON.stringify([{ key: "team_reminder", value: text, expires_at: expiresAt || null, updated_at: new Date().toISOString() }])
     }).then(function(r){
       if(!r.ok) throw new Error("http " + r.status);
+      clearDirty("reminder", "team", ts);
       setSyncFlag("synced", "Sincronizado");
     }).catch(function(){
-      setSyncFlag("error", "Falha ao sincronizar");
+      setSyncFlag("error", "Falha ao sincronizar — será reenviado");
     });
   }
 
   function pushPipeline(equipe, nome){
+    var key = equipe + "|" + nome;
+    var ts = markDirty("pipe", key);
     var list = getPipeline(equipe, nome);
     var rows = list.map(function(d){
       if(!d.id) d.id = genId();
@@ -1185,18 +1239,20 @@
     fetch(sbUrl("pipeline_deals?equipe=eq." + encodeURIComponent(equipe) + "&nome=eq." + encodeURIComponent(nome)), {
       method: "DELETE",
       headers: sbHeaders({ "Prefer": "return=minimal" })
-    }).then(function(){
-      if(!rows.length) { setSyncFlag("synced", "Sincronizado"); return; }
+    }).then(function(r){
+      if(!r.ok) throw new Error("http " + r.status);
+      if(!rows.length) { clearDirty("pipe", key, ts); setSyncFlag("synced", "Sincronizado"); return; }
       return fetch(sbUrl("pipeline_deals"), {
         method: "POST",
         headers: sbHeaders({ "Prefer": "return=minimal" }),
         body: JSON.stringify(rows)
-      }).then(function(r){
-        if(!r.ok) throw new Error("http " + r.status);
+      }).then(function(r2){
+        if(!r2.ok) throw new Error("http " + r2.status);
+        clearDirty("pipe", key, ts);
         setSyncFlag("synced", "Sincronizado");
       });
     }).catch(function(){
-      setSyncFlag("error", "Falha ao sincronizar");
+      setSyncFlag("error", "Falha ao sincronizar — será reenviado");
     });
   }
 
@@ -1242,6 +1298,21 @@
     ]).then(function(results){
       var entries = results[0], metas = results[1], deals = results[2], notices = results[3] || [], leaderNotes = results[4] || [];
       if(!Array.isArray(entries) || !Array.isArray(metas) || !Array.isArray(deals)) throw new Error("bad response");
+      // Primeira carga desta versão: cópias locais com conteúdo que ainda não existem
+      // no servidor (ex.: preenchidas durante uma queda) viram pendentes e são enviadas.
+      if(full && !store.dirty){
+        var serverKeys = {};
+        entries.forEach(function(row){ serverKeys[row.week_key+"|"+row.equipe+"|"+row.nome] = 1; });
+        store.dirty = { entries:{}, meta:{}, pipe:{} };
+        Object.keys(store.weeks || {}).forEach(function(wk){
+          Object.keys(store.weeks[wk]).forEach(function(eq){
+            Object.keys(store.weeks[wk][eq]).forEach(function(nm){
+              var e = store.weeks[wk][eq][nm], key = wk+"|"+eq+"|"+nm;
+              if(!serverKeys[key] && e && (JSON.stringify(e.items || {}) !== "{}" || e.notes)) store.dirty.entries[key] = 1;
+            });
+          });
+        });
+      }
       var weeks = {};
       if(!full){
         Object.keys(store.weeks || {}).forEach(function(wk){
@@ -1290,11 +1361,32 @@
         var pkey = currentTeam+"|"+currentAdvisor;
         if(store.pipeline[pkey]) pipeline[pkey] = store.pipeline[pkey];
       }
+      // Alterações locais ainda não confirmadas pelo servidor nunca são sobrescritas.
+      var dirty = store.dirty || {};
+      Object.keys(dirty.entries || {}).forEach(function(key){
+        var parts = key.split("|");
+        var wk = parts[0], eq = parts[1], nm = parts[2];
+        var localEntry = (store.weeks[wk] && store.weeks[wk][eq] && store.weeks[wk][eq][nm]) || null;
+        if(localEntry){
+          weeks[wk] = weeks[wk] || {};
+          weeks[wk][eq] = weeks[wk][eq] || {};
+          weeks[wk][eq][nm] = localEntry;
+        }
+      });
+      Object.keys(dirty.meta || {}).forEach(function(key){
+        var lq = store.quadrant && store.quadrant[key], ls = store.schedule && store.schedule[key], lm = store.missoesEntrega && store.missoesEntrega[key];
+        if(lq) quadrant[key] = lq; else delete quadrant[key];
+        if(ls) schedule[key] = ls; else delete schedule[key];
+        if(lm) missoesEntrega[key] = lm; else delete missoesEntrega[key];
+      });
+      Object.keys(dirty.pipe || {}).forEach(function(key){
+        pipeline[key] = (store.pipeline && store.pipeline[key]) || [];
+      });
 
       var noticeRow = notices.filter(function(n){ return n.key==="team_reminder"; })[0];
       var reminderText = noticeRow ? (noticeRow.value || "") : "";
       var reminderExpiresAt = noticeRow ? (noticeRow.expires_at || "") : "";
-      if(Date.now() - reminderRecentWrite < 10000){
+      if(Date.now() - reminderRecentWrite < 10000 || (store.dirty && store.dirty.reminder && store.dirty.reminder.team)){
         reminderText = store.reminderText || "";
         reminderExpiresAt = store.reminderExpiresAt || "";
       }
@@ -1323,6 +1415,7 @@
       persist();
       if(!isTypingSomewhere()) renderAll();
       if(!silent) setSyncFlag("synced", "Dados atualizados");
+      flushDirty(false);
     }).catch(function(){
       if(!silent) setSyncFlag("error", "Não foi possível carregar os dados");
     });
@@ -3255,8 +3348,10 @@
   pullAllFromSupabase(true);
   setInterval(function(){ if(!document.hidden) pullAllFromSupabase(true); }, 60000);
   document.addEventListener("visibilitychange", function(){
-    if(!document.hidden && Date.now() - lastPullAt > 30000) pullAllFromSupabase(true);
+    if(document.hidden) flushDirty(true);
+    else if(Date.now() - lastPullAt > 30000) pullAllFromSupabase(true);
   });
+  window.addEventListener("pagehide", function(){ flushDirty(true); });
 
   var refreshBtn = $("refreshDataBtn");
   if(refreshBtn){
