@@ -1208,33 +1208,66 @@
     return !!(a && (a.tagName==="TEXTAREA" || (a.tagName==="INPUT" && a.type!=="checkbox" && a.type!=="radio")));
   }
 
-  function pullAllFromSupabase(silent){
+  // Sincronização incremental: depois da primeira carga só baixa o que mudou
+  // (updated_at recente) e refaz a carga completa a cada 2h para pegar exclusões.
+  // Existe uma sobreposição de 15 min no filtro porque várias escritas gravam
+  // updated_at com o relógio do navegador, que pode estar levemente defasado.
+  var FULL_RESYNC_MS = 2*3600*1000;
+  var INCREMENTAL_OVERLAP_MS = 15*60*1000;
+  var lastPullAt = 0;
+  function maxStampMs(rows, cur){
+    var m = cur || 0;
+    rows.forEach(function(r){
+      var t = r && r.updated_at ? Date.parse(r.updated_at) : 0;
+      if(t > m) m = t;
+    });
+    return m;
+  }
+  function pullAllFromSupabase(silent, forceFull){
     if(!silent) setSyncFlag("syncing", "Carregando dados…");
+    lastPullAt = Date.now();
+    var cur = store.syncCursor || {};
+    var full = !!forceFull || !cur.fullAt || (Date.now() - cur.fullAt > FULL_RESYNC_MS) || !store.weeks || !Object.keys(store.weeks).length;
+    function since(col){
+      if(full || !cur[col]) return "";
+      return "&updated_at=gt." + encodeURIComponent(new Date(cur[col] - INCREMENTAL_OVERLAP_MS).toISOString());
+    }
+    function getJson(path){ return fetch(sbUrl(path), { headers: sbHeaders() }).then(function(r){ return r.json(); }); }
     return Promise.all([
-      fetch(sbUrl("weekly_entries?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }),
-      fetch(sbUrl("advisor_meta?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }),
-      fetch(sbUrl("pipeline_deals?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }),
-      fetch(sbUrl("app_notices?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }).catch(function(){ return []; }),
-      fetch(sbUrl("leader_weekly_notes?select=equipe,week_key,plano_acao,plano_status"), { headers: sbHeaders() }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; })
+      getJson("weekly_entries?select=*" + since("entries")),
+      getJson("advisor_meta?select=*" + since("meta")),
+      getJson("pipeline_deals?select=*" + since("pipe")),
+      getJson("app_notices?select=*").catch(function(){ return []; }),
+      fetch(sbUrl("leader_weekly_notes?select=equipe,week_key,plano_acao,plano_status,updated_at" + since("notes")), { headers: sbHeaders() }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; })
     ]).then(function(results){
-      var entries = results[0] || [], metas = results[1] || [], deals = results[2] || [], notices = results[3] || [], leaderNotes = results[4] || [];
+      var entries = results[0], metas = results[1], deals = results[2], notices = results[3] || [], leaderNotes = results[4] || [];
+      if(!Array.isArray(entries) || !Array.isArray(metas) || !Array.isArray(deals)) throw new Error("bad response");
       var weeks = {};
+      if(!full){
+        Object.keys(store.weeks || {}).forEach(function(wk){
+          weeks[wk] = {};
+          Object.keys(store.weeks[wk]).forEach(function(eq){ weeks[wk][eq] = Object.assign({}, store.weeks[wk][eq]); });
+        });
+      }
       entries.forEach(function(row){
         weeks[row.week_key] = weeks[row.week_key] || {};
         weeks[row.week_key][row.equipe] = weeks[row.week_key][row.equipe] || {};
         weeks[row.week_key][row.equipe][row.nome] = { items: row.items || {}, notes: row.notes || "" };
       });
-      var quadrant = {}, schedule = {}, missoesEntrega = {};
+      var quadrant = full ? {} : Object.assign({}, store.quadrant || {});
+      var schedule = full ? {} : Object.assign({}, store.schedule || {});
+      var missoesEntrega = full ? {} : Object.assign({}, store.missoesEntrega || {});
       metas.forEach(function(row){
         var key = row.equipe + "|" + row.nome;
-        if(row.quadrant) quadrant[key] = row.quadrant;
-        if(row.schedule_day || row.schedule_time) schedule[key] = { day: row.schedule_day || "", time: row.schedule_time || "" };
-        if(row.missoes_entregue) missoesEntrega[key] = row.missoes_entregue;
+        if(row.quadrant) quadrant[key] = row.quadrant; else delete quadrant[key];
+        if(row.schedule_day || row.schedule_time) schedule[key] = { day: row.schedule_day || "", time: row.schedule_time || "" }; else delete schedule[key];
+        if(row.missoes_entregue) missoesEntrega[key] = row.missoes_entregue; else delete missoesEntrega[key];
       });
-      var pipeline = {};
+      var pipeline = full ? {} : Object.assign({}, store.pipeline || {});
+      var pipeReplaced = {};
       deals.forEach(function(row){
         var key = row.equipe + "|" + row.nome;
-        pipeline[key] = pipeline[key] || [];
+        if(!pipeReplaced[key]){ pipeReplaced[key] = true; pipeline[key] = []; }
         var localId = String(row.deal_id).split("|").slice(2).join("|") || genId();
         pipeline[key].push({ id: localId, cliente: row.cliente || "", tipo: row.tipo || "", tipoOutro: row.tipo_outro || "", valor: row.valor===null?"":row.valor, estagio: row.estagio || "", previsao: row.previsao || "" });
       });
@@ -1266,13 +1299,19 @@
         reminderExpiresAt = store.reminderExpiresAt || "";
       }
 
-      var leaderPlanos = {};
+      var leaderPlanos = full ? {} : Object.assign({}, store.leaderPlanos || {});
+      if(!full) Object.keys(leaderPlanos).forEach(function(wk){ leaderPlanos[wk] = Object.assign({}, leaderPlanos[wk]); });
       leaderNotes.forEach(function(row){
-        if(!row.plano_acao) return;
         leaderPlanos[row.week_key] = leaderPlanos[row.week_key] || {};
-        leaderPlanos[row.week_key][row.equipe] = { text: row.plano_acao, status: row.plano_status || "" };
+        if(row.plano_acao) leaderPlanos[row.week_key][row.equipe] = { text: row.plano_acao, status: row.plano_status || "" };
+        else delete leaderPlanos[row.week_key][row.equipe];
       });
 
+      store.syncCursor = {
+        entries: maxStampMs(entries, cur.entries), meta: maxStampMs(metas, cur.meta),
+        pipe: maxStampMs(deals, cur.pipe), notes: maxStampMs(leaderNotes, cur.notes),
+        fullAt: full ? Date.now() : cur.fullAt
+      };
       store.weeks = weeks;
       store.quadrant = quadrant;
       store.schedule = schedule;
@@ -3214,11 +3253,14 @@
   })();
 
   pullAllFromSupabase(true);
-  setInterval(function(){ pullAllFromSupabase(true); }, 25000);
+  setInterval(function(){ if(!document.hidden) pullAllFromSupabase(true); }, 60000);
+  document.addEventListener("visibilitychange", function(){
+    if(!document.hidden && Date.now() - lastPullAt > 30000) pullAllFromSupabase(true);
+  });
 
   var refreshBtn = $("refreshDataBtn");
   if(refreshBtn){
-    refreshBtn.addEventListener("click", function(){ pullAllFromSupabase(false); });
+    refreshBtn.addEventListener("click", function(){ pullAllFromSupabase(false, true); });
   }
 })();
 </script>
