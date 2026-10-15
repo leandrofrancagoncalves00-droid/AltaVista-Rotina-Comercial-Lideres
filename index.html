@@ -1113,6 +1113,8 @@
   }
 
   var recentWrites = {};
+  var sendingEntries = {};
+  var sendingPipes = {};
   // "Pendente" = alteração local ainda não confirmada pelo servidor. Fica salva no
   // navegador, é preservada nos pulls e reenviada até o Supabase confirmar —
   // assim o líder não perde o que preencheu (queda de rede, cota, aba fechada).
@@ -1120,6 +1122,7 @@
     store.dirty = store.dirty || {};
     store.dirty[kind] = store.dirty[kind] || {};
     store.dirty[kind][key] = Date.now();
+    persist();
     return store.dirty[kind][key];
   }
   function clearDirty(kind, key, ts){
@@ -1137,6 +1140,8 @@
     var entry = entryFor(weekKey, equipe, nome, false);
     var ts = store.dirty && store.dirty.entries && store.dirty.entries[key];
     if(!entry){ if(ts) clearDirty("entries", key, ts); return Promise.resolve(); }
+    if(ts && sendingEntries[key] === ts) return Promise.resolve();
+    if(ts) sendingEntries[key] = ts;
     var items = entry.items || {};
     var notes = entry.notes || "";
     setSyncFlag("syncing", "Sincronizando…");
@@ -1151,6 +1156,8 @@
       setSyncFlag("synced", "Sincronizado");
     }).catch(function(){
       setSyncFlag("error", "Falha ao sincronizar — será reenviado");
+    }).then(function(){
+      if(sendingEntries[key] === ts) delete sendingEntries[key];
     });
   }
 
@@ -1234,6 +1241,8 @@
   function pushPipeline(equipe, nome){
     var key = equipe + "|" + nome;
     var ts = markDirty("pipe", key);
+    if(sendingPipes[key]) return;
+    sendingPipes[key] = true;
     var list = getPipeline(equipe, nome);
     var rows = list.map(function(d){
       if(!d.id) d.id = genId();
@@ -1265,6 +1274,8 @@
       });
     }).catch(function(){
       setSyncFlag("error", "Falha ao sincronizar — será reenviado");
+    }).then(function(){
+      delete sendingPipes[key];
     });
   }
 
@@ -3343,6 +3354,25 @@
     else if(Date.now() - lastPullAt > 30000) pullAllFromSupabase(true);
   });
   window.addEventListener("pagehide", function(){ flushDirty(true); });
+  // Fim de preenchimento (sair do campo, escolher opção, clicar): envia na hora,
+  // sem esperar o intervalo de digitação — assim um F5 logo depois não perde nada.
+  ["focusout", "change", "click"].forEach(function(evt){
+    document.addEventListener(evt, function(e){
+      var t = e.target;
+      if(!t || !t.closest || !t.closest("#advisorView, #teamView")) return;
+      if(hasPendingChanges()) flushDirty(true);
+    });
+  });
+  function hasPendingChanges(){
+    var d = store.dirty || {};
+    return ["entries", "meta", "pipe", "reminder"].some(function(k){ return d[k] && Object.keys(d[k]).length; });
+  }
+  window.addEventListener("beforeunload", function(e){
+    if(!hasPendingChanges()) return;
+    flushDirty(true);
+    e.preventDefault();
+    e.returnValue = "";
+  });
 
   var refreshBtn = $("refreshDataBtn");
   if(refreshBtn){
