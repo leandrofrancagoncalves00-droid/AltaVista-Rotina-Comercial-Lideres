@@ -1287,41 +1287,71 @@
     return !!(a && (a.tagName==="TEXTAREA" || a.tagName==="SELECT" || (a.tagName==="INPUT" && a.type!=="checkbox" && a.type!=="radio")));
   }
 
-  // Sincronização incremental: depois da primeira carga só baixa o que mudou
-  // (updated_at recente) e refaz a carga completa a cada 2h para pegar exclusões.
-  // Existe uma sobreposição de 15 min no filtro porque várias escritas gravam
-  // updated_at com o relógio do navegador, que pode estar levemente defasado.
+  // Sincronização com o Supabase.
+  // - A primeira atualização de cada carga de página (inclusive F5) é COMPLETA.
+  // - Depois, para weekly_entries, baixa só uma lista leve (id + updated_at) e
+  //   compara com o que já tem; só busca as linhas que mudaram ou sumiram. Não
+  //   depende do relógio do computador de quem salvou.
+  // - Demais tabelas (pequenas) são recarregadas por inteiro a cada 5 ciclos.
+  // - Carga completa também a cada 2h e no botão de atualizar.
   var FULL_RESYNC_MS = 2*3600*1000;
-  var INCREMENTAL_OVERLAP_MS = 15*60*1000;
+  var META_EVERY_N_PULLS = 5;
   var lastPullAt = 0;
   var firstPullDone = false;
-  function maxStampMs(rows, cur){
-    var m = cur || 0;
-    rows.forEach(function(r){
-      var t = r && r.updated_at ? Date.parse(r.updated_at) : 0;
-      if(t > m) m = t;
-    });
-    return m;
+  var pullCount = 0;
+  var pullFailures = 0;
+  function chunkList(list, n){
+    var out = [];
+    for(var i=0;i<list.length;i+=n) out.push(list.slice(i, i+n));
+    return out;
   }
   function pullAllFromSupabase(silent, forceFull){
     if(!silent) setSyncFlag("syncing", "Carregando dados…");
     lastPullAt = Date.now();
+    pullCount++;
     var cur = store.syncCursor || {};
-    var full = !!forceFull || store.syncVersion !== 2 || !cur.fullAt || (Date.now() - cur.fullAt > FULL_RESYNC_MS) || !store.weeks || !Object.keys(store.weeks).length;
-    function since(col){
-      if(full || !cur[col]) return "";
-      return "&updated_at=gt." + encodeURIComponent(new Date(cur[col] - INCREMENTAL_OVERLAP_MS).toISOString());
+    var full = !!forceFull || !firstPullDone || store.syncVersion !== 3 || !cur.fullAt || (Date.now() - cur.fullAt > FULL_RESYNC_MS) || !store.weeks || !Object.keys(store.weeks).length || !store.entryStamps;
+    var withSmallTables = full || (pullCount % META_EVERY_N_PULLS === 0);
+    function getJson(path){
+      return fetch(sbUrl(path), { headers: sbHeaders() }).then(function(r){
+        if(!r.ok) throw new Error("http " + r.status);
+        return r.json();
+      });
     }
-    function getJson(path){ return fetch(sbUrl(path), { headers: sbHeaders() }).then(function(r){ return r.json(); }); }
+    var entriesReq;
+    if(full){
+      entriesReq = getJson("weekly_entries?select=*").then(function(rows){
+        var stamps = {};
+        rows.forEach(function(r){ stamps[r.id] = r.updated_at; });
+        return { rows: rows, stamps: stamps, removedIds: [] };
+      });
+    } else {
+      var known = store.entryStamps || {};
+      entriesReq = getJson("weekly_entries?select=id,updated_at").then(function(list){
+        var stamps = {}, changedIds = [];
+        list.forEach(function(r){
+          stamps[r.id] = r.updated_at;
+          if(known[r.id] !== r.updated_at) changedIds.push(r.id);
+        });
+        var removedIds = Object.keys(known).filter(function(id){ return stamps[id] === undefined; });
+        if(!changedIds.length) return { rows: [], stamps: stamps, removedIds: removedIds };
+        return Promise.all(chunkList(changedIds, 120).map(function(ids){
+          return getJson("weekly_entries?select=*&id=in.(" + ids.join(",") + ")");
+        })).then(function(parts){
+          return { rows: [].concat.apply([], parts), stamps: stamps, removedIds: removedIds };
+        });
+      });
+    }
     return Promise.all([
-      getJson("weekly_entries?select=*" + since("entries")),
-      getJson("advisor_meta?select=*" + since("meta")),
-      getJson("pipeline_deals?select=*" + since("pipe")),
+      entriesReq,
+      withSmallTables ? getJson("advisor_meta?select=*") : Promise.resolve(null),
+      withSmallTables ? getJson("pipeline_deals?select=*") : Promise.resolve(null),
       getJson("app_notices?select=*").catch(function(){ return []; }),
-      fetch(sbUrl("leader_weekly_notes?select=equipe,week_key,plano_acao,plano_status,updated_at" + since("notes")), { headers: sbHeaders() }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; })
+      withSmallTables ? fetch(sbUrl("leader_weekly_notes?select=equipe,week_key,plano_acao,plano_status"), { headers: sbHeaders() }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }) : Promise.resolve(null)
     ]).then(function(results){
-      var entries = results[0], metas = results[1], deals = results[2], notices = results[3] || [], leaderNotes = results[4] || [];
-      if(!Array.isArray(entries) || !Array.isArray(metas) || !Array.isArray(deals)) throw new Error("bad response");
+      var entriesRes = results[0], metas = results[1], deals = results[2], notices = results[3] || [], leaderNotes = results[4];
+      var entries = entriesRes.rows;
+      if(!Array.isArray(entries) || (metas !== null && !Array.isArray(metas)) || (deals !== null && !Array.isArray(deals))) throw new Error("bad response");
       // Primeira carga desta versão: cópias locais com conteúdo que ainda não existem
       // no servidor (ex.: preenchidas durante uma queda) viram pendentes e são enviadas.
       if(full && !store.dirty){
@@ -1337,35 +1367,50 @@
           });
         });
       }
+      var keyById = full ? {} : Object.assign({}, store.entryKeyById || {});
       var weeks = {};
       if(!full){
         Object.keys(store.weeks || {}).forEach(function(wk){
           weeks[wk] = {};
           Object.keys(store.weeks[wk]).forEach(function(eq){ weeks[wk][eq] = Object.assign({}, store.weeks[wk][eq]); });
         });
+        entriesRes.removedIds.forEach(function(id){
+          var k = keyById[id];
+          if(k && weeks[k[0]] && weeks[k[0]][k[1]]) delete weeks[k[0]][k[1]][k[2]];
+          delete keyById[id];
+        });
       }
       entries.forEach(function(row){
         weeks[row.week_key] = weeks[row.week_key] || {};
         weeks[row.week_key][row.equipe] = weeks[row.week_key][row.equipe] || {};
         weeks[row.week_key][row.equipe][row.nome] = { items: row.items || {}, notes: row.notes || "" };
+        keyById[row.id] = [row.week_key, row.equipe, row.nome];
       });
-      var quadrant = full ? {} : Object.assign({}, store.quadrant || {});
-      var schedule = full ? {} : Object.assign({}, store.schedule || {});
-      var missoesEntrega = full ? {} : Object.assign({}, store.missoesEntrega || {});
-      metas.forEach(function(row){
-        var key = row.equipe + "|" + row.nome;
-        if(row.quadrant) quadrant[key] = row.quadrant; else delete quadrant[key];
-        if(row.schedule_day || row.schedule_time) schedule[key] = { day: row.schedule_day || "", time: row.schedule_time || "" }; else delete schedule[key];
-        if(row.missoes_entregue) missoesEntrega[key] = row.missoes_entregue; else delete missoesEntrega[key];
-      });
-      var pipeline = full ? {} : Object.assign({}, store.pipeline || {});
-      var pipeReplaced = {};
-      deals.forEach(function(row){
-        var key = row.equipe + "|" + row.nome;
-        if(!pipeReplaced[key]){ pipeReplaced[key] = true; pipeline[key] = []; }
-        var localId = String(row.deal_id).split("|").slice(2).join("|") || genId();
-        pipeline[key].push({ id: localId, cliente: row.cliente || "", tipo: row.tipo || "", tipoOutro: row.tipo_outro || "", valor: row.valor===null?"":row.valor, estagio: row.estagio || "", previsao: row.previsao || "" });
-      });
+      var quadrant, schedule, missoesEntrega, pipeline;
+      if(metas !== null){
+        quadrant = {}; schedule = {}; missoesEntrega = {};
+        metas.forEach(function(row){
+          var key = row.equipe + "|" + row.nome;
+          if(row.quadrant) quadrant[key] = row.quadrant;
+          if(row.schedule_day || row.schedule_time) schedule[key] = { day: row.schedule_day || "", time: row.schedule_time || "" };
+          if(row.missoes_entregue) missoesEntrega[key] = row.missoes_entregue;
+        });
+      } else {
+        quadrant = Object.assign({}, store.quadrant || {});
+        schedule = Object.assign({}, store.schedule || {});
+        missoesEntrega = Object.assign({}, store.missoesEntrega || {});
+      }
+      if(deals !== null){
+        pipeline = {};
+        deals.forEach(function(row){
+          var key = row.equipe + "|" + row.nome;
+          pipeline[key] = pipeline[key] || [];
+          var localId = String(row.deal_id).split("|").slice(2).join("|") || genId();
+          pipeline[key].push({ id: localId, cliente: row.cliente || "", tipo: row.tipo || "", tipoOutro: row.tipo_outro || "", valor: row.valor===null?"":row.valor, estagio: row.estagio || "", previsao: row.previsao || "" });
+        });
+      } else {
+        pipeline = Object.assign({}, store.pipeline || {});
+      }
       // Qualquer semana/assessor escrito localmente nos últimos segundos (dentro do
       // tempo de debounce + ida e volta da rede) é preservado — evita que o pull
       // periódico sobrescreva uma marcação recém-feita com o estado antigo do servidor.
@@ -1415,20 +1460,22 @@
         reminderExpiresAt = store.reminderExpiresAt || "";
       }
 
-      var leaderPlanos = full ? {} : Object.assign({}, store.leaderPlanos || {});
-      if(!full) Object.keys(leaderPlanos).forEach(function(wk){ leaderPlanos[wk] = Object.assign({}, leaderPlanos[wk]); });
-      leaderNotes.forEach(function(row){
-        leaderPlanos[row.week_key] = leaderPlanos[row.week_key] || {};
-        if(row.plano_acao) leaderPlanos[row.week_key][row.equipe] = { text: row.plano_acao, status: row.plano_status || "" };
-        else delete leaderPlanos[row.week_key][row.equipe];
-      });
+      var leaderPlanos;
+      if(Array.isArray(leaderNotes)){
+        leaderPlanos = {};
+        leaderNotes.forEach(function(row){
+          if(!row.plano_acao) return;
+          leaderPlanos[row.week_key] = leaderPlanos[row.week_key] || {};
+          leaderPlanos[row.week_key][row.equipe] = { text: row.plano_acao, status: row.plano_status || "" };
+        });
+      } else {
+        leaderPlanos = store.leaderPlanos || {};
+      }
 
-      store.syncVersion = 2;
-      store.syncCursor = {
-        entries: maxStampMs(entries, cur.entries), meta: maxStampMs(metas, cur.meta),
-        pipe: maxStampMs(deals, cur.pipe), notes: maxStampMs(leaderNotes, cur.notes),
-        fullAt: full ? Date.now() : cur.fullAt
-      };
+      store.syncVersion = 3;
+      store.syncCursor = { fullAt: full ? Date.now() : cur.fullAt };
+      store.entryStamps = entriesRes.stamps;
+      store.entryKeyById = keyById;
       store.weeks = weeks;
       store.quadrant = quadrant;
       store.schedule = schedule;
@@ -1438,14 +1485,19 @@
       store.reminderExpiresAt = reminderExpiresAt;
       store.leaderPlanos = leaderPlanos;
       persist();
+      var recovered = pullFailures > 0;
+      pullFailures = 0;
       if(!isTypingSomewhere()) renderAll();
-      if(!silent) setSyncFlag("synced", "Dados atualizados");
+      if(!silent || recovered) setSyncFlag("synced", "Dados atualizados");
       // Na primeira atualização da página (ex.: depois de um F5) tudo que estava
       // pendente já é antigo, então é enviado na hora.
       flushDirty(!firstPullDone);
       firstPullDone = true;
-    }).catch(function(){
-      if(!silent) setSyncFlag("error", "Não foi possível carregar os dados");
+    }).catch(function(err){
+      pullFailures++;
+      if(window.console && console.warn) console.warn("Falha ao atualizar dados:", err);
+      // Falha silenciosa não pode ficar invisível: após 2 falhas seguidas, avisa.
+      if(!silent || pullFailures >= 2) setSyncFlag("error", "Não foi possível atualizar os dados — tentando de novo");
     });
   }
 
