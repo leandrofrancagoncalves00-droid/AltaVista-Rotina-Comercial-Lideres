@@ -1284,7 +1284,7 @@
   // salvos por baixo (via markRecentWrite), só a repintura da tela é adiada.
   function isTypingSomewhere(){
     var a = document.activeElement;
-    return !!(a && (a.tagName==="TEXTAREA" || (a.tagName==="INPUT" && a.type!=="checkbox" && a.type!=="radio")));
+    return !!(a && (a.tagName==="TEXTAREA" || a.tagName==="SELECT" || (a.tagName==="INPUT" && a.type!=="checkbox" && a.type!=="radio")));
   }
 
   // Sincronização incremental: depois da primeira carga só baixa o que mudou
