@@ -1295,7 +1295,7 @@
     if(!silent) setSyncFlag("syncing", "Carregando dados…");
     lastPullAt = Date.now();
     var cur = store.syncCursor || {};
-    var full = !!forceFull || !cur.fullAt || (Date.now() - cur.fullAt > FULL_RESYNC_MS) || !store.weeks || !Object.keys(store.weeks).length;
+    var full = !!forceFull || store.syncVersion !== 2 || !cur.fullAt || (Date.now() - cur.fullAt > FULL_RESYNC_MS) || !store.weeks || !Object.keys(store.weeks).length;
     function since(col){
       if(full || !cur[col]) return "";
       return "&updated_at=gt." + encodeURIComponent(new Date(cur[col] - INCREMENTAL_OVERLAP_MS).toISOString());
@@ -1411,6 +1411,7 @@
         else delete leaderPlanos[row.week_key][row.equipe];
       });
 
+      store.syncVersion = 2;
       store.syncCursor = {
         entries: maxStampMs(entries, cur.entries), meta: maxStampMs(metas, cur.meta),
         pipe: maxStampMs(deals, cur.pipe), notes: maxStampMs(leaderNotes, cur.notes),
@@ -3000,21 +3001,25 @@
       });
     });
 
-    $("generalNotes").addEventListener("input", function(){
+    // Propriedade (não addEventListener): este elemento é fixo na página e
+    // bindAdvisorInputs roda a cada renderização; com addEventListener os
+    // handlers de assessores anteriores continuavam ativos e copiavam o texto
+    // digitado para as observações de todos os assessores já abertos.
+    $("generalNotes").oninput = function(){
       var entry = entryFor(weekKey, equipe, nome, true);
       entry.notes = $("generalNotes").value;
       persist();
       flashSave();
       scheduleSync();
-    });
+    };
 
     function saveSchedule(){
       setSchedule(equipe, nome, $("scheduleDay").value, $("scheduleTime").value);
       flashSave();
       pushAdvisorMeta(equipe, nome);
     }
-    $("scheduleDay").addEventListener("change", saveSchedule);
-    $("scheduleTime").addEventListener("change", saveSchedule);
+    $("scheduleDay").onchange = saveSchedule;
+    $("scheduleTime").onchange = saveSchedule;
 
     $("noShowBtn").onclick = function(){
       var entry = entryFor(weekKey, equipe, nome, true);
