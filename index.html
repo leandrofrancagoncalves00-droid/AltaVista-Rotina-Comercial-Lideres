@@ -1294,6 +1294,7 @@
   var FULL_RESYNC_MS = 2*3600*1000;
   var INCREMENTAL_OVERLAP_MS = 15*60*1000;
   var lastPullAt = 0;
+  var firstPullDone = false;
   function maxStampMs(rows, cur){
     var m = cur || 0;
     rows.forEach(function(r){
@@ -1439,7 +1440,10 @@
       persist();
       if(!isTypingSomewhere()) renderAll();
       if(!silent) setSyncFlag("synced", "Dados atualizados");
-      flushDirty(false);
+      // Na primeira atualização da página (ex.: depois de um F5) tudo que estava
+      // pendente já é antigo, então é enviado na hora.
+      flushDirty(!firstPullDone);
+      firstPullDone = true;
     }).catch(function(){
       if(!silent) setSyncFlag("error", "Não foi possível carregar os dados");
     });
