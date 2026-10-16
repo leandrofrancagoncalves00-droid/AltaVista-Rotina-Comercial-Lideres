@@ -1135,25 +1135,109 @@
     markDirty("entries", key);
   }
 
-  function pushEntryRaw(weekKey, equipe, nome){
+  // ---- Proteção contra sobrescrita ------------------------------------------
+  // O envio de uma semana/assessor substitui a linha inteira no banco. Se a cópia
+  // local não conhece a versão que está no servidor (página aberta com dados
+  // ainda não carregados, outro computador, atualização falha), um envio normal
+  // apagaria o que já estava salvo. Por isso, antes de enviar, comparamos com o
+  // servidor e COMBINAMOS as duas versões quando ele mudou desde a última vez que
+  // este navegador o viu.
+  var CONFLICT_TEXT_KEYS = { ata:1, resultado:1, noShowMotivo:1 };
+  function isEmptyVal(v){
+    if(v === undefined || v === null || v === "") return true;
+    if(Array.isArray(v)) return !v.length;
+    if(typeof v === "object") return !Object.keys(v).length;
+    return false;
+  }
+  function mergeText(l, s){
+    l = l || ""; s = s || "";
+    if(!s || l === s || l.indexOf(s) !== -1) return l;
+    if(!l || s.indexOf(l) !== -1) return s;
+    return l + "\n\n[Versão anterior salva no sistema]\n" + s;
+  }
+  function mergeVal(l, s, key, unknownBase){
+    if(isEmptyVal(l)) return s;
+    if(isEmptyVal(s)) return l;
+    if(Array.isArray(l) && Array.isArray(s)){
+      var out = [], n = Math.max(l.length, s.length);
+      for(var i=0;i<n;i++){
+        var a = l[i], b = s[i];
+        if(a === false && b === true && unknownBase) out[i] = true;
+        else if(a === undefined || a === null || a === "") out[i] = b;
+        else out[i] = a;
+      }
+      return out;
+    }
+    if(typeof l === "object" && typeof s === "object" && !Array.isArray(l) && !Array.isArray(s)){
+      var o = {};
+      Object.keys(s).forEach(function(k){ o[k] = s[k]; });
+      Object.keys(l).forEach(function(k){ o[k] = mergeVal(l[k], s[k], k, unknownBase); });
+      return o;
+    }
+    if(typeof l === "string" && typeof s === "string" && CONFLICT_TEXT_KEYS[key]) return mergeText(l, s);
+    return l;
+  }
+  function fetchServerEntry(weekKey, equipe, nome){
+    var q = "weekly_entries?equipe=eq." + encodeURIComponent(equipe) + "&nome=eq." + encodeURIComponent(nome) +
+            "&week_key=eq." + encodeURIComponent(weekKey) + "&select=id,items,notes,updated_at";
+    return fetch(sbUrl(q), { headers: sbHeaders() }).then(function(r){
+      if(!r.ok) throw new Error("http " + r.status);
+      return r.json();
+    }).then(function(rows){ return (rows && rows[0]) || null; });
+  }
+
+  function pushEntryRaw(weekKey, equipe, nome, unloading){
     var key = weekKey+"|"+equipe+"|"+nome;
     var entry = entryFor(weekKey, equipe, nome, false);
     var ts = store.dirty && store.dirty.entries && store.dirty.entries[key];
     if(!entry){ if(ts) clearDirty("entries", key, ts); return Promise.resolve(); }
     if(ts && sendingEntries[key] === ts) return Promise.resolve();
     if(ts) sendingEntries[key] = ts;
-    var items = entry.items || {};
-    var notes = entry.notes || "";
     setSyncFlag("syncing", "Sincronizando…");
-    return fetch(sbUrl("weekly_entries?on_conflict=equipe,nome,week_key"), {
-      method: "POST",
-      keepalive: true,
-      headers: sbHeaders({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
-      body: JSON.stringify([{ equipe: equipe, nome: nome, week_key: weekKey, items: items, notes: notes, updated_at: new Date().toISOString() }])
+    var conflict = false;
+    // Ao fechar a página não dá tempo de consultar antes: envia direto.
+    var base = unloading ? Promise.resolve(null) : fetchServerEntry(weekKey, equipe, nome);
+    return base.then(function(server){
+      var cur = entryFor(weekKey, equipe, nome, false) || entry;
+      var items = cur.items || {};
+      var notes = cur.notes || "";
+      if(server){
+        var knownStamp = store.entryStamps && store.entryStamps[server.id];
+        if(!knownStamp || knownStamp !== server.updated_at){
+          var mItems = mergeVal(items, server.items || {}, "items", !knownStamp);
+          var mNotes = mergeText(notes, server.notes || "");
+          if(JSON.stringify(mItems) !== JSON.stringify(items) || mNotes !== notes){
+            conflict = true;
+            items = mItems; notes = mNotes;
+            cur.items = items; cur.notes = notes;
+            persist();
+          }
+        }
+      }
+      return fetch(sbUrl("weekly_entries?on_conflict=equipe,nome,week_key"), {
+        method: "POST",
+        keepalive: true,
+        headers: sbHeaders({ "Prefer": "resolution=merge-duplicates,return=representation" }),
+        body: JSON.stringify([{ equipe: equipe, nome: nome, week_key: weekKey, items: items, notes: notes, updated_at: new Date().toISOString() }])
+      });
     }).then(function(r){
       if(!r.ok) throw new Error("http " + r.status);
+      return r.json().catch(function(){ return []; });
+    }).then(function(rows){
+      var row = rows && rows[0];
+      if(row && row.id !== undefined){
+        store.entryStamps = store.entryStamps || {};
+        store.entryKeyById = store.entryKeyById || {};
+        store.entryStamps[row.id] = row.updated_at;
+        store.entryKeyById[row.id] = [weekKey, equipe, nome];
+      }
       if(ts) clearDirty("entries", key, ts);
+      persist();
       setSyncFlag("synced", "Sincronizado");
+      if(conflict){
+        showToast("Este registro tinha sido alterado em outro lugar — as duas versões foram combinadas para não perder nada");
+        if(!isTypingSomewhere()) renderAll();
+      }
     }).catch(function(){
       setSyncFlag("error", "Falha ao sincronizar — será reenviado");
     }).then(function(){
@@ -1169,12 +1253,12 @@
 
   // Reenvia tudo que ainda está pendente (chamado após cada atualização e quando
   // a aba é fechada/escondida). force=true ignora a espera de 3s pós-edição.
-  function flushDirty(force){
+  function flushDirty(force, unloading){
     var d = store.dirty || {};
     function due(ts){ return force || (Date.now() - ts) > 3000; }
     Object.keys(d.entries || {}).forEach(function(k){
       if(!due(d.entries[k])) return;
-      var p = k.split("|"); pushEntryRaw(p[0], p[1], p[2]);
+      var p = k.split("|"); pushEntryRaw(p[0], p[1], p[2], unloading);
     });
     Object.keys(d.meta || {}).forEach(function(k){
       if(!due(d.meta[k])) return;
@@ -3403,13 +3487,13 @@
     renderAll();
   })();
 
-  pullAllFromSupabase(true);
+  pullAllFromSupabase(false);
   setInterval(function(){ if(!document.hidden) pullAllFromSupabase(true); }, 60000);
   document.addEventListener("visibilitychange", function(){
-    if(document.hidden) flushDirty(true);
+    if(document.hidden) flushDirty(true, true);
     else if(Date.now() - lastPullAt > 30000) pullAllFromSupabase(true);
   });
-  window.addEventListener("pagehide", function(){ flushDirty(true); });
+  window.addEventListener("pagehide", function(){ flushDirty(true, true); });
   // Fim de preenchimento (sair do campo, escolher opção, clicar): envia na hora,
   // sem esperar o intervalo de digitação — assim um F5 logo depois não perde nada.
   ["focusout", "change", "click"].forEach(function(evt){
@@ -3425,7 +3509,7 @@
   }
   window.addEventListener("beforeunload", function(e){
     if(!hasPendingChanges()) return;
-    flushDirty(true);
+    flushDirty(true, true);
     e.preventDefault();
     e.returnValue = "";
   });
