@@ -1402,16 +1402,32 @@
         return r.json();
       });
     }
+    // A API do Supabase devolve no máximo 1000 linhas por pedido; sem paginar, as
+    // linhas mais novas simplesmente não chegavam (e sumiam da tela do líder).
+    function getAllJson(path, order){
+      var pageSize = 1000, out = [];
+      function next(offset){
+        return fetch(sbUrl(path + "&order=" + order), { headers: sbHeaders({ "Range-Unit": "items", "Range": offset + "-" + (offset + pageSize - 1) }) }).then(function(r){
+          if(!r.ok) throw new Error("http " + r.status);
+          return r.json();
+        }).then(function(rows){
+          if(!Array.isArray(rows)) throw new Error("bad response");
+          out = out.concat(rows);
+          return rows.length === pageSize ? next(offset + pageSize) : out;
+        });
+      }
+      return next(0);
+    }
     var entriesReq;
     if(full){
-      entriesReq = getJson("weekly_entries?select=*").then(function(rows){
+      entriesReq = getAllJson("weekly_entries?select=*", "id.asc").then(function(rows){
         var stamps = {};
         rows.forEach(function(r){ stamps[r.id] = r.updated_at; });
         return { rows: rows, stamps: stamps, removedIds: [] };
       });
     } else {
       var known = store.entryStamps || {};
-      entriesReq = getJson("weekly_entries?select=id,updated_at").then(function(list){
+      entriesReq = getAllJson("weekly_entries?select=id,updated_at", "id.asc").then(function(list){
         var stamps = {}, changedIds = [];
         list.forEach(function(r){
           stamps[r.id] = r.updated_at;
@@ -1428,10 +1444,10 @@
     }
     return Promise.all([
       entriesReq,
-      withSmallTables ? getJson("advisor_meta?select=*") : Promise.resolve(null),
-      withSmallTables ? getJson("pipeline_deals?select=*") : Promise.resolve(null),
+      withSmallTables ? getAllJson("advisor_meta?select=*", "equipe.asc,nome.asc") : Promise.resolve(null),
+      withSmallTables ? getAllJson("pipeline_deals?select=*", "id.asc") : Promise.resolve(null),
       getJson("app_notices?select=*").catch(function(){ return []; }),
-      withSmallTables ? fetch(sbUrl("leader_weekly_notes?select=equipe,week_key,plano_acao,plano_status"), { headers: sbHeaders() }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }) : Promise.resolve(null)
+      withSmallTables ? getAllJson("leader_weekly_notes?select=equipe,week_key,plano_acao,plano_status", "equipe.asc,week_key.asc").catch(function(){ return null; }) : Promise.resolve(null)
     ]).then(function(results){
       var entriesRes = results[0], metas = results[1], deals = results[2], notices = results[3] || [], leaderNotes = results[4];
       var entries = entriesRes.rows;

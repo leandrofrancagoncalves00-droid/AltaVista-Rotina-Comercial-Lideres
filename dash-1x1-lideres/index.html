@@ -593,12 +593,29 @@
   var planoAcaoData = {};  // weekKey -> equipe -> texto
   var planoStatusData = {}; // weekKey -> equipe -> "done" | "not_done" | ""
 
+  // A API do Supabase devolve no máximo 1000 linhas por pedido; sem paginar, as
+  // linhas mais novas não chegavam.
+  function getAllRows(path, order){
+    var pageSize = 1000, out = [];
+    function next(offset){
+      return fetch(sbUrl(path + "&order=" + order), { headers: sbHeaders({ "Range-Unit": "items", "Range": offset + "-" + (offset + pageSize - 1) }) }).then(function(r){
+        if(!r.ok) throw new Error("http " + r.status);
+        return r.json();
+      }).then(function(rows){
+        if(!Array.isArray(rows)) throw new Error("bad response");
+        out = out.concat(rows);
+        return rows.length === pageSize ? next(offset + pageSize) : out;
+      });
+    }
+    return next(0);
+  }
+
   function pullAll(silent){
     if(!silent) setSyncFlag("syncFlag", "syncing", "Carregando dados…");
     return Promise.all([
-      fetch(sbUrl("weekly_entries?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }),
-      fetch(sbUrl("advisor_meta?select=*"), { headers: sbHeaders() }).then(function(r){ return r.json(); }),
-      fetch(sbUrl("leader_weekly_notes?select=*"), { headers: sbHeaders() }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; })
+      getAllRows("weekly_entries?select=*", "id.asc"),
+      getAllRows("advisor_meta?select=*", "equipe.asc,nome.asc"),
+      getAllRows("leader_weekly_notes?select=*", "equipe.asc,week_key.asc").catch(function(){ return []; })
     ]).then(function(results){
       var entries = results[0] || [], metas = results[1] || [], notes = results[2] || [];
       var weeks = {};
