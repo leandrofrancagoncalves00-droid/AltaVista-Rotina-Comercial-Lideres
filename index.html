@@ -474,6 +474,17 @@
   input[type=file]{display:none;}
 
   /* ---------- Settings overlay ---------- */
+  .sniper-card{display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 18px;margin-bottom:14px;}
+  .sniper-card .sn-title{display:flex;flex-direction:column;gap:2px;min-width:180px;}
+  .sniper-card .sn-title .eyebrow{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);font-weight:700;}
+  .sniper-card .sn-title b{font-size:14.5px;color:var(--ink-900);}
+  .sniper-card .sn-stats{display:flex;flex-wrap:wrap;gap:18px;flex:1;}
+  .sniper-card .sn-stat{display:flex;flex-direction:column;font-size:11px;color:var(--ink-500);}
+  .sniper-card .sn-stat b{font-family:var(--font-mono);font-size:16px;color:var(--ink-900);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .panel.sniper-panel{max-width:1240px;height:90vh;max-height:90vh;padding:0;gap:0;overflow:hidden;}
+  .sniper-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);}
+  .sniper-panel-head h3{font-family:var(--font-display);font-size:15px;color:var(--ink-900);}
+  .sniper-panel iframe{flex:1;width:100%;border:0;background:var(--bg);}
   .overlay{position:fixed;inset:0;background:rgba(10,14,18,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;}
   .overlay[hidden]{display:none;}
   .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);width:100%;max-width:460px;padding:20px;display:flex;flex-direction:column;gap:14px;max-height:86vh;overflow-y:auto;}
@@ -694,6 +705,8 @@
       <div class="quadrant-grid" id="quadrantGrid"></div>
     </div>
 
+    <div id="sniperBlock"></div>
+
     <div id="msvBlock"></div>
 
     <div class="items-grid" id="itemsGrid"></div>
@@ -821,8 +834,19 @@
   </div>
 </div>
 
+<div class="overlay" id="sniperModal" hidden>
+  <div class="panel sniper-panel">
+    <div class="sniper-panel-head">
+      <h3 id="sniperModalTitle">Base Sniper</h3>
+      <button class="btn" id="closeSniperModal">Fechar</button>
+    </div>
+    <iframe id="sniperFrame" title="Base Sniper do assessor"></iframe>
+  </div>
+</div>
+
 <div class="toast" id="toast" hidden></div>
 
+<script src="base-sniper/data.js?v=2026-10-14"></script>
 <script>
 (function(){
   "use strict";
@@ -1972,6 +1996,7 @@
     renderQuadrant();
     renderPipeline();
     renderMsvBlock(currentAdvisor);
+    renderSniperBlock(currentAdvisor);
     renderMissoesBlock(currentTeam, currentAdvisor);
     renderNoShowBlock();
     bindAdvisorInputs();
@@ -2229,6 +2254,73 @@
       flashSave();
     });
     ta.addEventListener("change", function(){ pushEntryForWeek(weekKey); });
+  }
+
+  // Base Sniper (P1+P2) e Open Investments: carteira do assessor nas duas bases
+  // (dados em base-sniper/data.js, casados pelo nome). Os botões abrem o dash da
+  // base num modal para o líder fazer o bate na 1:1.
+  var SNIPER_BY_NOME = (function(){
+    var map = {}, S = window.BASES_DATA;
+    if(!S) return map;
+    function norm(s){ return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim(); }
+    Object.keys(S.assessores).forEach(function(cod){ map[norm(S.assessores[cod].n)] = { cod: cod, sniper: [], opin: [], avenue: [] }; });
+    S.sniper.forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].sniper.push(c); });
+    S.opin.forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].opin.push(c); });
+    (S.avenue||[]).forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].avenue.push(c); });
+    map.__norm = norm;
+    return map;
+  })();
+  function sniperFor(nome){ return SNIPER_BY_NOME.__norm ? SNIPER_BY_NOME[SNIPER_BY_NOME.__norm(nome)] : null; }
+  function renderSniperBlock(nome){
+    var el = $("sniperBlock");
+    if(!el) return;
+    var sn = sniperFor(nome);
+    if(!sn || (!sn.sniper.length && !sn.opin.length && !sn.avenue.length)){ el.innerHTML = ""; return; }
+    var mi = function(v){ return "R$ " + (v/1e6).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) + " mi"; };
+    var sum = function(l,f){ var t=0; l.forEach(function(c){ t+=f(c); }); return t; };
+    var html = "";
+    if(sn.sniper.length){
+      var p1 = sn.sniper.filter(function(c){ return c.p==="P1"; }).length;
+      html += '<div class="sniper-card">' +
+        '<div class="sn-title"><span class="eyebrow">Base Sniper · P1 + P2</span><b>Share of wallet abaixo de 50%</b></div>' +
+        '<div class="sn-stats">' +
+          '<span class="sn-stat"><b>'+sn.sniper.length+'</b>clientes ('+p1+' P1 · '+(sn.sniper.length-p1)+' P2)</span>' +
+          '<span class="sn-stat"><b>'+mi(sum(sn.sniper,function(c){return c.g;}))+'</b>gap fora da XP</span>' +
+          '<span class="sn-stat"><b>'+mi(sum(sn.sniper,function(c){return c.x;}))+'</b>custódia XP</span>' +
+        '</div>' +
+        '<button type="button" class="btn primary sniper-open" data-base="sniper">Fazer o bate da base sniper</button></div>';
+    }
+    if(sn.opin.length){
+      var big = sn.opin.filter(function(c){ return c.t>=1e6; });
+      html += '<div class="sniper-card">' +
+        '<div class="sn-title"><span class="eyebrow">Open Investments · OPIN</span><b>Posição em outras instituições</b></div>' +
+        '<div class="sn-stats">' +
+          '<span class="sn-stat"><b>'+sn.opin.length+'</b>contas ('+big.length+' acima de R$ 1 mi)</span>' +
+          '<span class="sn-stat"><b>'+mi(sum(sn.opin,function(c){return c.t;}))+'</b>posição fora da XP</span>' +
+          '<span class="sn-stat"><b>'+mi(sum(sn.opin,function(c){return c.v90+c.v12;}))+'</b>vence em até 12 meses</span>' +
+        '</div>' +
+        '<button type="button" class="btn primary sniper-open" data-base="opin">Fazer o bate do OPIN</button></div>';
+    }
+    if(sn.avenue.length){
+      var avBig = sn.avenue.filter(function(c){ return c.t>=3e5; });
+      html += '<div class="sniper-card">' +
+        '<div class="sn-title"><span class="eyebrow">Avenue · trazer para a XP</span><b>Contas dos clientes na Avenue</b></div>' +
+        '<div class="sn-stats">' +
+          '<span class="sn-stat"><b>'+sn.avenue.length+'</b>contas ('+avBig.length+' acima de R$ 300 mil)</span>' +
+          '<span class="sn-stat"><b>'+mi(sum(sn.avenue,function(c){return c.t;}))+'</b>posição na Avenue</span>' +
+          '<span class="sn-stat"><b>'+mi(sum(sn.avenue,function(c){return c.mix[4];}))+'</b>saldo parado</span>' +
+        '</div>' +
+        '<button type="button" class="btn primary sniper-open" data-base="avenue">Fazer o bate da Avenue</button></div>';
+    }
+    el.innerHTML = html;
+    Array.prototype.forEach.call(el.querySelectorAll(".sniper-open"), function(btn){
+      btn.addEventListener("click", function(){
+        var base = btn.getAttribute("data-base");
+        $("sniperModalTitle").textContent = ({opin:"Open Investments · ", avenue:"Avenue · "}[base] || "Base Sniper · ") + nome;
+        $("sniperFrame").src = "base-sniper/index.html?embed=1&base=" + base + "&a=" + encodeURIComponent(sn.cod);
+        $("sniperModal").hidden = false;
+      });
+    });
   }
 
   function renderMsvBlock(nome){
@@ -3474,6 +3566,7 @@
   });
 
   $("closeTextModal").addEventListener("click", function(){ $("textModal").hidden = true; });
+  $("closeSniperModal").addEventListener("click", function(){ $("sniperModal").hidden = true; $("sniperFrame").src = "about:blank"; });
   $("textModal").addEventListener("click", function(e){ if(e.target===this) this.hidden = true; });
   $("copyTextModalBtn").addEventListener("click", function(){
     var text = $("textModalArea").value;

@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Base Sniper · Alta Vista</title>
+<style>
+  :root{
+    --bg:#4a3226; --on-bg:#eef2f7; --on-bg-muted:#a7b8d6;
+    --surface:#ffffff; --surface-2:#e3e9e7; --border:#d2dad7;
+    --ink-900:#121a22; --ink-700:#3c4a52; --ink-500:#6b7a80;
+    --accent:#2454c7; --accent-ink:#14306e; --accent-soft:#e3ecfc;
+    --success:#1e8e5a; --success-soft:#e1f3e9;
+    --warning:#a8770a; --warning-soft:#fbf1da;
+    --critical:#c4432e; --critical-soft:#fbe7e2;
+    --pending:#8b98a0; --pending-soft:#eceff0;
+    --purple:#6b4bc4; --purple-soft:#ece6fb;
+    --shadow:0 1px 2px rgba(18,26,34,.06),0 4px 14px rgba(18,26,34,.06);
+    --radius:12px; --radius-sm:8px;
+    --font-display:"Segoe UI Semibold","Segoe UI",system-ui,-apple-system,sans-serif;
+    --font-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --font-mono:ui-monospace,"Cascadia Code","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#1c130d; --on-bg:#edf1f4; --on-bg-muted:#8b98a0; --surface:#171e25; --surface-2:#1e2730; --border:#2b3640;
+      --ink-900:#edf1f4; --ink-700:#c3ccd2; --ink-500:#8b98a0;
+      --accent:#6c95ff; --accent-ink:#dce6ff; --accent-soft:#1c2b4d;
+      --success:#3fbe84; --success-soft:#16332a; --warning:#e0ac3a; --warning-soft:#3a2e14;
+      --critical:#e2694e; --critical-soft:#3b2019; --pending:#7c8890; --pending-soft:#232b31;
+      --purple:#a58cf0; --purple-soft:#2a2342;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1c130d; --on-bg:#edf1f4; --on-bg-muted:#8b98a0; --surface:#171e25; --surface-2:#1e2730; --border:#2b3640;
+    --ink-900:#edf1f4; --ink-700:#c3ccd2; --ink-500:#8b98a0;
+    --accent:#6c95ff; --accent-ink:#dce6ff; --accent-soft:#1c2b4d;
+    --success:#3fbe84; --success-soft:#16332a; --warning:#e0ac3a; --warning-soft:#3a2e14;
+    --critical:#e2694e; --critical-soft:#3b2019; --pending:#7c8890; --pending-soft:#232b31;
+    --purple:#a58cf0; --purple-soft:#2a2342;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  h1,h2,h3,p{margin:0;}
+  body{background:var(--bg);margin:0;}
+  button,input,select,textarea{font-family:inherit;color:inherit;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .app{font-family:var(--font-body);color:var(--ink-700);background:var(--bg);min-height:100vh;max-width:1280px;margin:0 auto;padding:20px 16px 56px;display:flex;flex-direction:column;gap:16px;}
+  .tabular,.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);}
+
+  .topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding:16px 20px;}
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .eyebrow{font-family:var(--font-display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);font-weight:700;}
+  .brand h1{font-size:21px;font-weight:700;color:var(--ink-900);letter-spacing:-.01em;}
+  .brand .sub{font-size:12.5px;color:var(--ink-500);}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  select,.search{padding:8px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);font-size:13px;color:var(--ink-900);}
+  .search{min-width:200px;}
+  .pills{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:3px;}
+  .pills button{border:none;background:none;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--ink-700);}
+  .pills button.sel{background:var(--accent);color:#fff;}
+  .sync{font-size:11.5px;color:var(--ink-500);display:flex;align-items:center;gap:6px;}
+  .sync::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--pending);}
+  .sync.ok::before{background:var(--success);} .sync.err::before{background:var(--critical);} .sync.busy::before{background:var(--warning);}
+  .sync.err{color:var(--critical);}
+
+  .scoreboard{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+  .stat{padding:14px 16px;display:flex;flex-direction:column;gap:6px;}
+  td.num{white-space:nowrap;}
+  .stat .n{white-space:nowrap;font-family:var(--font-mono);font-size:24px;font-weight:600;color:var(--ink-900);line-height:1;}
+  .stat .l{font-size:11px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.06em;}
+  .stat .s{font-size:11.5px;color:var(--ink-500);}
+  @media (max-width:860px){.scoreboard{grid-template-columns:repeat(2,1fr);}}
+
+  .funnel{padding:14px 18px;display:flex;flex-direction:column;gap:10px;}
+  .funnel-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .funnel-head h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-500);font-family:var(--font-display);}
+  .fbar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--pending-soft);gap:2px;}
+  .fbar span{height:100%;}
+  .flegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-700);}
+  .flegend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:0;}
+  .flegend b{font-family:var(--font-mono);color:var(--ink-900);}
+
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .section-head h2{font-family:var(--font-display);font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--on-bg-muted);}
+  .section-head .hint{font-size:12px;color:var(--on-bg-muted);}
+
+  .tablewrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-500);text-align:left;padding:10px 10px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface);position:sticky;top:0;}
+  th.r,td.r{text-align:right;}
+  td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink-900);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tbody tr.click{cursor:pointer;}
+  tbody tr.click:hover td{background:var(--accent-soft);}
+  .muted{color:var(--ink-500);font-size:11.5px;}
+  .badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:.03em;white-space:nowrap;}
+  .b-p1{background:var(--critical-soft);color:var(--critical);} .b-p2{background:var(--warning-soft);color:var(--warning);}
+  .minibar{display:inline-block;width:56px;height:6px;border-radius:999px;background:var(--pending-soft);vertical-align:middle;margin-right:6px;overflow:hidden;}
+  .minibar span{display:block;height:100%;background:var(--accent);}
+  .stack{display:flex;height:8px;width:120px;border-radius:999px;overflow:hidden;background:var(--pending-soft);}
+  .stack span{height:100%;}
+  .move{font-family:var(--font-mono);font-weight:600;color:var(--success);}
+  .move.zero{color:var(--ink-500);font-weight:400;}
+
+  td select,td input{font-size:12.5px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink-900);width:100%;}
+  td select{min-width:235px;border-radius:6px;}
+  td input.money{width:110px;text-align:right;font-family:var(--font-mono);}
+  td input.date{width:135px;}
+  td input.txt{min-width:180px;}
+  tr.saving td:first-child{box-shadow:inset 3px 0 0 var(--warning);}
+  tr.saved td:first-child{box-shadow:inset 3px 0 0 var(--success);}
+  tr.failed td:first-child{box-shadow:inset 3px 0 0 var(--critical);}
+  tr.stale td.lc{color:var(--critical);}
+
+  .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;}
+  .team-card{text-align:left;cursor:pointer;padding:15px 16px;display:flex;flex-direction:column;gap:10px;transition:border-color .12s,transform .12s;font-family:inherit;color:inherit;}
+  .team-card:hover{border-color:var(--accent);transform:translateY(-1px);}
+  .team-card .tname{font-weight:700;color:var(--ink-900);font-size:15px;letter-spacing:-.01em;}
+  .team-card .tlider{font-size:12px;color:var(--ink-500);margin-top:2px;}
+  .team-card .tgap{font-family:var(--font-mono);font-size:22px;font-weight:600;color:var(--ink-900);white-space:nowrap;}
+  .team-card .tgap small{font-family:var(--font-body);font-size:11px;font-weight:400;color:var(--ink-500);margin-left:4px;}
+  .team-card .stack{width:100%;}
+  .team-card .tmeta{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:11px;color:var(--ink-500);}
+  .team-card .tmeta b{display:block;font-family:var(--font-mono);font-size:13px;color:var(--ink-900);}
+  .team-card.nolider{opacity:.85;}
+  .adv-head{padding:16px 18px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;}
+  .adv-head h2{font-size:18px;color:var(--ink-900);}
+  .btn{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink-700);}
+  .btn:hover{border-color:var(--accent);color:var(--accent-ink);}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .pauta{padding:16px 18px;display:none;flex-direction:column;gap:8px;}
+  .pauta.open{display:flex;}
+  .pauta textarea{width:100%;min-height:260px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-size:12.5px;line-height:1.5;font-family:var(--font-mono);color:var(--ink-900);}
+  .empty{padding:24px;text-align:center;color:var(--ink-500);font-size:13px;}
+  body.embed .app{padding-top:12px;}
+  body.embed .topbar,body.embed #backBtn{display:none;}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink-900);color:var(--surface);padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;}
+  .toast.show{opacity:1;}
+  .basetabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  @media (max-width:700px){.basetabs{grid-template-columns:1fr;}}
+  .basetab{text-align:left;cursor:pointer;padding:12px 16px;display:flex;flex-direction:column;gap:3px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);font-family:inherit;color:var(--ink-700);opacity:.75;transition:opacity .12s,border-color .12s;}
+  .basetab:hover{opacity:1;border-color:var(--accent);}
+  .basetab.sel{opacity:1;border-color:var(--accent);box-shadow:inset 0 -3px 0 var(--accent),var(--shadow);}
+  .basetab b{font-size:15px;color:var(--ink-900);}
+  .basetab span{font-size:12px;color:var(--ink-500);}
+  .b-A{background:var(--critical-soft);color:var(--critical);} .b-B{background:var(--warning-soft);color:var(--warning);}
+  .b-C{background:var(--accent-soft);color:var(--accent-ink);} .b-D,.b-E{background:var(--pending-soft);color:var(--ink-500);}
+  .mixbar{display:flex;width:110px;height:8px;border-radius:999px;overflow:hidden;background:var(--pending-soft);}
+  .mixbar span{height:100%;}
+  .mixleg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--ink-500);}
+  .mixleg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;}
+  td.gk{font-size:12px;color:var(--ink-700);min-width:220px;max-width:300px;line-height:1.35;}
+  td.inst b{font-weight:600;}
+  .warn{color:var(--warning);font-weight:600;}
+  .concept{padding:0;}
+  .concept summary{list-style:none;cursor:pointer;padding:12px 18px;display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--ink-900);}
+  .concept summary::-webkit-details-marker{display:none;}
+  .concept summary::before{content:"›";display:inline-block;color:var(--ink-500);font-size:16px;transition:transform .12s;}
+  .concept[open] summary::before{transform:rotate(90deg);}
+  .concept summary span{font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--ink-500);}
+  .concept-body{padding:0 18px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;}
+  .concept-item{background:var(--surface-2);border-radius:var(--radius-sm);padding:12px 14px;font-size:12.5px;line-height:1.5;color:var(--ink-700);}
+  .concept-item h4{margin:0 0 4px;font-size:12.5px;color:var(--ink-900);display:flex;align-items:center;gap:6px;}
+  .concept-item b{color:var(--ink-900);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="card topbar">
+    <div class="brand">
+      <span class="eyebrow" id="eyebrow">Alta Vista</span>
+      <h1 id="title">Captação dos clientes com patrimônio fora da XP</h1>
+      <span class="sub" id="subline"></span>
+    </div>
+    <div class="controls">
+      <select id="teamSel" aria-label="Equipe"></select>
+      <div class="pills" id="segPills"></div>
+      <input class="search" id="search" type="search" placeholder="Buscar cliente ou assessor">
+      <span class="sync" id="sync">Conectando…</span>
+    </div>
+  </header>
+
+  <nav class="basetabs" id="baseTabs"></nav>
+  <details class="card concept" id="concept"></details>
+
+  <section class="scoreboard" id="scoreboard"></section>
+  <section class="card funnel" id="funnel"></section>
+
+  <section id="view"></section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="data.js?v=2026-10-14"></script>
+<script>
+(function(){
+  var D = window.BASES_DATA;
+  var STATUSES = ["Não abordado","Contatado","Reunião agendada","Reunião realizada","Reunião de consultoria agendada","Reunião de consultoria realizada","Proposta enviada","Captado","Sem interesse"];
+  var SCOLOR = {"Não abordado":"var(--pending)","Contatado":"#5b8def","Reunião agendada":"var(--accent)","Reunião realizada":"var(--purple)","Reunião de consultoria agendada":"#2bb3a3","Reunião de consultoria realizada":"#13806f","Proposta enviada":"var(--warning)","Captado":"var(--success)","Sem interesse":"var(--critical)"};
+  var STALE_DAYS = 14;
+  var MIX_AV = [["Fundos","var(--purple)"],["Alternativos","#2bb3a3"],["Renda variável","var(--success)"],["Renda fixa","#5b8def"],["Saldo em conta","var(--warning)"]];
+  var MIX = [["RF bancária","#5b8def"],["Crédito privado","var(--warning)"],["Fundos","var(--purple)"],["Renda variável","var(--success)"],["Tesouro","var(--pending)"]];
+
+  /* ---------- helpers ---------- */
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+  function mi(v){ return "R$ " + (v/1e6).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) + " mi"; }
+  function bi(v){ return v>=1e9 ? "R$ " + (v/1e9).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}) + " bi" : mi(v); }
+  function mil(v){ return v>=1e6 ? mi(v) : "R$ " + Math.round(v/1e3).toLocaleString("pt-BR") + " mil"; }
+  function pct(v){ return (v*100).toLocaleString("pt-BR",{maximumFractionDigits:0}) + "%"; }
+  function sum(list,f){ var t=0; list.forEach(function(c){ t+=f(c); }); return t; }
+  function count(list,f){ return list.filter(f).length; }
+  function advName(a){ return (D.assessores[a]||{}).n || a; }
+  function advTeam(a){ return (D.assessores[a]||{}).e || "Sem equipe cadastrada"; }
+  function teamLabel(e){ var l = D.lideres[e]; return l ? e + " · " + l.split(" ")[0] + " " + l.split(" ").slice(-1)[0] : e; }
+  function weekStart(){ var d=new Date(); var day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); d.setHours(0,0,0,0); return d; }
+  function daysSince(iso){ if(!iso) return null; return Math.floor((Date.now()-new Date(iso+"T12:00:00").getTime())/864e5); }
+  function toast(msg){ var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},2200); }
+  function setSync(cls,txt){ var s=document.getElementById("sync"); s.className="sync "+cls; s.textContent=txt; }
+  function mixBar(m, leg){
+    leg = leg || MIX;
+    var tot = m[0]+m[1]+m[2]+m[3]+m[4], h = "";
+    if(!tot) return '<div class="mixbar"></div>';
+    m.forEach(function(v,i){ if(v>0) h += '<span style="flex:'+v+';background:'+leg[i][1]+'" title="'+leg[i][0]+': '+mil(v)+' ('+pct(v/tot)+')"></span>'; });
+    return '<div class="mixbar">'+h+'</div>';
+  }
+
+  /* ---------- as duas bases ---------- */
+  var BASES = {
+    sniper: {
+      key:"sniper", tab:"Base Sniper · P1 + P2",
+      concept:{
+        title:"Conceito da Base Sniper · P1 + P2",
+        hint:"o que é, como as ondas são definidas e como abordar",
+        items:[
+          ["O que é a base sniper", "Clientes que <b>já têm relacionamento com a XP</b> (custódia aqui acima de <b>R$ 1 mi</b>), mas ainda concentram a maior parte do patrimônio em outras instituições. É captação dentro de casa: o cliente já confia no assessor, só não trouxe tudo."],
+          ["Share of wallet (SoW)", "Quanto do patrimônio total do cliente está na XP: <b>custódia XP ÷ patrimônio total declarado (PLA)</b>. Entram na base os clientes com SoW <b>abaixo de 50%</b>. O <b>gap</b> é o que está fora: PLA − custódia XP."],
+          ['<span class="badge b-p1">P1</span> Primeira onda · SoW abaixo de 30%', "Menos de 30% do patrimônio está na XP. <b>{P1}</b>. Maior potencial por cliente: é onde começamos, do maior gap para o menor."],
+          ['<span class="badge b-p2">P2</span> Segunda onda · SoW de 30% a 50%', "O cliente já tem uma fatia relevante na XP. <b>{P2}</b>. Ticket menor, foco em <b>consolidar</b> o que falta."],
+          ["Como usar na 1:1", "Revisar a lista do assessor pelo maior gap, marcar quem já está em conversa ou deve sair da abordagem, definir o responsável e acompanhar toda semana o funil <b>contato → reunião → consultoria → proposta → captação</b>."]
+        ]
+      },
+      tabSub: function(){ return D.sniper.length + " clientes · SoW < 50% · " + bi(sum(D.sniper,function(c){return c.g;})) + " de gap"; },
+      eyebrow:"Base Sniper · Alta Vista", title:"Captação dos clientes com patrimônio fora da XP",
+      sub:"Posição " + D.refSniper + " · custódia XP ≥ R$ 1 mi e share of wallet < 50% · P1 = SoW < 30% · P2 = SoW 30–50%",
+      rows:D.sniper, unit:"clientes", val:function(c){ return c.g; }, valLabel:"de gap fora",
+      segs:[["all","P1 + P2"],["P1","P1"],["P2","P2"]], defSeg:"all",
+      inSeg:function(c,s){ return s==="all" || c.p===s; },
+      sortRows:function(x,y){ return (x.p===y.p?0:(x.p==="P1"?-1:1)) || y.g-x.g; },
+      scoreboard:function(list,a){
+        var x = sum(list,function(c){return c.x;}), l = sum(list,function(c){return c.l;});
+        return [["Clientes na base", a.n, "P1: "+count(list,function(c){return c.p==="P1";})+" · P2: "+count(list,function(c){return c.p==="P2";})],
+                ["Gap fora da XP", bi(a.v), "Custódia XP " + bi(x) + " · SoW " + (l?pct(x/l):"–")]];
+      },
+      teamMeta:function(g){ return [[count(g,function(c){return c.p==="P1";})+" / "+count(g,function(c){return c.p==="P2";}),"P1 / P2"],[mi(sum(g,function(c){return c.x;})),"custódia XP"]]; },
+      advCols:[["P1",function(g){ return count(g,function(c){return c.p==="P1";}); }],["P2",function(g){ return count(g,function(c){return c.p==="P2";}); }],["Custódia XP",function(g){ return mi(sum(g,function(c){return c.x;})); }]],
+      valCol:"Gap fora",
+      head:'<th>Onda</th><th>Cliente</th><th class="r">Custódia XP</th><th class="r">PLA</th><th>SoW</th><th class="r">Gap fora</th>',
+      cells:function(c){
+        return '<td><span class="badge '+(c.p==="P1"?"b-p1":"b-p2")+'">'+c.p+'</span><div class="muted">'+esc(c.f)+'</div></td>' +
+          '<td><b class="num">'+esc(c.c)+'</b><div class="muted">'+esc(c.s)+'</div></td>' +
+          '<td class="r num">'+mi(c.x)+'</td><td class="r num">'+mi(c.l)+'</td>' +
+          '<td class="num"><span class="minibar"><span style="width:'+Math.min(100,c.w*100)+'%"></span></span>'+pct(c.w)+'</td>' +
+          '<td class="r num"><b>'+mi(c.g)+'</b></td>';
+      },
+      pautaHead:function(all){ return "Base: " + all.length + " clientes · gap fora " + mi(sum(all,function(c){return c.g;})) + " · custódia XP " + mi(sum(all,function(c){return c.x;})); },
+      pautaLine:function(c){ return c.c + " · " + c.p + " · " + c.s + " · custódia " + mi(c.x) + " · SoW " + pct(c.w) + " · gap " + mi(c.g); },
+      msgIntro:"sua lista da *Base Sniper (P1 + P2)*: clientes com mais de R$ 1 mi na XP que ainda têm a maior parte do patrimônio fora",
+      msgGroups:[["P1","*P1 · share of wallet abaixo de 30%* (prioridade)"],["P2","*P2 · share of wallet de 30% a 50%*"]],
+      msgGroupOf:function(c){ return c.p; },
+      msgLine:function(c){ return "Cliente " + c.c + " · " + c.s + " · na XP " + mi(c.x) + " (" + pct(c.w) + ") · fora " + mi(c.g); },
+      tsvHead:["Onda","Cliente","Segmento","Custódia XP","Patrimônio total","SoW","Gap fora da XP"],
+      tsvRow:function(c){ return [c.p, c.c, c.s, c.x, c.l, pct(c.w), c.g]; },
+      pautaExtra:function(){ return []; }
+    },
+    opin: {
+      key:"opin", tab:"Open Investments · OPIN",
+      concept:{
+        title:"Conceito do Open Investments · OPIN",
+        hint:"o que é, os números da base, as faixas e o gancho de consultoria",
+        items:[
+          ["O que é", "Posições que os clientes da Alta Vista têm em <b>outras instituições</b>, visíveis pelo Open Investments (segmentos PF 300K-, PF 300K+ e Private). A ideia é usar a <b>consultoria</b> — um diagnóstico da carteira externa — como porta de entrada para captar."],
+          ["Volume e concentração", "<b>{VOL}</b> fora da XP, em <b>{CONTAS}</b> contas e <b>{ASS}</b> assessores. As <b>{N1}</b> contas acima de R$ 1 mi respondem por <b>{PB}</b> do volume; as <b>{N3}</b> maiores (acima de R$ 3 mi) somam <b>{V3}</b>."],
+          ["Instituições e produtos", "{INST} concentram a maior parte. Em <b>{CONC}</b> contas acima de R$ 1 mi, 80% ou mais do dinheiro está em uma única instituição. Produtos: {MIX}."],
+          ["1 · Prioridade pela posição fora", "Quanto maior a posição fora, maior o potencial. <span class=\"badge b-A\">A</span> acima de R$ 3 mi: diagnóstico personalizado com <b>gestor + assessor</b>. <span class=\"badge b-B\">B</span> R$ 1 a 3 mi: <b>assessor com apoio do gestor</b>, contato em até 30 dias. <span class=\"badge b-C\">C</span> 300 mil a 1 mi: convite com material padronizado. <span class=\"badge b-D\">D</span> <span class=\"badge b-E\">E</span> abaixo de 300 mil: convite digital e comunicação massificada."],
+          ["2 · Consultoria como porta de entrada", "Cada conta já traz o <b>gancho principal</b>: concentração em uma instituição, carteira fragmentada, crédito privado relevante, fundos para revisão ou <b>vencimentos próximos</b> — o momento natural de reinvestimento. Use o gancho para abrir a conversa e oferecer o diagnóstico."]
+        ]
+      },
+      tabSub: function(){ return D.opin.length + " contas · " + bi(sum(D.opin,function(c){return c.t;})) + " em outras instituições"; },
+      eyebrow:"Open Investments · Alta Vista", title:"Consultoria para a posição fora da XP",
+      sub:"Posição aberta em outras instituições (PF 300K-, PF 300K+ e Private) · prioridade pela posição fora · consultoria como porta de entrada",
+      rows:D.opin, unit:"contas", val:function(c){ return c.t; }, valLabel:"fora da XP",
+      segs:[["AB","> R$ 1 mi (A+B)"],["C","300 mil–1 mi"],["DE","até 300 mil"],["all","Todas"]], defSeg:"AB",
+      inSeg:function(c,s){ return s==="all" || s.indexOf(c.f)>=0; },
+      sortRows:function(x,y){ return y.t-x.t; },
+      scoreboard:function(list,a){
+        var v90 = sum(list,function(c){return c.v90;});
+        return [["Contas", a.n, count(list,function(c){return c.t>=1e6;}) + " acima de R$ 1 mi"],
+                ["Posição fora da XP", bi(a.v), mil(v90) + " vence em até 90 dias"]];
+      },
+      teamMeta:function(g){ return [[count(g,function(c){return c.t>=3e6;})+" / "+count(g,function(c){return c.t>=1e6&&c.t<3e6;}),"contas A / B"],[mi(sum(g,function(c){return c.v90+c.v12;})),"vence em 12m"]]; },
+      advCols:[["A (>3 mi)",function(g){ return count(g,function(c){return c.f==="A";}); }],["B (1–3 mi)",function(g){ return count(g,function(c){return c.f==="B";}); }],["Vence 12m",function(g){ return mi(sum(g,function(c){return c.v90+c.v12;})); }]],
+      valCol:"Posição fora",
+      head:'<th>Faixa</th><th>Conta</th><th class="r">Posição fora</th><th>Instituição</th><th>Produtos</th><th class="r">Vence ≤ 90d / 12m</th><th>Gancho de consultoria</th>',
+      cells:function(c){
+        var outras = c.inst.slice(1).map(function(kv){ return kv[0] + " " + mil(kv[1]); }).join(" · ");
+        return '<td><span class="badge b-'+c.f+'">'+c.f+'</span><div class="muted">'+esc(c.fl.split(" · ")[1]||"")+'</div></td>' +
+          '<td><b class="num">'+esc(c.c)+'</b></td>' +
+          '<td class="r num"><b>'+mil(c.t)+'</b></td>' +
+          '<td class="inst"><b>'+esc(c.ip)+'</b> <span class="muted">'+pct(c.pp)+'</span><div class="muted">'+(c.ni>1?c.ni+" instituições"+(outras?": "+esc(outras):""):"só 1 instituição")+'</div></td>' +
+          '<td>'+mixBar(c.mix)+'</td>' +
+          '<td class="r num">'+(c.v90?'<span class="warn">'+mil(c.v90)+'</span>':'–')+'<div class="muted">'+(c.v12?mil(c.v12):'–')+'</div></td>' +
+          '<td class="gk">'+esc(c.gk)+'<div class="muted">'+esc(c.ab)+'</div></td>';
+      },
+      pautaHead:function(all){ var g = all.filter(function(c){return c.t>=1e6;}); return "OPIN: " + all.length + " contas · " + mi(sum(all,function(c){return c.t;})) + " fora da XP · " + g.length + " acima de R$ 1 mi (" + mi(sum(g,function(c){return c.t;})) + ")"; },
+      pautaLine:function(c){ return c.c + " · faixa " + c.f + " · " + mil(c.t) + " fora · " + c.ip + " " + pct(c.pp) + (c.v90?" · vence ≤90d " + mil(c.v90):"") + " → " + c.gk; },
+      msgIntro:"sua lista do *Open Investments*: posições dos seus clientes em outras instituições, para oferecermos o diagnóstico da carteira externa",
+      msgGroups:[["A","*Faixa A · acima de R$ 3 mi* (vamos juntos, gestor + assessor)"],["B","*Faixa B · R$ 1 a 3 mi* (contato em até 30 dias)"],["C","*Faixa C · R$ 300 mil a 1 mi*"],["D","*Faixa D · R$ 100 a 300 mil*"],["E","*Faixa E · até R$ 100 mil*"]],
+      msgGroupOf:function(c){ return c.f; },
+      msgLine:function(c){ return "Conta " + c.c + " · " + mil(c.t) + " fora · " + c.ip + " " + pct(c.pp) + (c.v90?" · vence em até 90 dias: " + mil(c.v90):"") + "\n   Gancho: " + c.gk; },
+      tsvHead:["Faixa","Conta","Posição fora","Instituição principal","% na principal","Nº instituições","Vence ≤ 90 dias","Vence 91d–12m","Gancho de consultoria"],
+      tsvRow:function(c){ return [c.f, c.c, c.t, c.ip, pct(c.pp), c.ni, c.v90, c.v12, c.gk]; },
+      pautaExtra:function(all){
+        var v = all.filter(function(c){ return c.v90>0 && c.t>=3e5; }).sort(function(x,y){ return y.v90-x.v90; }).slice(0,5);
+        if(!v.length) return [];
+        return ["VENCIMENTOS EM ATÉ 90 DIAS (momento de reinvestimento):"].concat(v.map(function(c){ return "• " + c.c + " · " + mil(c.v90) + " vencendo · " + c.ip; })).concat([""]);
+      }
+    },
+    avenue: {
+      key:"avenue", tab:"Avenue · trazer para a XP", mix:MIX_AV, msgTotal:"na Avenue",
+      concept:{
+        title:"Conceito da base Avenue",
+        hint:"o que é, as faixas e como abordar",
+        items:[
+          ["O que é", "Contas de clientes da Alta Vista na <b>Avenue</b>, com posição em {AVREF}. O objetivo é <b>trazer essas contas para a XP</b>, consolidando a carteira do cliente numa só casa. São <b>{AVN}</b> contas e <b>{AVT}</b>."],
+          ['<span class="badge b-A">A</span> <span class="badge b-B">B</span> Acima de R$ 300 mil', "<b>A (acima de R$ 1 mi)</b>: {AVA}. Abordagem individual, assessor com o gestor. <b>B (R$ 300 mil a 1 mi)</b>: {AVB}. Assessor faz o contato em até 30 dias."],
+          ['<span class="badge b-C">C</span> <span class="badge b-D">D</span> Até R$ 300 mil', "<b>C (R$ 100 a 300 mil)</b>: {AVC}. Convite com material padronizado. <b>D (até R$ 100 mil)</b>: {AVD}. Comunicação em massa."],
+          ["Por onde puxar a conversa", "A coluna <b>Produtos</b> mostra como o dinheiro está alocado na Avenue. <b>Saldo em conta</b> alto é dinheiro parado ({AVCX} no total) e um bom gancho. Fundos e renda fixa pedem comparação de custo e alternativa equivalente na XP."],
+          ["Como identificar o cliente", "A base usa o <b>código da conta na Avenue</b> e o assessor responsável. Ela ainda não está ligada ao código XP do cliente: o assessor confirma quem é pela conta Avenue."]
+        ]
+      },
+      tabSub: function(){ return D.avenue.length.toLocaleString("pt-BR") + " contas · " + bi(sum(D.avenue,function(c){return c.t;})) + " na Avenue"; },
+      eyebrow:"Avenue · Alta Vista", title:"Trazer as contas da Avenue para a XP",
+      sub:"Posição na Avenue em " + D.refAvenue.split("-").reverse().join("/") + " · faixas pela posição da conta · A = acima de R$ 1 mi · B = R$ 300 mil a 1 mi",
+      rows:D.avenue, unit:"contas", val:function(c){ return c.t; }, valLabel:"na Avenue",
+      segs:[["AB","> R$ 300 mil (A+B)"],["C","100–300 mil"],["D","até 100 mil"],["all","Todas"]], defSeg:"AB",
+      inSeg:function(c,s){ return s==="all" || s.indexOf(c.f)>=0; },
+      sortRows:function(x,y){ return y.t-x.t; },
+      scoreboard:function(list,a){
+        var cx = sum(list,function(c){return c.mix[4];});
+        return [["Contas", a.n, count(list,function(c){return c.t>=1e6;}) + " acima de R$ 1 mi"],
+                ["Posição na Avenue", bi(a.v), mil(cx) + " em saldo parado"]];
+      },
+      teamMeta:function(g){ return [[count(g,function(c){return c.f==="A";})+" / "+count(g,function(c){return c.f==="B";}),"contas A / B"],[mi(sum(g,function(c){return c.mix[4];})),"saldo parado"]]; },
+      advCols:[["A (>1 mi)",function(g){ return count(g,function(c){return c.f==="A";}); }],["B (300k–1 mi)",function(g){ return count(g,function(c){return c.f==="B";}); }],["Saldo parado",function(g){ return mi(sum(g,function(c){return c.mix[4];})); }]],
+      valCol:"Posição na Avenue",
+      head:'<th>Faixa</th><th>Conta Avenue</th><th class="r">Posição</th><th>Produtos</th><th>Principal</th><th class="r">Saldo em conta</th><th>Abertura</th>',
+      cells:function(c){
+        var i = c.mix.indexOf(Math.max.apply(null,c.mix));
+        var lab = {A:"acima de 1 mi",B:"300 mil–1 mi",C:"100–300 mil",D:"até 100 mil"}[c.f];
+        return '<td><span class="badge b-'+c.f+'">'+c.f+'</span><div class="muted">'+lab+'</div></td>' +
+          '<td><b class="num" title="'+esc(c.c)+'">'+esc(c.c.slice(0,10))+'…</b></td>' +
+          '<td class="r num"><b>'+mil(c.t)+'</b></td>' +
+          '<td>'+mixBar(c.mix, MIX_AV)+'</td>' +
+          '<td>'+esc(MIX_AV[i][0])+' <span class="muted">'+pct(c.mix[i]/c.t)+'</span></td>' +
+          '<td class="r num">'+(c.mix[4]>=5e4?'<span class="warn">'+mil(c.mix[4])+'</span>':(c.mix[4]?mil(c.mix[4]):'–'))+'</td>' +
+          '<td class="muted num">'+esc((c.ab||"").split("-").reverse().join("/"))+'</td>';
+      },
+      pautaHead:function(all){ var g = all.filter(function(c){return c.t>=3e5;}); return "Avenue: " + all.length + " contas · " + mi(sum(all,function(c){return c.t;})) + " na Avenue · " + g.length + " acima de R$ 300 mil (" + mi(sum(g,function(c){return c.t;})) + ")"; },
+      pautaLine:function(c){ var i = c.mix.indexOf(Math.max.apply(null,c.mix)); return "conta " + c.c.slice(0,10) + "… · faixa " + c.f + " · " + mil(c.t) + " · principal: " + MIX_AV[i][0] + (c.mix[4]>=5e4?" · saldo parado " + mil(c.mix[4]):""); },
+      pautaExtra:function(all){
+        var v = all.filter(function(c){ return c.mix[4]>=5e4; }).sort(function(x,y){ return y.mix[4]-x.mix[4]; }).slice(0,5);
+        if(!v.length) return [];
+        return ["SALDO PARADO NA AVENUE (gancho para trazer):"].concat(v.map(function(c){ return "• conta " + c.c.slice(0,10) + "… · " + mil(c.mix[4]) + " em saldo"; })).concat([""]);
+      },
+      msgIntro:"sua lista de *contas na Avenue*: clientes que vamos trabalhar para trazer a conta para a XP",
+      msgGroups:[["A","*Faixa A · acima de R$ 1 mi* (vamos juntos, gestor + assessor)"],["B","*Faixa B · R$ 300 mil a 1 mi* (contato em até 30 dias)"],["C","*Faixa C · R$ 100 a 300 mil*"],["D","*Faixa D · até R$ 100 mil*"]],
+      msgGroupOf:function(c){ return c.f; },
+      msgLine:function(c){ var i = c.mix.indexOf(Math.max.apply(null,c.mix)); return "Conta Avenue " + c.c + " · " + mil(c.t) + " · principal: " + MIX_AV[i][0] + (c.mix[4]>=5e4?" · saldo parado " + mil(c.mix[4]):""); },
+      tsvHead:["Faixa","Conta Avenue","Posição","Fundos","Alternativos","Renda variável","Renda fixa","Saldo em conta","Abertura"],
+      tsvRow:function(c){ return [c.f, c.c, c.t, c.mix[0], c.mix[1], c.mix[2], c.mix[3], c.mix[4], c.ab]; }
+    }
+  };
+
+  var params = new URLSearchParams(location.search);
+  var B = BASES[params.get("base")] || BASES.sniper;
+  var state = { team:"all", seg:B.defSeg, q:"", advisor:null };
+  var status = {};   // "base:cod" -> linha do Supabase
+  var logs = [];     // sniper_log da semana
+  var offline = false; // sem tabelas no Supabase: edições ficam só nesta aba
+
+  function key(c){ return B.key + ":" + c.c; }
+  function st(c){ return status[key(c)] || {}; }
+  function stName(c){ return st(c).status || "Não abordado"; }
+  function captado(c){ return Number(st(c).valor_captado)||0; }
+
+  /* ---------- Supabase ---------- */
+  var SUPABASE_URL = "https://wklgqghxsddkhrmplpgu.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_nLV82e6T4_7F-cEOOaaF4g_WzXe9QlM";
+  function sbHeaders(extra){
+    var h = { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" };
+    if(extra){ for(var k in extra){ h[k] = extra[k]; } }
+    return h;
+  }
+  function sbUrl(path){ return SUPABASE_URL + "/rest/v1/" + path; }
+
+  function pullAll(){
+    setSync("busy","Carregando…");
+    var since = weekStart().toISOString();
+    return Promise.all([
+      fetch(sbUrl("sniper_status?select=*"), {headers:sbHeaders()}).then(function(r){ if(!r.ok) throw r; return r.json(); }),
+      fetch(sbUrl("sniper_log?select=*&changed_at=gte."+encodeURIComponent(since)), {headers:sbHeaders()}).then(function(r){ if(!r.ok) throw r; return r.json(); })
+    ]).then(function(res){
+      status = {}; res[0].forEach(function(r){ status[r.base + ":" + r.cod_cliente] = r; });
+      logs = res[1];
+      setSync("ok","Sincronizado");
+    }).catch(function(){
+      offline = true;
+      setSync("","Modo visualização · edições não são salvas");
+    });
+  }
+
+  var timers = {};
+  function queueSave(c, tr){
+    clearTimeout(timers[key(c)]);
+    if(offline){ renderSummary(); return; }
+    tr.className = "saving";
+    timers[key(c)] = setTimeout(function(){ save(c, tr); }, 700);
+  }
+  function save(c, tr){
+    var cur = st(c), prev = c._prev || {};
+    var row = {
+      base:B.key, cod_cliente:c.c, assessor:c.a,
+      status:cur.status||"Não abordado",
+      ultimo_contato:cur.ultimo_contato||null,
+      proximo_passo:cur.proximo_passo||"",
+      responsavel:cur.responsavel||"",
+      valor_captado:Number(cur.valor_captado)||0,
+      observacoes:cur.observacoes||"",
+      updated_at:new Date().toISOString()
+    };
+    var changed = (prev.status||"Não abordado") !== row.status || (Number(prev.valor_captado)||0) !== row.valor_captado;
+    var lg = {base:B.key, cod_cliente:c.c, assessor:c.a, status_de:prev.status||"Não abordado", status_para:row.status, valor_captado:row.valor_captado};
+    var reqs = [fetch(sbUrl("sniper_status?on_conflict=base,cod_cliente"), {method:"POST", headers:sbHeaders({"Prefer":"resolution=merge-duplicates,return=minimal"}), body:JSON.stringify(row)})];
+    if(changed) reqs.push(fetch(sbUrl("sniper_log"), {method:"POST", headers:sbHeaders({"Prefer":"return=minimal"}), body:JSON.stringify(lg)}));
+    Promise.all(reqs).then(function(rs){
+      rs.forEach(function(r){ if(!r.ok) throw r; });
+      if(changed){ lg.changed_at = row.updated_at; logs.push(lg); }
+      c._prev = {status:row.status, valor_captado:row.valor_captado};
+      tr.className = "saved";
+      setSync("ok","Salvo");
+      renderSummary();
+    }).catch(function(){
+      tr.className = "failed";
+      setSync("err","Falha ao salvar");
+      toast("Não consegui salvar " + c.c);
+    });
+  }
+
+  /* ---------- filtros ---------- */
+  function filtered(){
+    var q = state.q.trim().toLowerCase();
+    return B.rows.filter(function(c){
+      if(!B.inSeg(c, state.seg)) return false;
+      if(state.team!=="all" && advTeam(c.a)!==state.team) return false;
+      if(state.advisor && c.a!==state.advisor) return false;
+      if(q && c.c.indexOf(q)<0 && advName(c.a).toLowerCase().indexOf(q)<0 && c.a.toLowerCase().indexOf(q)<0) return false;
+      return true;
+    });
+  }
+  function agg(list){
+    var o = {n:list.length, v:0, cap:0, ab:0, reun:0, by:{}};
+    STATUSES.forEach(function(s){ o.by[s]=0; });
+    list.forEach(function(c){
+      var s = stName(c);
+      o.v += B.val(c); o.cap += captado(c); o.by[s]++;
+      if(s!=="Não abordado") o.ab++;
+      if(["Reunião realizada","Reunião de consultoria agendada","Reunião de consultoria realizada","Proposta enviada","Captado"].indexOf(s)>=0) o.reun++;
+    });
+    return o;
+  }
+  function movesFor(list){
+    var codes = {}; list.forEach(function(c){ codes[c.c]=1; });
+    return logs.filter(function(l){ return (l.base||"sniper")===B.key && codes[l.cod_cliente]; }).length;
+  }
+  function isStale(c){
+    var s = stName(c);
+    if(s==="Não abordado"||s==="Captado"||s==="Sem interesse") return false;
+    var d = daysSince(st(c).ultimo_contato); return d==null || d>STALE_DAYS;
+  }
+
+  /* ---------- render ---------- */
+  function stat(l,n,s){ return '<div class="card stat"><span class="l">'+esc(l)+'</span><span class="n">'+esc(n)+'</span><span class="s">'+esc(s)+'</span></div>'; }
+  function stackBar(by){
+    var h=""; STATUSES.forEach(function(s){ if(by[s]) h+='<span style="flex:'+by[s]+';background:'+SCOLOR[s]+'" title="'+esc(s)+': '+by[s]+'"></span>'; });
+    return '<div class="stack">'+h+'</div>';
+  }
+
+  var OPIN_NUMS = (function(){
+    var o = D.opin, tot = sum(o,function(c){return c.t;}), ass = {}, inst = {}, mix = [0,0,0,0,0];
+    o.forEach(function(c){ ass[c.a]=1; c.inst.forEach(function(kv){ inst[kv[0]]=(inst[kv[0]]||0)+kv[1]; }); c.mix.forEach(function(v,i){ mix[i]+=v; }); });
+    var big = o.filter(function(c){return c.t>=1e6;}), top = o.filter(function(c){return c.t>=3e6;});
+    var instTop = Object.keys(inst).sort(function(a,b){ return inst[b]-inst[a]; }).slice(0,2);
+    var mixTot = mix.reduce(function(a,b){return a+b;},0);
+    var names = ["renda fixa bancária","crédito privado","fundos","renda variável","Tesouro"], order = [2,0,1,3,4];
+    return {
+      VOL:bi(tot), CONTAS:o.length.toLocaleString("pt-BR"), ASS:Object.keys(ass).length,
+      N1:big.length, PB:pct(sum(big,function(c){return c.t;})/tot), N3:top.length, V3:mi(sum(top,function(c){return c.t;})),
+      INST:instTop.map(function(k){ return "<b>"+esc(k)+"</b> ("+pct(inst[k]/tot)+")"; }).join(" e "),
+      CONC:big.filter(function(c){return c.pp>=0.8;}).length,
+      MIX:order.map(function(i){ return names[i]+" "+pct(mix[i]/mixTot); }).join(", ")
+    };
+  })();
+  var AV_NUMS = (function(){
+    var o = D.avenue, f = function(k){ var l = o.filter(function(c){ return c.f===k; }); return l.length + " contas, " + mi(sum(l,function(c){return c.t;})); };
+    return { AVREF:D.refAvenue.split("-").reverse().join("/"), AVN:o.length.toLocaleString("pt-BR"), AVT:bi(sum(o,function(c){return c.t;})),
+             AVA:f("A"), AVB:f("B"), AVC:f("C"), AVD:f("D"), AVCX:mi(sum(o,function(c){return c.mix[4];})) };
+  })();
+  function fillConcept(t){
+    t = t.replace(/\{(AVREF|AVN|AVT|AVA|AVB|AVC|AVD|AVCX)\}/g, function(_, k){ return AV_NUMS[k]; });
+    t = t.replace(/\{(VOL|CONTAS|ASS|N1|PB|N3|V3|INST|CONC|MIX)\}/g, function(_, k){ return OPIN_NUMS[k]; });
+    return t.replace(/\{(P1|P2)\}/g, function(_, p){
+      var l = D.sniper.filter(function(c){ return c.p===p; });
+      return l.length + " clientes e " + bi(sum(l,function(c){ return c.g; })) + " de gap";
+    });
+  }
+  function renderChrome(){
+    document.getElementById("eyebrow").textContent = B.eyebrow;
+    document.getElementById("title").textContent = B.title;
+    document.getElementById("subline").textContent = B.sub;
+    var cp = document.getElementById("concept");
+    cp.open = false;
+    cp.innerHTML = '<summary>'+esc(B.concept.title)+' <span>· clique para ver '+esc(B.concept.hint)+'</span></summary><div class="concept-body">' +
+      B.concept.items.map(function(it){ return '<div class="concept-item"><h4>'+it[0]+'</h4>'+fillConcept(it[1])+'</div>'; }).join("") + '</div>';
+    document.title = {sniper:"Base Sniper", opin:"Open Investments", avenue:"Avenue"}[B.key] + " · Alta Vista";
+    document.getElementById("baseTabs").innerHTML = ["sniper","opin","avenue"].map(function(k){
+      var b = BASES[k];
+      return '<button class="basetab'+(b===B?' sel':'')+'" data-k="'+k+'"><b>'+esc(b.tab)+'</b><span>'+esc(b.tabSub())+'</span></button>';
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll(".basetab"), function(t){
+      t.addEventListener("click", function(){ switchBase(t.getAttribute("data-k")); });
+    });
+    var pills = document.getElementById("segPills");
+    pills.innerHTML = B.segs.map(function(s){ return '<button data-v="'+s[0]+'"'+(s[0]===state.seg?' class="sel"':'')+'>'+esc(s[1])+'</button>'; }).join("");
+    Array.prototype.forEach.call(pills.querySelectorAll("button"), function(b){
+      b.addEventListener("click", function(){ state.seg = b.getAttribute("data-v"); renderChrome(); render(); });
+    });
+  }
+  function switchBase(k){
+    if(BASES[k]===B) return;
+    B = BASES[k]; state.seg = document.body.classList.contains("embed") ? "all" : B.defSeg;
+    try{ var u = new URL(location.href); u.searchParams.set("base",k); history.replaceState(null,"",u); }catch(e){}
+    renderChrome(); render();
+  }
+
+  function renderSummary(){
+    var list = filtered(), a = agg(list);
+    document.getElementById("scoreboard").innerHTML =
+      B.scoreboard(list,a).map(function(x){ return stat(x[0],x[1],x[2]); }).join("") +
+      stat("Abordados", a.n ? pct(a.ab/a.n) : "–", a.ab + " de " + a.n + " " + B.unit) +
+      stat("Reuniões realizadas+", a.reun, a.by["Reunião de consultoria realizada"] + " consultorias realizadas · inclui proposta e captado") +
+      stat("Captado", bi(a.cap), (a.v ? pct(a.cap/a.v) : "0%") + " do potencial · " + movesFor(list) + " movimentos na semana");
+    var bar = "", leg = "";
+    STATUSES.forEach(function(s){
+      var v = a.by[s];
+      if(v) bar += '<span style="flex:'+v+';background:'+SCOLOR[s]+'" title="'+esc(s)+': '+v+'"></span>';
+      leg += '<span><i style="background:'+SCOLOR[s]+'"></i>'+esc(s)+' <b>'+v+'</b></span>';
+    });
+    document.getElementById("funnel").innerHTML =
+      '<div class="funnel-head"><h3>Funil</h3><span class="muted">contato → reunião → consultoria → proposta → captação</span></div>' +
+      '<div class="fbar">'+bar+'</div><div class="flegend">'+leg+'</div>' +
+      (B.key!=="sniper" ? '<div class="mixleg">Produtos: '+(B.mix||MIX).map(function(m){ return '<span><i style="background:'+m[1]+'"></i>'+m[0]+'</span>'; }).join("")+'</div>' : '');
+  }
+
+  function renderTeams(){
+    var list = filtered(), groups = {};
+    list.forEach(function(c){ var e=advTeam(c.a); (groups[e]=groups[e]||[]).push(c); });
+    var rows = Object.keys(groups).map(function(e){
+      var g = groups[e], advs = {};
+      g.forEach(function(c){ advs[c.a]=1; });
+      return {e:e, g:g, o:agg(g), nAdv:Object.keys(advs).length, mv:movesFor(g)};
+    }).sort(function(x,y){ var F="Fora da Rotina Comercial"; return (x.e===F)-(y.e===F) || (D.lideres[y.e]?1:0)-(D.lideres[x.e]?1:0) || y.o.v-x.o.v; });
+    var html = '<div class="section-head" style="margin-bottom:8px"><h2>Equipes · '+rows.length+'</h2><span class="hint">Clique na equipe para ver os assessores e a carteira de cada um.</span></div>';
+    if(!rows.length){ document.getElementById("view").innerHTML = html + '<div class="card empty">Nenhum registro com esses filtros.</div>'; return; }
+    html += '<div class="team-grid">';
+    rows.forEach(function(r){
+      var l = D.lideres[r.e], m = B.teamMeta(r.g);
+      html += '<button class="card team-card'+(l?'':' nolider')+'" data-e="'+esc(r.e)+'">' +
+        '<div><div class="tname">'+esc(r.e)+'</div><div class="tlider">'+(l?'Líder: '+esc(l):'Sem líder cadastrado')+'</div></div>' +
+        '<div class="tgap">'+mi(r.o.v)+'<small>'+esc(B.valLabel)+'</small></div>' +
+        stackBar(r.o.by) +
+        '<div class="tmeta"><span><b>'+r.o.n+'</b>'+B.unit+'</span><span><b>'+(r.o.n?pct(r.o.ab/r.o.n):'–')+'</b>abordados</span><span><b>'+(r.o.cap?mi(r.o.cap):'–')+'</b>captado</span>' +
+        '<span><b>'+r.nAdv+'</b>assessores</span><span><b>'+m[0][0]+'</b>'+m[0][1]+'</span><span><b>'+m[1][0]+'</b>'+m[1][1]+'</span></div></button>';
+    });
+    html += '</div>';
+    document.getElementById("view").innerHTML = html;
+    Array.prototype.forEach.call(document.querySelectorAll(".team-card"), function(b){
+      b.addEventListener("click", function(){ setTeam(b.getAttribute("data-e")); window.scrollTo(0,0); });
+    });
+  }
+
+  function renderAdvisors(){
+    var list = filtered(), groups = {};
+    list.forEach(function(c){ (groups[c.a]=groups[c.a]||[]).push(c); });
+    var rows = Object.keys(groups).map(function(a){
+      var g = groups[a];
+      return {a:a, g:g, o:agg(g), mv:movesFor(g), stale:count(g,isStale)};
+    }).sort(function(x,y){ return y.o.v-x.o.v; });
+
+    var oneTeam = state.team!=="all", lider = D.lideres[state.team];
+    var html = '';
+    if(oneTeam) html += '<div class="card adv-head"><div><button class="btn" id="backTeams">← Todas as equipes</button></div><div style="flex:1;min-width:220px"><span class="eyebrow">'+(lider?'Líder: '+esc(lider):'Sem líder cadastrado')+'</span><h2>'+esc(state.team)+'</h2></div></div>';
+    html += '<div class="section-head" style="margin:'+(oneTeam?'14px':'0')+' 0 8px"><h2>Assessores · '+rows.length+'</h2><span class="hint">Ordenado por '+esc(B.valCol.toLowerCase())+'. Clique para abrir a carteira do assessor.</span></div>';
+    if(rows.length){
+      html += '<div class="card tablewrap"><table><thead><tr><th>Assessor</th>'+(oneTeam?'':'<th>Equipe</th>') +
+        B.advCols.map(function(c){ return '<th class="r">'+esc(c[0])+'</th>'; }).join("") +
+        '<th class="r">'+esc(B.valCol)+'</th><th>Funil</th><th class="r">Abordados</th><th class="r">Captado</th><th class="r">Mov. semana</th><th class="r">Parados &gt;'+STALE_DAYS+'d</th></tr></thead><tbody>';
+      rows.forEach(function(r){
+        html += '<tr class="click" data-a="'+esc(r.a)+'"><td><b>'+esc(advName(r.a))+'</b><div class="muted">'+esc(r.a)+'</div></td>'+(oneTeam?'':'<td class="muted">'+esc(advTeam(r.a))+'</td>') +
+          B.advCols.map(function(c){ return '<td class="r num">'+c[1](r.g)+'</td>'; }).join("") +
+          '<td class="r num"><b>'+mi(r.o.v)+'</b></td>' +
+          '<td>'+stackBar(r.o.by)+'</td><td class="r num">'+r.o.ab+'/'+r.o.n+'</td><td class="r num">'+(r.o.cap?mi(r.o.cap):'–')+'</td>' +
+          '<td class="r"><span class="move'+(r.mv?'':' zero')+'">'+r.mv+'</span></td><td class="r num" style="color:'+(r.stale?'var(--critical)':'var(--ink-500)')+'">'+r.stale+'</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    } else {
+      html += '<div class="card empty">Nenhum registro com esses filtros.</div>';
+    }
+    document.getElementById("view").innerHTML = html;
+    var bt = document.getElementById("backTeams");
+    if(bt) bt.addEventListener("click", function(){ setTeam("all"); });
+    Array.prototype.forEach.call(document.querySelectorAll("tr[data-a]"), function(tr){
+      tr.addEventListener("click", function(){ state.advisor = tr.getAttribute("data-a"); render(); window.scrollTo(0,0); });
+    });
+  }
+
+  function renderAdvisor(){
+    var a = state.advisor, list = filtered().sort(B.sortRows);
+    var lider = D.lideres[advTeam(a)];
+    var nCols = (B.head.match(/<th/g)||[]).length + 6;
+    var html = '<div class="card adv-head"><div><button class="btn" id="backBtn">← '+esc(state.team!=="all"?state.team:"Todos os assessores")+'</button></div>' +
+      '<div style="flex:1;min-width:220px"><span class="eyebrow">'+esc(advTeam(a))+(lider?' · Líder: '+esc(lider):'')+'</span><h2>'+esc(advName(a))+' <span class="muted">'+esc(a)+'</span></h2></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="sendBtn">Enviar ao assessor</button><button class="btn primary" id="pautaBtn">Pauta do 1:1</button></div></div>' +
+      '<div class="card pauta" id="sendPanel"><div class="section-head"><b style="color:var(--ink-900)">Mensagem para '+esc(advName(a).split(" ")[0])+' · '+esc(B.tab)+'</b><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="copyMsgBtn">Copiar mensagem</button><button class="btn" id="copyTsvBtn">Copiar como planilha</button></span></div>' +
+      '<span class="muted">Lista na faixa selecionada no topo, do maior para o menor. Dá para editar o texto antes de copiar. "Copiar como planilha" cola em colunas no Excel ou no e-mail.</span><textarea id="sendTxt"></textarea></div>' +
+      '<div class="card pauta" id="pauta"><div class="section-head"><b style="color:var(--ink-900)">Pauta do 1:1 · '+esc(B.tab)+'</b><button class="btn" id="copyBtn">Copiar</button></div><textarea id="pautaTxt" readonly></textarea></div>' +
+      '<div class="card tablewrap"><table><thead><tr>'+B.head+'<th>Status</th><th>Último contato</th><th>Próximo passo</th><th>Responsável</th><th class="r">Valor captado (R$)</th><th>Observações</th></tr></thead><tbody id="clientRows"></tbody></table></div>';
+    document.getElementById("view").innerHTML = html;
+    var tb = document.getElementById("clientRows");
+    if(!list.length){
+      var other = B.rows.some(function(c){ return c.a===a; });
+      tb.innerHTML = '<tr><td colspan="'+nCols+'" class="empty">'+(other?'Nenhum registro nessa faixa — troque o filtro no topo.':'Este assessor não tem '+B.unit+' nesta base.')+'</td></tr>';
+    }
+    list.forEach(function(c){
+      var s = st(c), sn = stName(c);
+      c._prev = {status:sn, valor_captado:Number(s.valor_captado)||0};
+      var tr = document.createElement("tr");
+      if(isStale(c)) tr.classList.add("stale");
+      var opts = STATUSES.map(function(x){ return '<option'+(x===sn?' selected':'')+'>'+esc(x)+'</option>'; }).join("");
+      tr.innerHTML = B.cells(c) +
+        '<td><select data-f="status" style="border-left:4px solid '+SCOLOR[sn]+'">'+opts+'</select></td>' +
+        '<td class="lc"><input class="date" type="date" data-f="ultimo_contato" value="'+esc(s.ultimo_contato||"")+'"></td>' +
+        '<td><input class="txt" data-f="proximo_passo" value="'+esc(s.proximo_passo||"")+'" placeholder="Ex.: ligar 5ª p/ agendar"></td>' +
+        '<td><input class="txt" style="min-width:130px" data-f="responsavel" value="'+esc(s.responsavel||"")+'" placeholder="'+esc(advName(c.a).split(" ")[0])+'"></td>' +
+        '<td class="r"><input class="money" type="number" min="0" step="1000" data-f="valor_captado" value="'+(Number(s.valor_captado)||"")+'" placeholder="0"></td>' +
+        '<td><input class="txt" data-f="observacoes" value="'+esc(s.observacoes||"")+'"></td>';
+      Array.prototype.forEach.call(tr.querySelectorAll("[data-f]"), function(el){
+        var ev = el.tagName==="SELECT" || el.type==="date" ? "change" : "input";
+        el.addEventListener(ev, function(){
+          var cur = status[key(c)] = status[key(c)] || {base:B.key, cod_cliente:c.c, assessor:c.a};
+          var f = el.getAttribute("data-f");
+          cur[f] = f==="valor_captado" ? (Number(el.value)||0) : el.value;
+          if(f==="status"){
+            el.style.borderLeftColor = SCOLOR[el.value];
+            var dt = tr.querySelector('[data-f="ultimo_contato"]');
+            if(el.value!=="Não abordado" && !dt.value){ dt.value = new Date().toISOString().slice(0,10); cur.ultimo_contato = dt.value; }
+          }
+          queueSave(c, tr);
+        });
+      });
+      tb.appendChild(tr);
+    });
+    document.getElementById("backBtn").addEventListener("click", function(){ state.advisor=null; render(); });
+    document.getElementById("pautaBtn").addEventListener("click", function(){
+      document.getElementById("pauta").classList.toggle("open");
+      document.getElementById("pautaTxt").value = buildPauta(a);
+    });
+    document.getElementById("copyBtn").addEventListener("click", function(){ copyText(document.getElementById("pautaTxt"), "Pauta copiada"); });
+    document.getElementById("sendBtn").addEventListener("click", function(){
+      var p = document.getElementById("sendPanel");
+      p.classList.toggle("open");
+      if(p.classList.contains("open")) document.getElementById("sendTxt").value = buildMsg(a, list);
+    });
+    document.getElementById("copyMsgBtn").addEventListener("click", function(){ copyText(document.getElementById("sendTxt"), "Mensagem copiada — cole no WhatsApp ou no e-mail"); });
+    document.getElementById("copyTsvBtn").addEventListener("click", function(){ copyText(buildTsv(list), "Planilha copiada — cole no Excel ou no e-mail"); });
+  }
+
+  function copyText(src, msg){
+    var text = typeof src==="string" ? src : src.value;
+    var fallback = function(){
+      var t = document.createElement("textarea"); t.value = text; t.style.position="fixed"; t.style.opacity="0";
+      document.body.appendChild(t); t.select();
+      try{ document.execCommand("copy"); toast(msg); }catch(e){ toast("Não consegui copiar — selecione o texto e use Ctrl+C"); }
+      document.body.removeChild(t);
+    };
+    if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(function(){ toast(msg); }, fallback);
+    else fallback();
+  }
+
+  function buildMsg(a, list){
+    var L = [], first = advName(a).split(" ")[0];
+    L.push("Oi, " + first + "! Segue " + B.msgIntro + ".");
+    L.push("");
+    L.push("*" + list.length + " " + B.unit + " · " + mi(sum(list,B.val)) + " " + (B.msgTotal||"fora da XP") + "*");
+    B.msgGroups.forEach(function(g){
+      var rows = list.filter(function(c){ return B.msgGroupOf(c)===g[0]; });
+      if(!rows.length) return;
+      L.push("");
+      L.push(g[1]);
+      rows.forEach(function(c, i){
+        var s = st(c), sn = stName(c);
+        L.push((i+1) + ". " + B.msgLine(c) + (sn!=="Não abordado" ? "\n   Status: " + sn + (s.proximo_passo ? " → " + s.proximo_passo : "") : ""));
+      });
+    });
+    L.push("");
+    L.push("Vamos começar pelos maiores. Na nossa 1:1 a gente combina o próximo passo de cada um.");
+    return L.join("\n");
+  }
+
+  function buildTsv(list){
+    var clean = function(v){ return String(v==null?"":v).replace(/[\t\n]+/g," "); };
+    var head = B.tsvHead.concat(["Status","Último contato","Próximo passo"]);
+    var rows = list.map(function(c){ var s = st(c); return B.tsvRow(c).concat([stName(c), s.ultimo_contato||"", s.proximo_passo||""]).map(clean).join("\t"); });
+    return [head.join("\t")].concat(rows).join("\n");
+  }
+
+  function buildPauta(a){
+    var all = B.rows.filter(function(c){ return c.a===a; }), focus = all.filter(function(c){ return B.inSeg(c, state.seg); }), o = agg(all);
+    var L = [];
+    L.push("1:1 " + B.tab.toUpperCase() + " · " + advName(a) + " (" + advTeam(a) + ")");
+    L.push(B.pautaHead(all));
+    L.push("Andamento: " + o.ab + "/" + o.n + " abordados · " + o.by["Reunião agendada"] + " reuniões agendadas · " + o.by["Reunião realizada"] + " realizadas · " + o.by["Reunião de consultoria agendada"] + " consultorias agendadas · " + o.by["Reunião de consultoria realizada"] + " consultorias realizadas · " + o.by["Proposta enviada"] + " propostas · captado " + mi(o.cap));
+    L.push("");
+    var andamento = all.filter(function(c){ var s=stName(c); return s!=="Não abordado"&&s!=="Captado"&&s!=="Sem interesse"; }).sort(B.sortRows);
+    if(andamento.length){
+      L.push("EM ANDAMENTO (cobrar próximo passo):");
+      andamento.forEach(function(c){ var s=st(c), d=daysSince(s.ultimo_contato);
+        L.push("• " + c.c + " · " + stName(c) + " · " + mil(B.val(c)) + (d!=null?" · último contato há "+d+"d":" · sem data de contato") + (s.proximo_passo?" → "+s.proximo_passo:" → definir próximo passo")); });
+      L.push("");
+    }
+    var nov = focus.filter(function(c){ return stName(c)==="Não abordado"; }).sort(B.sortRows).slice(0,5);
+    if(nov.length){
+      L.push("ABORDAR ESTA SEMANA (maior potencial, ainda sem contato):");
+      nov.forEach(function(c){ L.push("• " + B.pautaLine(c)); });
+      L.push("");
+    }
+    L = L.concat(B.pautaExtra(focus));
+    var cap = all.filter(function(c){ return captado(c)>0; });
+    if(cap.length){
+      L.push("CAPTADO:");
+      cap.forEach(function(c){ L.push("• " + c.c + " · " + mi(captado(c))); });
+      L.push("");
+    }
+    L.push("COMBINADO DA SEMANA:");
+    L.push("• ");
+    return L.join("\n");
+  }
+
+  function render(){
+    renderSummary();
+    if(state.advisor) renderAdvisor();
+    else if(state.team==="all" && !state.q.trim()) renderTeams();
+    else renderAdvisors();
+  }
+
+  /* ---------- init ---------- */
+  var teams = {};
+  D.sniper.concat(D.opin, D.avenue).forEach(function(c){ teams[advTeam(c.a)] = 1; });
+  var sel = document.getElementById("teamSel");
+  sel.innerHTML = '<option value="all">Todas as equipes</option>' + Object.keys(teams).sort().map(function(e){ return '<option value="'+esc(e)+'">'+esc(teamLabel(e))+'</option>'; }).join("");
+  function setTeam(e){ state.team = e; state.advisor = null; sel.value = e; try{ localStorage.setItem("sniper_team", e); }catch(x){} render(); }
+  try{ var saved = localStorage.getItem("sniper_team"); if(saved && teams[saved]){ sel.value = saved; state.team = saved; } }catch(e){}
+  sel.addEventListener("change", function(){ setTeam(sel.value); });
+  var tq = null;
+  document.getElementById("search").addEventListener("input", function(e){ clearTimeout(tq); tq = setTimeout(function(){ state.q = e.target.value; render(); }, 200); });
+
+  if(params.get("embed")) document.body.classList.add("embed");
+  var qa = params.get("a");
+  if(qa && D.assessores[qa]){ state.advisor = qa; state.team = advTeam(qa); sel.value = state.team; state.seg = "all"; }
+
+  renderChrome();
+  render();
+  pullAll().then(render);
+})();
+</script>
+</body>
+</html>
