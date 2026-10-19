@@ -239,7 +239,7 @@
           ["Share of wallet (SoW)", "Quanto do patrimônio total do cliente está na XP: <b>custódia XP ÷ patrimônio total declarado (PLA)</b>. Entram na base os clientes com SoW <b>abaixo de 50%</b>. O <b>gap</b> é o que está fora: PLA − custódia XP."],
           ['<span class="badge b-p1">P1</span> Primeira onda · SoW abaixo de 30%', "Menos de 30% do patrimônio está na XP. <b>{P1}</b>. Maior potencial por cliente: é onde começamos, do maior gap para o menor."],
           ['<span class="badge b-p2">P2</span> Segunda onda · SoW de 30% a 50%', "O cliente já tem uma fatia relevante na XP. <b>{P2}</b>. Ticket menor, foco em <b>consolidar</b> o que falta."],
-          ["Como usar na 1:1", "Revisar a lista do assessor pelo maior gap, marcar quem já está em conversa ou deve sair da abordagem, definir o responsável e acompanhar toda semana o funil <b>contato → reunião → consultoria → proposta → captação</b>."]
+          ["Como usar na 1:1", "Revisar a lista do assessor pelo maior gap, marcar quem já está em conversa ou deve sair da abordagem e acompanhar toda semana o funil <b>contato → reunião → consultoria → proposta → captação</b>."]
         ]
       },
       tabSub: function(){ return D.sniper.length + " clientes · SoW < 50% · " + bi(sum(D.sniper,function(c){return c.g;})) + " de gap"; },
@@ -394,7 +394,6 @@
   function key(c){ return B.key + ":" + c.c; }
   function st(c){ return status[key(c)] || {}; }
   function stName(c){ return st(c).status || "Não abordado"; }
-  function captado(c){ return Number(st(c).valor_captado)||0; }
 
   /* ---------- Supabase ---------- */
   var SUPABASE_URL = "https://wklgqghxsddkhrmplpgu.supabase.co";
@@ -441,7 +440,7 @@
       observacoes:cur.observacoes||"",
       updated_at:new Date().toISOString()
     };
-    var changed = (prev.status||"Não abordado") !== row.status || (Number(prev.valor_captado)||0) !== row.valor_captado;
+    var changed = (prev.status||"Não abordado") !== row.status;
     var lg = {base:B.key, cod_cliente:c.c, assessor:c.a, status_de:prev.status||"Não abordado", status_para:row.status, valor_captado:row.valor_captado};
     var reqs = [fetch(sbUrl("sniper_status?on_conflict=base,cod_cliente"), {method:"POST", headers:sbHeaders({"Prefer":"resolution=merge-duplicates,return=minimal"}), body:JSON.stringify(row)})];
     if(changed) reqs.push(fetch(sbUrl("sniper_log"), {method:"POST", headers:sbHeaders({"Prefer":"return=minimal"}), body:JSON.stringify(lg)}));
@@ -475,7 +474,8 @@
     STATUSES.forEach(function(s){ o.by[s]=0; });
     list.forEach(function(c){
       var s = stName(c);
-      o.v += B.val(c); o.cap += captado(c); o.by[s]++;
+      o.v += B.val(c); o.by[s]++;
+      if(s==="Captado") o.cap++;
       if(s!=="Não abordado") o.ab++;
       if(["Reunião realizada","Reunião de consultoria agendada","Reunião de consultoria realizada","Proposta enviada","Captado"].indexOf(s)>=0) o.reun++;
     });
@@ -561,7 +561,7 @@
       B.scoreboard(list,a).map(function(x){ return stat(x[0],x[1],x[2]); }).join("") +
       stat("Abordados", a.n ? pct(a.ab/a.n) : "–", a.ab + " de " + a.n + " " + B.unit) +
       stat("Reuniões realizadas+", a.reun, a.by["Reunião de consultoria realizada"] + " consultorias realizadas · inclui proposta e captado") +
-      stat("Captado", bi(a.cap), (a.v ? pct(a.cap/a.v) : "0%") + " do potencial · " + movesFor(list) + " movimentos na semana");
+      stat("Captados", a.cap, (a.n ? pct(a.cap/a.n) : "0%") + " dos " + B.unit + " · " + movesFor(list) + " movimentos na semana");
     var bar = "", leg = "";
     STATUSES.forEach(function(s){
       var v = a.by[s];
@@ -591,7 +591,7 @@
         '<div><div class="tname">'+esc(r.e)+'</div><div class="tlider">'+(l?'Líder: '+esc(l):'Sem líder cadastrado')+'</div></div>' +
         '<div class="tgap">'+mi(r.o.v)+'<small>'+esc(B.valLabel)+'</small></div>' +
         stackBar(r.o.by) +
-        '<div class="tmeta"><span><b>'+r.o.n+'</b>'+B.unit+'</span><span><b>'+(r.o.n?pct(r.o.ab/r.o.n):'–')+'</b>abordados</span><span><b>'+(r.o.cap?mi(r.o.cap):'–')+'</b>captado</span>' +
+        '<div class="tmeta"><span><b>'+r.o.n+'</b>'+B.unit+'</span><span><b>'+(r.o.n?pct(r.o.ab/r.o.n):'–')+'</b>abordados</span><span><b>'+(r.o.cap||'–')+'</b>captados</span>' +
         '<span><b>'+r.nAdv+'</b>assessores</span><span><b>'+m[0][0]+'</b>'+m[0][1]+'</span><span><b>'+m[1][0]+'</b>'+m[1][1]+'</span></div></button>';
     });
     html += '</div>';
@@ -616,12 +616,12 @@
     if(rows.length){
       html += '<div class="card tablewrap"><table><thead><tr><th>Assessor</th>'+(oneTeam?'':'<th>Equipe</th>') +
         B.advCols.map(function(c){ return '<th class="r">'+esc(c[0])+'</th>'; }).join("") +
-        '<th class="r">'+esc(B.valCol)+'</th><th>Funil</th><th class="r">Abordados</th><th class="r">Captado</th><th class="r">Mov. semana</th><th class="r">Parados &gt;'+STALE_DAYS+'d</th></tr></thead><tbody>';
+        '<th class="r">'+esc(B.valCol)+'</th><th>Funil</th><th class="r">Abordados</th><th class="r">Captados</th><th class="r">Mov. semana</th><th class="r">Parados &gt;'+STALE_DAYS+'d</th></tr></thead><tbody>';
       rows.forEach(function(r){
         html += '<tr class="click" data-a="'+esc(r.a)+'"><td><b>'+esc(advName(r.a))+'</b><div class="muted">'+esc(r.a)+'</div></td>'+(oneTeam?'':'<td class="muted">'+esc(advTeam(r.a))+'</td>') +
           B.advCols.map(function(c){ return '<td class="r num">'+c[1](r.g)+'</td>'; }).join("") +
           '<td class="r num"><b>'+mi(r.o.v)+'</b></td>' +
-          '<td>'+stackBar(r.o.by)+'</td><td class="r num">'+r.o.ab+'/'+r.o.n+'</td><td class="r num">'+(r.o.cap?mi(r.o.cap):'–')+'</td>' +
+          '<td>'+stackBar(r.o.by)+'</td><td class="r num">'+r.o.ab+'/'+r.o.n+'</td><td class="r num">'+(r.o.cap||'–')+'</td>' +
           '<td class="r"><span class="move'+(r.mv?'':' zero')+'">'+r.mv+'</span></td><td class="r num" style="color:'+(r.stale?'var(--critical)':'var(--ink-500)')+'">'+r.stale+'</td></tr>';
       });
       html += '</tbody></table></div>';
@@ -646,7 +646,7 @@
       '<div class="card pauta" id="sendPanel"><div class="section-head"><b style="color:var(--ink-900)">Mensagem para '+esc(advName(a).split(" ")[0])+' · '+esc(B.tab)+'</b><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="copyMsgBtn">Copiar mensagem</button><button class="btn" id="copyTsvBtn">Copiar como planilha</button></span></div>' +
       '<span class="muted">Lista na faixa selecionada no topo, do maior para o menor. Dá para editar o texto antes de copiar. "Copiar como planilha" cola em colunas no Excel ou no e-mail.</span><textarea id="sendTxt"></textarea></div>' +
       '<div class="card pauta" id="pauta"><div class="section-head"><b style="color:var(--ink-900)">Pauta do 1:1 · '+esc(B.tab)+'</b><button class="btn" id="copyBtn">Copiar</button></div><textarea id="pautaTxt" readonly></textarea></div>' +
-      '<div class="card tablewrap"><table><thead><tr>'+B.head+'<th>Status</th><th>Último contato</th><th>Próximo passo</th><th>Responsável</th><th class="r">Valor captado (R$)</th><th>Observações</th></tr></thead><tbody id="clientRows"></tbody></table></div>';
+      '<div class="card tablewrap"><table><thead><tr>'+B.head+'<th>Status</th><th>Último contato</th></tr></thead><tbody id="clientRows"></tbody></table></div>';
     document.getElementById("view").innerHTML = html;
     var tb = document.getElementById("clientRows");
     if(!list.length){
@@ -661,11 +661,7 @@
       var opts = STATUSES.map(function(x){ return '<option'+(x===sn?' selected':'')+'>'+esc(x)+'</option>'; }).join("");
       tr.innerHTML = B.cells(c) +
         '<td><select data-f="status" style="border-left:4px solid '+SCOLOR[sn]+'">'+opts+'</select></td>' +
-        '<td class="lc"><input class="date" type="date" data-f="ultimo_contato" value="'+esc(s.ultimo_contato||"")+'"></td>' +
-        '<td><input class="txt" data-f="proximo_passo" value="'+esc(s.proximo_passo||"")+'" placeholder="Ex.: ligar 5ª p/ agendar"></td>' +
-        '<td><input class="txt" style="min-width:130px" data-f="responsavel" value="'+esc(s.responsavel||"")+'" placeholder="'+esc(advName(c.a).split(" ")[0])+'"></td>' +
-        '<td class="r"><input class="money" type="number" min="0" step="1000" data-f="valor_captado" value="'+(Number(s.valor_captado)||"")+'" placeholder="0"></td>' +
-        '<td><input class="txt" data-f="observacoes" value="'+esc(s.observacoes||"")+'"></td>';
+        '<td class="lc"><input class="date" type="date" data-f="ultimo_contato" value="'+esc(s.ultimo_contato||"")+'"></td>';
       Array.prototype.forEach.call(tr.querySelectorAll("[data-f]"), function(el){
         var ev = el.tagName==="SELECT" || el.type==="date" ? "change" : "input";
         el.addEventListener(ev, function(){
@@ -721,7 +717,7 @@
       L.push(g[1]);
       rows.forEach(function(c, i){
         var s = st(c), sn = stName(c);
-        L.push((i+1) + ". " + B.msgLine(c) + (sn!=="Não abordado" ? "\n   Status: " + sn + (s.proximo_passo ? " → " + s.proximo_passo : "") : ""));
+        L.push((i+1) + ". " + B.msgLine(c) + (sn!=="Não abordado" ? "\n   Status: " + sn : ""));
       });
     });
     L.push("");
@@ -731,8 +727,8 @@
 
   function buildTsv(list){
     var clean = function(v){ return String(v==null?"":v).replace(/[\t\n]+/g," "); };
-    var head = B.tsvHead.concat(["Status","Último contato","Próximo passo"]);
-    var rows = list.map(function(c){ var s = st(c); return B.tsvRow(c).concat([stName(c), s.ultimo_contato||"", s.proximo_passo||""]).map(clean).join("\t"); });
+    var head = B.tsvHead.concat(["Status","Último contato"]);
+    var rows = list.map(function(c){ var s = st(c); return B.tsvRow(c).concat([stName(c), s.ultimo_contato||""]).map(clean).join("\t"); });
     return [head.join("\t")].concat(rows).join("\n");
   }
 
@@ -741,13 +737,13 @@
     var L = [];
     L.push("1:1 " + B.tab.toUpperCase() + " · " + advName(a) + " (" + advTeam(a) + ")");
     L.push(B.pautaHead(all));
-    L.push("Andamento: " + o.ab + "/" + o.n + " abordados · " + o.by["Reunião agendada"] + " reuniões agendadas · " + o.by["Reunião realizada"] + " realizadas · " + o.by["Reunião de consultoria agendada"] + " consultorias agendadas · " + o.by["Reunião de consultoria realizada"] + " consultorias realizadas · " + o.by["Proposta enviada"] + " propostas · captado " + mi(o.cap));
+    L.push("Andamento: " + o.ab + "/" + o.n + " abordados · " + o.by["Reunião agendada"] + " reuniões agendadas · " + o.by["Reunião realizada"] + " realizadas · " + o.by["Reunião de consultoria agendada"] + " consultorias agendadas · " + o.by["Reunião de consultoria realizada"] + " consultorias realizadas · " + o.by["Proposta enviada"] + " propostas · " + o.cap + " captados");
     L.push("");
     var andamento = all.filter(function(c){ var s=stName(c); return s!=="Não abordado"&&s!=="Captado"&&s!=="Sem interesse"; }).sort(B.sortRows);
     if(andamento.length){
-      L.push("EM ANDAMENTO (cobrar próximo passo):");
+      L.push("EM ANDAMENTO (cobrar o andamento):");
       andamento.forEach(function(c){ var s=st(c), d=daysSince(s.ultimo_contato);
-        L.push("• " + c.c + " · " + stName(c) + " · " + mil(B.val(c)) + (d!=null?" · último contato há "+d+"d":" · sem data de contato") + (s.proximo_passo?" → "+s.proximo_passo:" → definir próximo passo")); });
+        L.push("• " + c.c + " · " + stName(c) + " · " + mil(B.val(c)) + (d!=null?" · último contato há "+d+"d":" · sem data de contato")); });
       L.push("");
     }
     var nov = focus.filter(function(c){ return stName(c)==="Não abordado"; }).sort(B.sortRows).slice(0,5);
@@ -757,10 +753,10 @@
       L.push("");
     }
     L = L.concat(B.pautaExtra(focus));
-    var cap = all.filter(function(c){ return captado(c)>0; });
+    var cap = all.filter(function(c){ return stName(c)==="Captado"; });
     if(cap.length){
       L.push("CAPTADO:");
-      cap.forEach(function(c){ L.push("• " + c.c + " · " + mi(captado(c))); });
+      cap.forEach(function(c){ L.push("• " + c.c + " · " + mil(B.val(c))); });
       L.push("");
     }
     L.push("COMBINADO DA SEMANA:");
