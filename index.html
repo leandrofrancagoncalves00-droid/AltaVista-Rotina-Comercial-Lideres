@@ -189,7 +189,7 @@
   .advisor-name-line{display:flex;align-items:center;gap:6px;}
   .advisor-name{font-weight:600;color:var(--ink-900);font-size:13.5px;}
   .advisor-sched{font-size:10.5px;color:var(--ink-500);font-family:var(--font-mono);}
-  .advisor-pct{font-family:var(--font-mono);font-size:14px;text-align:right;}
+  .advisor-pct{font-family:var(--font-mono);font-size:13px;text-align:right;white-space:nowrap;}
   .advisor-chips{display:flex;gap:4px;justify-content:flex-end;}
   .chip{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:var(--pending-soft);color:var(--pending);}
   .chip.ok{background:var(--success-soft);color:var(--success);}
@@ -565,7 +565,7 @@
 
   @media (max-width:640px){
     .scoreboard{grid-template-columns:repeat(2,1fr);}
-    .advisor-row{grid-template-columns:14px 1fr 60px 16px;}
+    .advisor-row{grid-template-columns:14px 1fr 72px 16px;}
     .advisor-chips{display:none;}
   }
 </style>
@@ -1708,6 +1708,10 @@
     return { total:advisors.length, counts:counts, avg:avg, did1a1:did1a1 };
   }
 
+  function statusLabel(status){
+    return status==="ok" ? "Em dia" : status==="crit" ? "No show" : "—";
+  }
+
   function dotColor(status){
     return status==="ok" ? "var(--success)" : status==="warn" ? "var(--warning)" : status==="crit" ? "var(--critical)" : "var(--pending)";
   }
@@ -1775,7 +1779,7 @@
     } else {
       $("statusPanelList").innerHTML = list.map(function(a){
         var r = computeStatus(weekKey, a.equipe, a.nome);
-        var pctLabel = r.pct===null ? "—" : r.pct+"%";
+        var pctLabel = statusLabel(r.status);
         return '<button type="button" class="status-row" data-nome="'+esc(a.nome)+'" data-team="'+esc(a.equipe)+'">'+
           '<span class="status-dot '+r.status+'"></span>'+
           '<span class="nm">'+esc(a.nome)+'</span>'+
@@ -1927,7 +1931,7 @@
     $("advisorList").innerHTML = advisors.map(function(a){
       var r = computeStatus(weekKey, a.equipe, a.nome);
       var items = (r.entry && r.entry.items) || {};
-      var pctLabel = r.pct===null ? "—" : r.pct+"%";
+      var pctLabel = statusLabel(r.status);
       var chips = ITEM_DEFS.map(function(def){ return chipHtml(def, items); }).join("");
       var sched = getSchedule(a.equipe, a.nome);
       var schedText = sched.day ? (DAY_LABELS[sched.day]||sched.day)+(sched.time?" · "+sched.time:"") : "";
@@ -1956,7 +1960,7 @@
     $("advisorName").textContent = currentAdvisor;
     $("advisorTeamTag").textContent = currentTeam;
     $("advisorDot").className = "status-dot "+r.status;
-    $("advisorPct").textContent = r.pct===null ? "—" : r.pct+"%";
+    $("advisorPct").textContent = statusLabel(r.status);
     $("advisorPct").style.color = dotColor(r.status);
     $("noShowBtn").classList.toggle("active", !!(r.entry && r.entry.items && r.entry.items.noShow));
     var noShowMonthCount = noShowCountThisMonth(currentTeam, currentAdvisor, currentMonday);
@@ -3288,7 +3292,7 @@
       pushEntryForWeek(weekKey);
       var r = computeStatus(weekKey, equipe, nome);
       $("advisorDot").className = "status-dot "+r.status;
-      $("advisorPct").textContent = r.pct===null ? "—" : r.pct+"%";
+      $("advisorPct").textContent = statusLabel(r.status);
       $("advisorPct").style.color = dotColor(r.status);
       $("noShowBtn").classList.toggle("active", !!entry.items.noShow);
       $("noShowCount").textContent = (function(){
@@ -3315,7 +3319,7 @@
     var weekKey = weekKeyFor(currentMonday);
     var r = computeStatus(weekKey, currentTeam, currentAdvisor);
     $("advisorDot").className = "status-dot "+r.status;
-    $("advisorPct").textContent = r.pct===null ? "—" : r.pct+"%";
+    $("advisorPct").textContent = statusLabel(r.status);
     $("advisorPct").style.color = dotColor(r.status);
     refreshChecklistCards();
     renderScoreboard();
