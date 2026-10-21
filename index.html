@@ -324,6 +324,8 @@
   .value-input input{width:100px;border:none;background:transparent;font-family:var(--font-mono);font-size:13px;text-align:right;padding:3px 0;}
   .value-input input:focus{outline:none;}
   .value-input:focus-within{border-color:var(--accent);}
+  .value-input input.carried{color:var(--ink-500);font-style:italic;}
+  .carried-note{display:block;font-size:10.5px;color:var(--ink-500);font-style:italic;font-weight:400;margin-top:1px;}
 
   .meeting-ata{display:flex;flex-direction:column;gap:8px;}
   .meeting-ata > label{font-size:11px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.05em;}
@@ -897,7 +899,7 @@
         { t:"Captação líquida na semana", k:"value", unit:"R$ mil" },
         { t:"Contas abertas", k:"value", unit:"contas" },
         { t:"Receita na semana", k:"value", unit:"R$" },
-        { t:"% Fee fixo na carteira", k:"value", unit:"%" },
+        { t:"% Fee fixo na carteira", k:"value", unit:"%", carry:true },
         { t:"Reuniões de seguro realizadas", k:"value", unit:"reuniões" },
         { t:"Reuniões de consórcio realizadas", k:"value", unit:"reuniões" },
         { t:"Reuniões de revisão de carteira / consultoria realizadas", k:"value", unit:"reuniões" },
@@ -3011,6 +3013,21 @@
       '<div class="pilares-grid">'+chips+'</div>'+details+'</div>';
   }
 
+  // Campos marcados com carry:true repetem o último valor preenchido em semanas
+  // anteriores enquanto a semana atual estiver em branco (só exibição: nada é
+  // gravado até o líder editar, para não contar como preenchido).
+  function carriedValue(equipe, nome, weekKey, defKey, idx){
+    var wks = Object.keys(store.weeks).filter(function(wk){ return wk < weekKey; }).sort().reverse();
+    for(var i=0;i<wks.length;i++){
+      var team = store.weeks[wks[i]] && store.weeks[wks[i]][equipe];
+      var e = team && team[nome];
+      var obj = e && e.items && e.items[defKey];
+      var v = obj && obj.answers && obj.answers[idx];
+      if(v!==undefined && v!==null && v!=="") return { v:v, wk:wks[i] };
+    }
+    return null;
+  }
+
   function meetingCardHtml(def, items, followUps){
     var cl = CHECKLISTS[def.key];
     var obj = items[def.key] || {};
@@ -3029,7 +3046,12 @@
         if(it.k === "value"){
           var vv = answers[idx];
           vv = (vv===undefined||vv===null) ? "" : vv;
-          return '<div class="value-row"><span class="qtext">'+esc(it.t)+'</span><div class="value-input"><span class="prefix">'+esc(it.unit||"")+'</span><input type="number" step="0.01" inputmode="decimal" data-meeting-idx="'+idx+'" data-meeting-value value="'+vv+'" placeholder="0"></div></div>';
+          var carried = null;
+          if(vv==="" && it.carry){
+            carried = carriedValue(currentTeam, currentAdvisor, weekKeyFor(currentMonday), def.key, idx);
+            if(carried) vv = carried.v;
+          }
+          return '<div class="value-row"><span class="qtext">'+esc(it.t)+(carried ? '<span class="carried-note">valor repetido da semana de '+esc(fmtRange(mondayFromWeekKey(carried.wk)))+' — altere se mudou</span>' : '')+'</span><div class="value-input"><span class="prefix">'+esc(it.unit||"")+'</span><input type="number" step="0.01" inputmode="decimal" data-meeting-idx="'+idx+'" data-meeting-value value="'+vv+'" placeholder="0"'+(carried ? ' class="carried"' : '')+'></div></div>';
         }
         var checked = !!answers[idx];
         return '<label class="check-row'+(checked?' checked':'')+'">'+
@@ -3140,6 +3162,9 @@
         entry.items[key] = entry.items[key] || { answers:[], ata:"" };
         var idx = Number(inp.getAttribute("data-meeting-idx"));
         entry.items[key].answers[idx] = inp.value === "" ? "" : Number(inp.value);
+        inp.classList.remove("carried");
+        var note = inp.closest(".value-row").querySelector(".carried-note");
+        if(note) note.remove();
         persist();
         afterEdit();
       });
