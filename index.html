@@ -847,7 +847,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="base-sniper/data.js?v=2026-10-14"></script>
+<script src="base-sniper/data.js?v=2026-10-22"></script>
 <script>
 (function(){
   "use strict";
@@ -2268,10 +2268,11 @@
     var map = {}, S = window.BASES_DATA;
     if(!S) return map;
     function norm(s){ return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim(); }
-    Object.keys(S.assessores).forEach(function(cod){ map[norm(S.assessores[cod].n)] = { cod: cod, sniper: [], opin: [], avenue: [] }; });
+    Object.keys(S.assessores).forEach(function(cod){ map[norm(S.assessores[cod].n)] = { cod: cod, sniper: [], opin: [], avenue: [], afastados: [] }; });
     S.sniper.forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].sniper.push(c); });
     S.opin.forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].opin.push(c); });
     (S.avenue||[]).forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].avenue.push(c); });
+    (S.afastados||[]).forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].afastados.push(c); });
     map.__norm = norm;
     return map;
   })();
@@ -2280,7 +2281,7 @@
     var el = $("sniperBlock");
     if(!el) return;
     var sn = sniperFor(nome);
-    if(!sn || (!sn.sniper.length && !sn.opin.length && !sn.avenue.length)){ el.innerHTML = ""; return; }
+    if(!sn || (!sn.sniper.length && !sn.opin.length && !sn.avenue.length && !sn.afastados.length)){ el.innerHTML = ""; return; }
     var mi = function(v){ return "R$ " + (v/1e6).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) + " mi"; };
     var sum = function(l,f){ var t=0; l.forEach(function(c){ t+=f(c); }); return t; };
     var html = "";
@@ -2317,11 +2318,22 @@
         '</div>' +
         '<button type="button" class="btn primary sniper-open" data-base="avenue">Fazer o bate da Avenue</button></div>';
     }
+    if(sn.afastados.length){
+      var k2 = sn.afastados.filter(function(c){ return c.k==="2.0"; }).length;
+      html += '<div class="sniper-card">' +
+        '<div class="sn-title"><span class="eyebrow">Clientes afastados · campanha</span><b>Bônus para o cliente voltar</b></div>' +
+        '<div class="sn-stats">' +
+          '<span class="sn-stat"><b>'+sn.afastados.length+'</b>contas afastadas</span>' +
+          '<span class="sn-stat"><b>'+k2+'</b>no boost 2.0 (R$ 750 / 100 mil)</span>' +
+          '<span class="sn-stat"><b>'+(sn.afastados.length-k2)+'</b>na 1.0 (R$ 450 / 100 mil)</span>' +
+        '</div>' +
+        '<button type="button" class="btn primary sniper-open" data-base="afastados">Fazer o bate dos afastados</button></div>';
+    }
     el.innerHTML = html;
     Array.prototype.forEach.call(el.querySelectorAll(".sniper-open"), function(btn){
       btn.addEventListener("click", function(){
         var base = btn.getAttribute("data-base");
-        $("sniperModalTitle").textContent = ({opin:"Open Investments · ", avenue:"Avenue · "}[base] || "Base Sniper · ") + nome;
+        $("sniperModalTitle").textContent = ({opin:"Open Investments · ", avenue:"Avenue · ", afastados:"Clientes afastados · "}[base] || "Base Sniper · ") + nome;
         $("sniperFrame").src = "base-sniper/index.html?embed=1&base=" + base + "&a=" + encodeURIComponent(sn.cod);
         $("sniperModal").hidden = false;
       });

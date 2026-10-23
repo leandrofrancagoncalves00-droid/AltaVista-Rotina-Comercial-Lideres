@@ -140,7 +140,14 @@
   body.embed .topbar,body.embed #backBtn{display:none;}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink-900);color:var(--surface);padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;}
   .toast.show{opacity:1;}
-  .basetabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .basetabs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  @media (max-width:1000px){.basetabs{grid-template-columns:repeat(2,1fr);}}
+  .simul{padding:14px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;}
+  .simul label{font-size:12px;color:var(--ink-500);}
+  .simul input{font-family:var(--font-mono);font-size:14px;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink-900);width:150px;text-align:right;}
+  .simul .res{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12.5px;color:var(--ink-700);}
+  .simul .res b{font-family:var(--font-mono);color:var(--ink-900);}
+  .b-k2{background:var(--success-soft);color:var(--success);} .b-k1{background:var(--accent-soft);color:var(--accent-ink);}
   @media (max-width:700px){.basetabs{grid-template-columns:1fr;}}
   .basetab{text-align:left;cursor:pointer;padding:12px 16px;display:flex;flex-direction:column;gap:3px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);font-family:inherit;color:var(--ink-700);opacity:.75;transition:opacity .12s,border-color .12s;}
   .basetab:hover{opacity:1;border-color:var(--accent);}
@@ -194,7 +201,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="data.js?v=2026-10-14"></script>
+<script src="data.js?v=2026-10-22"></script>
 <script>
 (function(){
   var D = window.BASES_DATA;
@@ -381,6 +388,66 @@
       msgLine:function(c){ var i = c.mix.indexOf(Math.max.apply(null,c.mix)); return "Conta Avenue " + c.c + " · " + mil(c.t) + " · principal: " + MIX_AV[i][0] + (c.mix[4]>=5e4?" · saldo parado " + mil(c.mix[4]):""); },
       tsvHead:["Faixa","Conta Avenue","Posição","Fundos","Alternativos","Renda variável","Renda fixa","Saldo em conta","Abertura"],
       tsvRow:function(c){ return [c.f, c.c, c.t, c.mix[0], c.mix[1], c.mix[2], c.mix[3], c.mix[4], c.ab]; }
+    },
+    afastados: {
+      key:"afastados", tab:"Clientes afastados · campanha", msgTotal:"de bônus potencial se cada uma enviar R$ 100 mil",
+      fmtVal:function(v){ return v>=1e6 ? mi(v) : "R$ " + Math.round(v).toLocaleString("pt-BR"); },
+      concept:{
+        title:"Conceito da força-tarefa de clientes afastados",
+        hint:"as campanhas 1.0 e 2.0, a regra da premiação e como usar",
+        items:[
+          ["O que é", "Clientes da Alta Vista que se afastaram da XP. A XP paga um <b>bônus ao cliente</b> para cada R$ 100 mil que ele enviar de volta. São <b>{AFN}</b> contas: {AFK2} na campanha 2.0 (boost) e {AFK1} na 1.0."],
+          ['<span class="badge b-k2">2.0</span> Campanha 2.0 · boost', "<b>R$ 750 de investback</b> ou <b>25.000 pontos XP</b> a cada R$ 100 mil aportados. Limite: R$ 150.000 em investback ou 5.000.000 de pontos (alcançado com R$ 20 mi)."],
+          ['<span class="badge b-k1">1.0</span> Campanha 1.0', "<b>R$ 450 de investback</b> a cada R$ 100 mil aportados."],
+          ["Regra da premiação", "Paga por <b>faixa completa de R$ 100 mil</b>: R$ 150 mil rende o mesmo que R$ 100 mil; R$ 400 mil rende 4 faixas. Use o <b>simulador</b> na carteira do assessor para mostrar ao cliente quanto ele recebe."],
+          ["Como usar na 1:1", "Começar pelas contas 2.0 (boost), marcar o status de cada contato e acompanhar o funil toda semana. A equipe de cada conta segue o cadastro atual da Rotina Comercial, não as abas da planilha original."]
+        ]
+      },
+      tabSub: function(){ return D.afastados.length.toLocaleString("pt-BR") + " contas · " + count(D.afastados,function(c){return c.k==="2.0";}) + " no boost 2.0"; },
+      eyebrow:"Clientes afastados · Alta Vista", title:"Força-tarefa: trazer de volta os clientes afastados",
+      sub:"Campanhas 1.0 (R$ 450 a cada R$ 100 mil) e 2.0 boost (R$ 750 ou 25.000 pontos a cada R$ 100 mil) · bônus pago ao cliente por faixa completa de R$ 100 mil",
+      rows:D.afastados, unit:"contas", val:function(c){ return c.k==="2.0" ? 750 : 450; }, valLabel:"de bônus potencial",
+      segs:[["all","Todas"],["2.0","2.0 · boost"],["1.0","1.0"]], defSeg:"all",
+      inSeg:function(c,s){ return s==="all" || c.k===s; },
+      sortRows:function(x,y){ return (x.k===y.k ? 0 : (x.k==="2.0" ? -1 : 1)) || (x.c < y.c ? -1 : 1); },
+      scoreboard:function(list,a){
+        return [["Contas", a.n, count(list,function(c){return c.k==="2.0";}) + " no boost 2.0 · " + count(list,function(c){return c.k==="1.0";}) + " na 1.0"],
+                ["Bônus potencial", B.fmtVal(a.v), "se cada conta enviar R$ 100 mil"]];
+      },
+      teamMeta:function(g){ return [[count(g,function(c){return c.k==="2.0";})+" / "+count(g,function(c){return c.k==="1.0";}),"contas 2.0 / 1.0"],[(count(g,function(c){return c.k==="2.0";})*25000).toLocaleString("pt-BR"),"pontos possíveis (2.0)"]]; },
+      advCols:[["2.0 (boost)",function(g){ return count(g,function(c){return c.k==="2.0";}); }],["1.0",function(g){ return count(g,function(c){return c.k==="1.0";}); }]],
+      valCol:"Bônus potencial",
+      head:'<th>Campanha</th><th>Conta XP</th><th class="r">Investback a cada R$ 100 mil</th><th class="r">ou pontos XP</th>',
+      cells:function(c){
+        var b = c.k==="2.0";
+        return '<td><span class="badge '+(b?'b-k2':'b-k1')+'">'+esc(c.k)+'</span><div class="muted">'+(b?'boost':'sem boost')+'</div></td>' +
+          '<td><b class="num">'+esc(c.c)+'</b></td>' +
+          '<td class="r num"><b>R$ '+(b?'750':'450')+'</b></td>' +
+          '<td class="r num">'+(b?'25.000':'–')+'</td>';
+      },
+      advExtra:function(){
+        return '<div class="card simul"><label for="simAporte">Simular aporte de um cliente (R$)</label><input id="simAporte" type="text" inputmode="numeric" value="100.000"><div class="res" id="simRes"></div></div>';
+      },
+      advExtraBind:function(){
+        var inp = document.getElementById("simAporte"), out = document.getElementById("simRes");
+        var calc = function(){
+          var v = Number(String(inp.value).replace(/\D/g,"")) || 0, f = Math.floor(v/1e5);
+          var inv2 = Math.min(f*750, 150000), pts = Math.min(f*25000, 5e6), inv1 = f*450;
+          out.innerHTML = '<span>'+f+' faixa'+(f===1?'':'s')+' de R$ 100 mil</span>' +
+            '<span><span class="badge b-k2">2.0</span> <b>R$ '+inv2.toLocaleString("pt-BR")+'</b> de investback ou <b>'+pts.toLocaleString("pt-BR")+'</b> pontos</span>' +
+            '<span><span class="badge b-k1">1.0</span> <b>R$ '+inv1.toLocaleString("pt-BR")+'</b> de investback</span>';
+        };
+        inp.addEventListener("input", calc); calc();
+      },
+      pautaHead:function(all){ return "Afastados: " + all.length + " contas · " + count(all,function(c){return c.k==="2.0";}) + " no boost 2.0 · bônus potencial " + B.fmtVal(sum(all,B.val)) + " (R$ 100 mil por conta)"; },
+      pautaLine:function(c){ return "conta " + c.c + " · campanha " + c.k + (c.k==="2.0" ? " (boost: R$ 750 ou 25.000 pontos a cada R$ 100 mil)" : " (R$ 450 a cada R$ 100 mil)"); },
+      pautaExtra:function(){ return []; },
+      msgIntro:"sua lista da *força-tarefa de clientes afastados*: para cada R$ 100 mil que o cliente enviar à XP, ele recebe investback (e, no boost 2.0, pode escolher pontos XP)",
+      msgGroups:[["2.0","*Campanha 2.0 · boost* (R$ 750 ou 25.000 pontos a cada R$ 100 mil) — começar por aqui"],["1.0","*Campanha 1.0* (R$ 450 a cada R$ 100 mil)"]],
+      msgGroupOf:function(c){ return c.k; },
+      msgLine:function(c){ return "Conta XP " + c.c; },
+      tsvHead:["Campanha","Conta XP","Investback a cada R$ 100 mil","Pontos XP a cada R$ 100 mil"],
+      tsvRow:function(c){ return [c.k, c.c, c.k==="2.0" ? 750 : 450, c.k==="2.0" ? 25000 : ""]; }
     }
   };
 
@@ -518,7 +585,10 @@
     return { AVREF:D.refAvenue.split("-").reverse().join("/"), AVN:o.length.toLocaleString("pt-BR"), AVT:bi(sum(o,function(c){return c.t;})),
              AVA:f("A"), AVB:f("B"), AVC:f("C"), AVD:f("D"), AVCX:mi(sum(o,function(c){return c.mix[4];})) };
   })();
+  function fv(v){ return (B.fmtVal || mi)(v); }
+  var AF_NUMS = { AFN:D.afastados.length.toLocaleString("pt-BR"), AFK2:count(D.afastados,function(c){return c.k==="2.0";}).toLocaleString("pt-BR"), AFK1:count(D.afastados,function(c){return c.k==="1.0";}).toLocaleString("pt-BR") };
   function fillConcept(t){
+    t = t.replace(/\{(AFN|AFK2|AFK1)\}/g, function(_, k){ return AF_NUMS[k]; });
     t = t.replace(/\{(AVREF|AVN|AVT|AVA|AVB|AVC|AVD|AVCX)\}/g, function(_, k){ return AV_NUMS[k]; });
     t = t.replace(/\{(VOL|CONTAS|ASS|N1|PB|N3|V3|INST|CONC|MIX)\}/g, function(_, k){ return OPIN_NUMS[k]; });
     return t.replace(/\{(P1|P2)\}/g, function(_, p){
@@ -534,8 +604,8 @@
     cp.open = false;
     cp.innerHTML = '<summary>'+esc(B.concept.title)+' <span>· clique para ver '+esc(B.concept.hint)+'</span></summary><div class="concept-body">' +
       B.concept.items.map(function(it){ return '<div class="concept-item"><h4>'+it[0]+'</h4>'+fillConcept(it[1])+'</div>'; }).join("") + '</div>';
-    document.title = {sniper:"Base Sniper", opin:"Open Investments", avenue:"Avenue"}[B.key] + " · Alta Vista";
-    document.getElementById("baseTabs").innerHTML = ["sniper","opin","avenue"].map(function(k){
+    document.title = {sniper:"Base Sniper", opin:"Open Investments", avenue:"Avenue", afastados:"Clientes afastados"}[B.key] + " · Alta Vista";
+    document.getElementById("baseTabs").innerHTML = ["sniper","opin","avenue","afastados"].map(function(k){
       var b = BASES[k];
       return '<button class="basetab'+(b===B?' sel':'')+'" data-k="'+k+'"><b>'+esc(b.tab)+'</b><span>'+esc(b.tabSub())+'</span></button>';
     }).join("");
@@ -561,7 +631,7 @@
       B.scoreboard(list,a).map(function(x){ return stat(x[0],x[1],x[2]); }).join("") +
       stat("Abordados", a.n ? pct(a.ab/a.n) : "–", a.ab + " de " + a.n + " " + B.unit) +
       stat("Reuniões realizadas+", a.reun, a.by["Reunião de consultoria realizada"] + " consultorias realizadas · inclui proposta e captado") +
-      stat("Captados", a.cap, (a.n ? pct(a.cap/a.n) : "0%") + " dos " + B.unit + " · " + movesFor(list) + " movimentos na semana");
+      stat("Captados", a.cap, (a.n ? pct(a.cap/a.n) : "0%") + " do total · " + movesFor(list) + " movimentos na semana");
     var bar = "", leg = "";
     STATUSES.forEach(function(s){
       var v = a.by[s];
@@ -571,7 +641,7 @@
     document.getElementById("funnel").innerHTML =
       '<div class="funnel-head"><h3>Funil</h3><span class="muted">contato → reunião → consultoria → proposta → captação</span></div>' +
       '<div class="fbar">'+bar+'</div><div class="flegend">'+leg+'</div>' +
-      (B.key!=="sniper" ? '<div class="mixleg">Produtos: '+(B.mix||MIX).map(function(m){ return '<span><i style="background:'+m[1]+'"></i>'+m[0]+'</span>'; }).join("")+'</div>' : '');
+      (B.key==="opin" || B.key==="avenue" ? '<div class="mixleg">Produtos: '+(B.mix||MIX).map(function(m){ return '<span><i style="background:'+m[1]+'"></i>'+m[0]+'</span>'; }).join("")+'</div>' : '');
   }
 
   function renderTeams(){
@@ -589,7 +659,7 @@
       var l = D.lideres[r.e], m = B.teamMeta(r.g);
       html += '<button class="card team-card'+(l?'':' nolider')+'" data-e="'+esc(r.e)+'">' +
         '<div><div class="tname">'+esc(r.e)+'</div><div class="tlider">'+(l?'Líder: '+esc(l):'Sem líder cadastrado')+'</div></div>' +
-        '<div class="tgap">'+mi(r.o.v)+'<small>'+esc(B.valLabel)+'</small></div>' +
+        '<div class="tgap">'+fv(r.o.v)+'<small>'+esc(B.valLabel)+'</small></div>' +
         stackBar(r.o.by) +
         '<div class="tmeta"><span><b>'+r.o.n+'</b>'+B.unit+'</span><span><b>'+(r.o.n?pct(r.o.ab/r.o.n):'–')+'</b>abordados</span><span><b>'+(r.o.cap||'–')+'</b>captados</span>' +
         '<span><b>'+r.nAdv+'</b>assessores</span><span><b>'+m[0][0]+'</b>'+m[0][1]+'</span><span><b>'+m[1][0]+'</b>'+m[1][1]+'</span></div></button>';
@@ -620,7 +690,7 @@
       rows.forEach(function(r){
         html += '<tr class="click" data-a="'+esc(r.a)+'"><td><b>'+esc(advName(r.a))+'</b><div class="muted">'+esc(r.a)+'</div></td>'+(oneTeam?'':'<td class="muted">'+esc(advTeam(r.a))+'</td>') +
           B.advCols.map(function(c){ return '<td class="r num">'+c[1](r.g)+'</td>'; }).join("") +
-          '<td class="r num"><b>'+mi(r.o.v)+'</b></td>' +
+          '<td class="r num"><b>'+fv(r.o.v)+'</b></td>' +
           '<td>'+stackBar(r.o.by)+'</td><td class="r num">'+r.o.ab+'/'+r.o.n+'</td><td class="r num">'+(r.o.cap||'–')+'</td>' +
           '<td class="r"><span class="move'+(r.mv?'':' zero')+'">'+r.mv+'</span></td><td class="r num" style="color:'+(r.stale?'var(--critical)':'var(--ink-500)')+'">'+r.stale+'</td></tr>';
       });
@@ -645,6 +715,7 @@
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="sendBtn">Enviar ao assessor</button><button class="btn primary" id="pautaBtn">Pauta do 1:1</button></div></div>' +
       '<div class="card pauta" id="sendPanel"><div class="section-head"><b style="color:var(--ink-900)">Mensagem para '+esc(advName(a).split(" ")[0])+' · '+esc(B.tab)+'</b><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="copyMsgBtn">Copiar mensagem</button><button class="btn" id="copyTsvBtn">Copiar como planilha</button></span></div>' +
       '<span class="muted">Lista na faixa selecionada no topo, do maior para o menor. Dá para editar o texto antes de copiar. "Copiar como planilha" cola em colunas no Excel ou no e-mail.</span><textarea id="sendTxt"></textarea></div>' +
+      (B.advExtra ? B.advExtra() : '') +
       '<div class="card pauta" id="pauta"><div class="section-head"><b style="color:var(--ink-900)">Pauta do 1:1 · '+esc(B.tab)+'</b><button class="btn" id="copyBtn">Copiar</button></div><textarea id="pautaTxt" readonly></textarea></div>' +
       '<div class="card tablewrap"><table><thead><tr>'+B.head+'<th>Status</th><th>Último contato</th></tr></thead><tbody id="clientRows"></tbody></table></div>';
     document.getElementById("view").innerHTML = html;
@@ -679,6 +750,7 @@
       tb.appendChild(tr);
     });
     document.getElementById("backBtn").addEventListener("click", function(){ state.advisor=null; render(); });
+    if(B.advExtraBind) B.advExtraBind();
     document.getElementById("pautaBtn").addEventListener("click", function(){
       document.getElementById("pauta").classList.toggle("open");
       document.getElementById("pautaTxt").value = buildPauta(a);
@@ -709,7 +781,7 @@
     var L = [], first = advName(a).split(" ")[0];
     L.push("Oi, " + first + "! Segue " + B.msgIntro + ".");
     L.push("");
-    L.push("*" + list.length + " " + B.unit + " · " + mi(sum(list,B.val)) + " " + (B.msgTotal||"fora da XP") + "*");
+    L.push("*" + list.length + " " + B.unit + " · " + fv(sum(list,B.val)) + " " + (B.msgTotal||"fora da XP") + "*");
     B.msgGroups.forEach(function(g){
       var rows = list.filter(function(c){ return B.msgGroupOf(c)===g[0]; });
       if(!rows.length) return;
@@ -773,7 +845,7 @@
 
   /* ---------- init ---------- */
   var teams = {};
-  D.sniper.concat(D.opin, D.avenue).forEach(function(c){ teams[advTeam(c.a)] = 1; });
+  D.sniper.concat(D.opin, D.avenue, D.afastados).forEach(function(c){ teams[advTeam(c.a)] = 1; });
   var sel = document.getElementById("teamSel");
   sel.innerHTML = '<option value="all">Todas as equipes</option>' + Object.keys(teams).sort().map(function(e){ return '<option value="'+esc(e)+'">'+esc(teamLabel(e))+'</option>'; }).join("");
   function setTeam(e){ state.team = e; state.advisor = null; sel.value = e; try{ localStorage.setItem("sniper_team", e); }catch(x){} render(); }
