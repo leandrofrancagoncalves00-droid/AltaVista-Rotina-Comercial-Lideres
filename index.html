@@ -848,6 +848,7 @@
 <div class="toast" id="toast" hidden></div>
 
 <script src="base-sniper/data.js?v=2026-10-22"></script>
+<script src="planejamentos/data.js?v=2026-10-30"></script>
 <script>
 (function(){
   "use strict";
@@ -2264,15 +2265,22 @@
   // Base Sniper (P1+P2) e Open Investments: carteira do assessor nas duas bases
   // (dados em base-sniper/data.js, casados pelo nome). Os botões abrem o dash da
   // base num modal para o líder fazer o bate na 1:1.
+  // Planejamentos (patrimônio declarado no FP) vêm de planejamentos/data.js e abrem a página própria.
   var SNIPER_BY_NOME = (function(){
-    var map = {}, S = window.BASES_DATA;
-    if(!S) return map;
+    var map = {}, S = window.BASES_DATA, F = window.FP_DATA;
+    if(!S && !F) return map;
     function norm(s){ return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim(); }
-    Object.keys(S.assessores).forEach(function(cod){ map[norm(S.assessores[cod].n)] = { cod: cod, sniper: [], opin: [], avenue: [], afastados: [] }; });
-    S.sniper.forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].sniper.push(c); });
-    S.opin.forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].opin.push(c); });
-    (S.avenue||[]).forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].avenue.push(c); });
-    (S.afastados||[]).forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].afastados.push(c); });
+    function entry(n, cod){ var k = norm(n); return map[k] = map[k] || { cod: cod, sniper: [], opin: [], avenue: [], afastados: [], fp: [] }; }
+    if(S){
+      Object.keys(S.assessores).forEach(function(cod){ entry(S.assessores[cod].n, cod); });
+      S.sniper.forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].sniper.push(c); });
+      S.opin.forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].opin.push(c); });
+      (S.avenue||[]).forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].avenue.push(c); });
+      (S.afastados||[]).forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].afastados.push(c); });
+    }
+    if(F){
+      F.fp.forEach(function(c){ var a = F.assessores[c.a]; if(a){ var e = entry(a.n, c.a); e.fpCod = c.a; e.fp.push(c); } });
+    }
     map.__norm = norm;
     return map;
   })();
@@ -2281,7 +2289,7 @@
     var el = $("sniperBlock");
     if(!el) return;
     var sn = sniperFor(nome);
-    if(!sn || (!sn.sniper.length && !sn.opin.length && !sn.avenue.length && !sn.afastados.length)){ el.innerHTML = ""; return; }
+    if(!sn || (!sn.sniper.length && !sn.opin.length && !sn.avenue.length && !sn.afastados.length && !sn.fp.length)){ el.innerHTML = ""; return; }
     var mi = function(v){ return "R$ " + (v/1e6).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) + " mi"; };
     var sum = function(l,f){ var t=0; l.forEach(function(c){ t+=f(c); }); return t; };
     var html = "";
@@ -2329,12 +2337,24 @@
         '</div>' +
         '<button type="button" class="btn primary sniper-open" data-base="afastados">Fazer o bate dos afastados</button></div>';
     }
+    if(sn.fp.length){
+      var fpFora = sn.fp.filter(function(c){ return c.e>0; });
+      html += '<div class="sniper-card">' +
+        '<div class="sn-title"><span class="eyebrow">Planejamento financeiro</span><b>Patrimônio declarado no FP</b></div>' +
+        '<div class="sn-stats">' +
+          '<span class="sn-stat"><b>'+sn.fp.length+'</b>clientes com FP ('+fpFora.length+' com patrimônio fora)</span>' +
+          '<span class="sn-stat"><b>'+mi(sum(sn.fp,function(c){return c.e;}))+'</b>patrimônio fora da XP</span>' +
+          '<span class="sn-stat"><b>'+mi(sum(sn.fp,function(c){return c.e+c.im+c.vc;}))+'</b>patrimônio declarado</span>' +
+        '</div>' +
+        '<button type="button" class="btn primary sniper-open" data-base="fp">Fazer o bate dos planejamentos</button></div>';
+    }
     el.innerHTML = html;
     Array.prototype.forEach.call(el.querySelectorAll(".sniper-open"), function(btn){
       btn.addEventListener("click", function(){
         var base = btn.getAttribute("data-base");
-        $("sniperModalTitle").textContent = ({opin:"Open Investments · ", avenue:"Avenue · ", afastados:"Clientes afastados · "}[base] || "Base Sniper · ") + nome;
-        $("sniperFrame").src = "base-sniper/index.html?embed=1&base=" + base + "&a=" + encodeURIComponent(sn.cod);
+        $("sniperModalTitle").textContent = ({opin:"Open Investments · ", avenue:"Avenue · ", afastados:"Clientes afastados · ", fp:"Planejamentos · "}[base] || "Base Sniper · ") + nome;
+        $("sniperFrame").src = base==="fp" ? "planejamentos/index.html?embed=1&a=" + encodeURIComponent(sn.fpCod)
+          : "base-sniper/index.html?embed=1&base=" + base + "&a=" + encodeURIComponent(sn.cod);
         $("sniperModal").hidden = false;
       });
     });
