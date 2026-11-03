@@ -332,6 +332,9 @@
   .meeting-ata textarea{width:100%;min-height:64px;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);font-size:12.5px;resize:vertical;}
   .ata-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .ata-hint{font-size:11px;color:var(--ink-500);}
+  .meeting-transcript{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);}
+  .tr-rec.recording{background:#c0392b;border-color:#c0392b;color:#fff;}
+  .tr-status{font-style:italic;}
 
   .pilares-gap{display:flex;flex-direction:column;gap:10px;}
   .pilares-gap-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
@@ -1168,7 +1171,7 @@
   // apagaria o que já estava salvo. Por isso, antes de enviar, comparamos com o
   // servidor e COMBINAMOS as duas versões quando ele mudou desde a última vez que
   // este navegador o viu.
-  var CONFLICT_TEXT_KEYS = { ata:1, resultado:1, noShowMotivo:1 };
+  var CONFLICT_TEXT_KEYS = { ata:1, resultado:1, noShowMotivo:1, transcricao:1 };
   function isEmptyVal(v){
     if(v === undefined || v === null || v === "") return true;
     if(Array.isArray(v)) return !v.length;
@@ -1394,6 +1397,7 @@
   // salvos por baixo (via markRecentWrite), só a repintura da tela é adiada.
   function isTypingSomewhere(){
     var a = document.activeElement;
+    if(typeof tr !== "undefined" && tr && tr.recording) return true;
     return !!(a && (a.tagName==="TEXTAREA" || a.tagName==="SELECT" || (a.tagName==="INPUT" && a.type!=="checkbox" && a.type!=="radio")));
   }
 
@@ -2636,12 +2640,80 @@
     '</div>';
   }
 
+  // ---- Transcrição da 1x1 (reconhecimento de voz do navegador: Chrome/Edge) ----
+  // O texto fica num rascunho (tr.draft) e só vai para o banco quando o líder
+  // clica em "Salvar transcrição". Enquanto grava, a tela não é redesenhada.
+  var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var tr = { rec:null, recording:false, key:"", draft:{}, interim:"" };
+  function trKey(){ return weekKeyFor(currentMonday)+"|"+currentTeam+"|"+currentAdvisor; }
+  function trSaved(obj){ return (obj && obj.transcricao) || ""; }
+  function trText(obj){ var k = trKey(); return tr.draft[k]!==undefined ? tr.draft[k] : trSaved(obj); }
+  function trRefreshUi(){
+    var btn = document.querySelector(".tr-rec"), st = document.querySelector(".tr-status"), ta = document.querySelector("textarea[data-meeting-transcript]");
+    if(ta && tr.draft[tr.key]!==undefined && trKey()===tr.key && ta.value!==tr.draft[tr.key] && document.activeElement!==ta) ta.value = tr.draft[tr.key];
+    if(!btn) return;
+    var mine = tr.recording && tr.key===trKey();
+    btn.textContent = mine ? "■ Parar" : "● Gravar";
+    btn.classList.toggle("recording", mine);
+    if(st) st.textContent = mine ? ("Gravando…" + (tr.interim ? " " + tr.interim : "")) : "";
+  }
+  function stopTranscribing(){
+    tr.recording = false;
+    try{ if(tr.rec) tr.rec.stop(); }catch(e){}
+    tr.interim = "";
+    trRefreshUi();
+  }
+  function startTranscribing(){
+    if(!SpeechRec){ showToast("Este navegador não tem transcrição de voz. Use o Chrome ou o Edge."); return; }
+    tr.key = trKey();
+    var entry = entryFor(weekKeyFor(currentMonday), currentTeam, currentAdvisor, false);
+    var cur = trText(entry && entry.items && entry.items.reuniao11);
+    tr.draft[tr.key] = cur;
+    var rec = new SpeechRec();
+    rec.lang = "pt-BR"; rec.continuous = true; rec.interimResults = true;
+    rec.onresult = function(ev){
+      var fin = "", interim = "";
+      for(var i=ev.resultIndex;i<ev.results.length;i++){
+        var txt = ev.results[i][0].transcript;
+        if(ev.results[i].isFinal) fin += txt.trim() + " "; else interim += txt;
+      }
+      if(fin){
+        var d = tr.draft[tr.key] || "";
+        tr.draft[tr.key] = (d && !/\s$/.test(d) ? d + " " : d) + fin;
+      }
+      tr.interim = interim;
+      trRefreshUi();
+      var ta = document.querySelector("textarea[data-meeting-transcript]");
+      if(ta && trKey()===tr.key){ ta.value = tr.draft[tr.key]; ta.scrollTop = ta.scrollHeight; }
+    };
+    rec.onerror = function(ev){
+      if(ev.error === "not-allowed" || ev.error === "service-not-allowed"){ tr.recording = false; showToast("Permita o uso do microfone no navegador para gravar"); trRefreshUi(); }
+      else if(ev.error === "audio-capture"){ tr.recording = false; showToast("Não encontrei um microfone"); trRefreshUi(); }
+      else if(ev.error === "network"){ tr.recording = false; showToast("Sem conexão com o serviço de voz do navegador"); trRefreshUi(); }
+    };
+    // O navegador encerra sozinho depois de um tempo em silêncio: religa enquanto o líder não parar.
+    rec.onend = function(){
+      if(tr.recording){ try{ rec.start(); }catch(e){ tr.recording = false; } }
+      trRefreshUi();
+    };
+    tr.rec = rec; tr.recording = true; tr.interim = "";
+    try{ rec.start(); }catch(e){ tr.recording = false; showToast("Não consegui iniciar a gravação"); }
+    trRefreshUi();
+  }
+
   function planBlockHtml(obj){
     var ata = obj.ata || "";
     return '<div class="meeting-ata">'+
       '<label>Ata / plano de ação combinado</label>'+
       '<textarea data-meeting-ata rows="3" placeholder="O que · até quando · como mede — registre os combinados para enviar ao assessor">'+esc(ata)+'</textarea>'+
       '<div class="ata-actions"><button type="button" class="btn ai-analyze-btn">Analisar com IA</button><span class="ata-hint">Copia o texto para você colar numa conversa com o Claude e receber um plano organizado.</span></div>'+
+    '</div>'+
+    '<div class="meeting-ata meeting-transcript">'+
+      '<label>Transcrição da 1x1</label>'+
+      '<div class="ata-actions"><button type="button" class="btn tr-rec">● Gravar</button><span class="tr-status ata-hint"></span></div>'+
+      '<span class="ata-hint">Avise o assessor que a 1x1 está sendo transcrita. Funciona no Chrome e no Edge, com o microfone ligado. O texto só é salvo quando você clicar em "Salvar transcrição".</span>'+
+      '<textarea data-meeting-transcript rows="5" placeholder="A transcrição aparece aqui enquanto você grava. Você pode corrigir o texto.">'+esc(trText(obj))+'</textarea>'+
+      '<div class="ata-actions"><button type="button" class="btn tr-save">Salvar transcrição</button><button type="button" class="btn tr-to-ata">Enviar para o plano de ação</button><button type="button" class="btn tr-ai">Copiar para o Claude</button></div>'+
     '</div>';
   }
 
@@ -3243,6 +3315,40 @@
         flashSave();
         scheduleSync();
       });
+    }
+
+    if(tr.recording && tr.key !== trKey()) stopTranscribing();
+    var trBtn = grid.querySelector(".tr-rec"), trTa = grid.querySelector("textarea[data-meeting-transcript]");
+    if(trBtn){
+      trRefreshUi();
+      trBtn.onclick = function(){ if(tr.recording && tr.key===trKey()) stopTranscribing(); else startTranscribing(); };
+      trTa.oninput = function(){ tr.draft[trKey()] = trTa.value; };
+      grid.querySelector(".tr-save").onclick = function(){
+        var entry = entryFor(weekKey, equipe, nome, true);
+        entry.items.reuniao11 = entry.items.reuniao11 || { answers:[], ata:"" };
+        entry.items.reuniao11.transcricao = trTa.value;
+        tr.draft[trKey()] = trTa.value;
+        persist(); flashSave(); scheduleSync();
+        showToast("Transcrição salva");
+      };
+      grid.querySelector(".tr-to-ata").onclick = function(){
+        var txt = trTa.value.trim();
+        if(!txt){ showToast("Ainda não há transcrição"); return; }
+        var entry = entryFor(weekKey, equipe, nome, true);
+        entry.items.reuniao11 = entry.items.reuniao11 || { answers:[], ata:"" };
+        var atual = entry.items.reuniao11.ata || "";
+        entry.items.reuniao11.ata = (atual ? atual.replace(/\s+$/,"") + "\n\n" : "") + "[Transcrição da 1x1]\n" + txt;
+        entry.items.reuniao11.transcricao = trTa.value;
+        persist(); flashSave(); scheduleSync();
+        var ataBox = grid.querySelector("textarea[data-meeting-ata]");
+        if(ataBox) ataBox.value = entry.items.reuniao11.ata;
+        showToast("Transcrição enviada para o plano de ação");
+      };
+      grid.querySelector(".tr-ai").onclick = function(){
+        var txt = trTa.value.trim();
+        if(!txt){ showToast("Ainda não há transcrição"); return; }
+        copyForAiAnalysis("Esta é a transcrição de uma 1x1 comercial entre líder e assessor. Extraia os combinados em itens claros (o que, até quando, como medir) e aponte o que ficou em aberto:\n\n"+txt);
+      };
     }
 
     var aiBtn = grid.querySelector(".ai-analyze-btn");
