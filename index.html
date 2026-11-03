@@ -2645,6 +2645,18 @@
   // clica em "Salvar transcrição". Enquanto grava, a tela não é redesenhada.
   var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   var tr = { rec:null, recording:false, key:"", draft:{}, interim:"" };
+  // Rascunho guardado também no navegador: se a aba fechar no meio de uma 1x1
+  // longa, o texto já falado não se perde.
+  var TR_LS = "rotinaTranscricaoRascunho";
+  try{ tr.draft = JSON.parse(localStorage.getItem(TR_LS) || "{}") || {}; }catch(e){ tr.draft = {}; }
+  function trPersistDraft(){ try{ localStorage.setItem(TR_LS, JSON.stringify(tr.draft)); }catch(e){} }
+  function trHasUnsaved(){
+    return Object.keys(tr.draft).some(function(k){
+      var p = k.split("|"), e = entryFor(p[0], p[1], p[2], false);
+      var saved = (e && e.items && e.items.reuniao11 && e.items.reuniao11.transcricao) || "";
+      return (tr.draft[k] || "") !== saved && (tr.draft[k] || "").trim() !== "";
+    });
+  }
   function trKey(){ return weekKeyFor(currentMonday)+"|"+currentTeam+"|"+currentAdvisor; }
   function trSaved(obj){ return (obj && obj.transcricao) || ""; }
   function trText(obj){ var k = trKey(); return tr.draft[k]!==undefined ? tr.draft[k] : trSaved(obj); }
@@ -2682,6 +2694,7 @@
         tr.draft[tr.key] = (d && !/\s$/.test(d) ? d + " " : d) + fin;
       }
       tr.interim = interim;
+      if(fin) trPersistDraft();
       trRefreshUi();
       var ta = document.querySelector("textarea[data-meeting-transcript]");
       if(ta && trKey()===tr.key){ ta.value = tr.draft[tr.key]; ta.scrollTop = ta.scrollHeight; }
@@ -3322,12 +3335,12 @@
     if(trBtn){
       trRefreshUi();
       trBtn.onclick = function(){ if(tr.recording && tr.key===trKey()) stopTranscribing(); else startTranscribing(); };
-      trTa.oninput = function(){ tr.draft[trKey()] = trTa.value; };
+      trTa.oninput = function(){ tr.draft[trKey()] = trTa.value; trPersistDraft(); };
       grid.querySelector(".tr-save").onclick = function(){
         var entry = entryFor(weekKey, equipe, nome, true);
         entry.items.reuniao11 = entry.items.reuniao11 || { answers:[], ata:"" };
         entry.items.reuniao11.transcricao = trTa.value;
-        tr.draft[trKey()] = trTa.value;
+        delete tr.draft[trKey()]; trPersistDraft();
         persist(); flashSave(); scheduleSync();
         showToast("Transcrição salva");
       };
@@ -3339,6 +3352,7 @@
         var atual = entry.items.reuniao11.ata || "";
         entry.items.reuniao11.ata = (atual ? atual.replace(/\s+$/,"") + "\n\n" : "") + "[Transcrição da 1x1]\n" + txt;
         entry.items.reuniao11.transcricao = trTa.value;
+        delete tr.draft[trKey()]; trPersistDraft();
         persist(); flashSave(); scheduleSync();
         var ataBox = grid.querySelector("textarea[data-meeting-ata]");
         if(ataBox) ataBox.value = entry.items.reuniao11.ata;
@@ -3771,7 +3785,8 @@
     return ["entries", "meta", "pipe", "reminder"].some(function(k){ return d[k] && Object.keys(d[k]).length; });
   }
   window.addEventListener("beforeunload", function(e){
-    if(!hasPendingChanges()) return;
+    var trPend = tr.recording || trHasUnsaved();
+    if(!hasPendingChanges() && !trPend) return;
     flushDirty(true, true);
     e.preventDefault();
     e.returnValue = "";
