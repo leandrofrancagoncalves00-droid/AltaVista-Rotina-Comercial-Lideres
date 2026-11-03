@@ -605,7 +605,7 @@
     cp.innerHTML = '<summary>'+esc(B.concept.title)+' <span>· clique para ver '+esc(B.concept.hint)+'</span></summary><div class="concept-body">' +
       B.concept.items.map(function(it){ return '<div class="concept-item"><h4>'+it[0]+'</h4>'+fillConcept(it[1])+'</div>'; }).join("") + '</div>';
     document.title = {sniper:"Base Sniper", opin:"Open Investments", avenue:"Avenue", afastados:"Clientes afastados"}[B.key] + " · Alta Vista";
-    document.getElementById("baseTabs").innerHTML = ["sniper","opin","avenue","afastados"].map(function(k){
+    document.getElementById("baseTabs").innerHTML = ["sniper","opin","avenue"].map(function(k){
       var b = BASES[k];
       return '<button class="basetab'+(b===B?' sel':'')+'" data-k="'+k+'"><b>'+esc(b.tab)+'</b><span>'+esc(b.tabSub())+'</span></button>';
     }).join("");
@@ -845,7 +845,7 @@
 
   /* ---------- init ---------- */
   var teams = {};
-  D.sniper.concat(D.opin, D.avenue, D.afastados).forEach(function(c){ teams[advTeam(c.a)] = 1; });
+  D.sniper.concat(D.opin, D.avenue).forEach(function(c){ teams[advTeam(c.a)] = 1; });
   var sel = document.getElementById("teamSel");
   sel.innerHTML = '<option value="all">Todas as equipes</option>' + Object.keys(teams).sort().map(function(e){ return '<option value="'+esc(e)+'">'+esc(teamLabel(e))+'</option>'; }).join("");
   function setTeam(e){ state.team = e; state.advisor = null; sel.value = e; try{ localStorage.setItem("sniper_team", e); }catch(x){} render(); }
