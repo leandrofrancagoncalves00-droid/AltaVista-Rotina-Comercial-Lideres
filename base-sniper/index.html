@@ -140,8 +140,13 @@
   body.embed .topbar,body.embed #backBtn{display:none;}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink-900);color:var(--surface);padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;}
   .toast.show{opacity:1;}
-  .basetabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-  @media (max-width:700px){.basetabs{grid-template-columns:1fr;}}
+  .basetabs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  @media (max-width:1000px){.basetabs{grid-template-columns:repeat(2,1fr);}}
+  .simul{padding:14px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;}
+  .simul label{font-size:12px;color:var(--ink-500);}
+  .simul input{font-family:var(--font-mono);font-size:14px;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink-900);width:150px;text-align:right;}
+  .simul .res{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12.5px;color:var(--ink-700);}
+  .simul .res b{font-family:var(--font-mono);color:var(--ink-900);}
   @media (max-width:700px){.basetabs{grid-template-columns:1fr;}}
   .basetab{text-align:left;cursor:pointer;padding:12px 16px;display:flex;flex-direction:column;gap:3px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);font-family:inherit;color:var(--ink-700);opacity:.75;transition:opacity .12s,border-color .12s;}
   .basetab:hover{opacity:1;border-color:var(--accent);}
@@ -195,7 +200,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="data.js?v=2026-11-03"></script>
+<script src="data.js?v=2026-11-09"></script>
 <script>
 (function(){
   var D = window.BASES_DATA;
@@ -382,6 +387,59 @@
       msgLine:function(c){ var i = c.mix.indexOf(Math.max.apply(null,c.mix)); return "Conta Avenue " + c.c + " · " + mil(c.t) + " · principal: " + MIX_AV[i][0] + (c.mix[4]>=5e4?" · saldo parado " + mil(c.mix[4]):""); },
       tsvHead:["Faixa","Conta Avenue","Posição","Fundos","Alternativos","Renda variável","Renda fixa","Saldo em conta","Abertura"],
       tsvRow:function(c){ return [c.f, c.c, c.t, c.mix[0], c.mix[1], c.mix[2], c.mix[3], c.mix[4], c.ab]; }
+    },
+    afastados: {
+      key:"afastados", tab:"Clientes afastados 3.0", msgTotal:"de investback potencial se cada uma aportar R$ 100 mil",
+      fmtVal:function(v){ return v>=1e6 ? mi(v) : "R$ " + Math.round(v).toLocaleString("pt-BR"); },
+      concept:{
+        title:"Conceito da campanha Clientes afastados 3.0",
+        hint:"o objetivo, a premiação e como usar",
+        items:[
+          ["O que é", "Reativar clientes que já têm relacionamento com a XP, mas se afastaram. A campanha incentiva a <b>retomada do relacionamento</b> por meio de <b>novos aportes, transferências de custódia e entrada de recursos</b> na plataforma. São <b>{AFN}</b> contas."],
+          ["Premiação do cliente", "<b>R$ 900 em investback</b> ou <b>30.000 pontos XP</b> a cada <b>R$ 100 mil aportados</b> ao longo do período da campanha. Limite máximo: <b>R$ 150.000</b> em investback ou <b>5.000.000</b> de pontos (alcançado com cerca de R$ 16,7 mi)."],
+          ["Como conta", "Vale o volume aportado no período, por <b>faixa completa de R$ 100 mil</b>: R$ 150 mil rende o mesmo que R$ 100 mil; R$ 400 mil rende 4 faixas. Use o <b>simulador</b> na carteira do assessor para mostrar ao cliente quanto ele recebe."],
+          ["Como usar na 1:1", "Revisar a lista do assessor, marcar o status de cada contato e acompanhar o funil toda semana. A equipe de cada conta segue o cadastro atual da Rotina Comercial."]
+        ]
+      },
+      tabSub: function(){ return D.afastados.length.toLocaleString("pt-BR") + " contas · R$ 900 ou 30 mil pontos a cada R$ 100 mil"; },
+      eyebrow:"Clientes afastados 3.0 · Alta Vista", title:"Captação de clientes afastados 3.0",
+      sub:"Novos aportes, transferências de custódia e entrada de recursos · R$ 900 em investback ou 30.000 pontos XP a cada R$ 100 mil aportados · limite R$ 150.000 ou 5.000.000 de pontos",
+      rows:D.afastados, unit:"contas", val:function(){ return 900; }, valLabel:"de investback potencial",
+      segs:[["all","Todas"]], defSeg:"all",
+      inSeg:function(){ return true; },
+      sortRows:function(x,y){ return x.c < y.c ? -1 : 1; },
+      scoreboard:function(list,a){
+        return [["Contas", a.n, "clientes afastados da lista da XP"],
+                ["Investback potencial", B.fmtVal(a.v), "ou " + (a.n*30000).toLocaleString("pt-BR") + " pontos, se cada conta aportar R$ 100 mil"]];
+      },
+      teamMeta:function(g){ return [[(g.length*30000).toLocaleString("pt-BR"),"pontos possíveis"],[count(g,function(c){ return stName(c)!=="Não abordado"; })+"/"+g.length,"contatadas"]]; },
+      advCols:[],
+      valCol:"Investback potencial",
+      head:'<th>Conta XP</th>',
+      cells:function(c){ return '<td><b class="num">'+esc(c.c)+'</b></td>'; },
+      advExtra:function(){
+        return '<div class="card simul"><label for="simAporte">Simular aporte de um cliente (R$)</label><input id="simAporte" type="text" inputmode="numeric" value="100.000"><div class="res" id="simRes"></div></div>';
+      },
+      advExtraBind:function(){
+        var inp = document.getElementById("simAporte"), out = document.getElementById("simRes");
+        var calc = function(){
+          var v = Number(String(inp.value).replace(/\D/g,"")) || 0, f = Math.floor(v/1e5);
+          var inv = Math.min(f*900, 150000), pts = Math.min(f*30000, 5e6);
+          out.innerHTML = '<span>'+f+' faixa'+(f===1?'':'s')+' de R$ 100 mil</span>' +
+            '<span><b>R$ '+inv.toLocaleString("pt-BR")+'</b> de investback ou <b>'+pts.toLocaleString("pt-BR")+'</b> pontos XP</span>' +
+            (f*900>150000 ? '<span class="muted">limite da campanha atingido</span>' : '');
+        };
+        inp.addEventListener("input", calc); calc();
+      },
+      pautaHead:function(all){ return "Afastados 3.0: " + all.length + " contas · R$ 900 ou 30.000 pontos a cada R$ 100 mil aportados"; },
+      pautaLine:function(c){ return "conta " + c.c; },
+      pautaExtra:function(){ return []; },
+      msgIntro:"sua lista da campanha *Clientes afastados 3.0*: a cada R$ 100 mil que o cliente aportar (novos aportes, transferência de custódia ou entrada de recursos), ele recebe *R$ 900 em investback ou 30.000 pontos XP*, até R$ 150 mil ou 5 milhões de pontos",
+      msgGroups:[["3.0","*Contas para reativar*"]],
+      msgGroupOf:function(){ return "3.0"; },
+      msgLine:function(c){ return "Conta XP " + c.c; },
+      tsvHead:["Conta XP","Investback a cada R$ 100 mil","Pontos XP a cada R$ 100 mil"],
+      tsvRow:function(c){ return [c.c, 900, 30000]; }
     }
   };
 
@@ -519,7 +577,9 @@
     return { AVREF:D.refAvenue.split("-").reverse().join("/"), AVN:o.length.toLocaleString("pt-BR"), AVT:bi(sum(o,function(c){return c.t;})),
              AVA:f("A"), AVB:f("B"), AVC:f("C"), AVD:f("D"), AVCX:mi(sum(o,function(c){return c.mix[4];})) };
   })();
+  function fv(v){ return (B.fmtVal || mi)(v); }
   function fillConcept(t){
+    t = t.replace(/\{AFN\}/g, D.afastados.length.toLocaleString("pt-BR"));
     t = t.replace(/\{(AVREF|AVN|AVT|AVA|AVB|AVC|AVD|AVCX)\}/g, function(_, k){ return AV_NUMS[k]; });
     t = t.replace(/\{(VOL|CONTAS|ASS|N1|PB|N3|V3|INST|CONC|MIX)\}/g, function(_, k){ return OPIN_NUMS[k]; });
     return t.replace(/\{(P1|P2)\}/g, function(_, p){
@@ -535,8 +595,8 @@
     cp.open = false;
     cp.innerHTML = '<summary>'+esc(B.concept.title)+' <span>· clique para ver '+esc(B.concept.hint)+'</span></summary><div class="concept-body">' +
       B.concept.items.map(function(it){ return '<div class="concept-item"><h4>'+it[0]+'</h4>'+fillConcept(it[1])+'</div>'; }).join("") + '</div>';
-    document.title = {sniper:"Base Sniper", opin:"Open Investments", avenue:"Avenue"}[B.key] + " · Alta Vista";
-    document.getElementById("baseTabs").innerHTML = ["sniper","opin","avenue"].map(function(k){
+    document.title = {sniper:"Base Sniper", opin:"Open Investments", avenue:"Avenue", afastados:"Clientes afastados 3.0"}[B.key] + " · Alta Vista";
+    document.getElementById("baseTabs").innerHTML = ["sniper","opin","avenue","afastados"].map(function(k){
       var b = BASES[k];
       return '<button class="basetab'+(b===B?' sel':'')+'" data-k="'+k+'"><b>'+esc(b.tab)+'</b><span>'+esc(b.tabSub())+'</span></button>';
     }).join("");
@@ -572,7 +632,7 @@
     document.getElementById("funnel").innerHTML =
       '<div class="funnel-head"><h3>Funil</h3><span class="muted">contato → reunião → consultoria → proposta → captação</span></div>' +
       '<div class="fbar">'+bar+'</div><div class="flegend">'+leg+'</div>' +
-      (B.key!=="sniper" ? '<div class="mixleg">Produtos: '+(B.mix||MIX).map(function(m){ return '<span><i style="background:'+m[1]+'"></i>'+m[0]+'</span>'; }).join("")+'</div>' : '');
+      (B.key==="opin" || B.key==="avenue" ? '<div class="mixleg">Produtos: '+(B.mix||MIX).map(function(m){ return '<span><i style="background:'+m[1]+'"></i>'+m[0]+'</span>'; }).join("")+'</div>' : '');
   }
 
   function renderTeams(){
@@ -590,7 +650,7 @@
       var l = D.lideres[r.e], m = B.teamMeta(r.g);
       html += '<button class="card team-card'+(l?'':' nolider')+'" data-e="'+esc(r.e)+'">' +
         '<div><div class="tname">'+esc(r.e)+'</div><div class="tlider">'+(l?'Líder: '+esc(l):'Sem líder cadastrado')+'</div></div>' +
-        '<div class="tgap">'+mi(r.o.v)+'<small>'+esc(B.valLabel)+'</small></div>' +
+        '<div class="tgap">'+fv(r.o.v)+'<small>'+esc(B.valLabel)+'</small></div>' +
         stackBar(r.o.by) +
         '<div class="tmeta"><span><b>'+r.o.n+'</b>'+B.unit+'</span><span><b>'+(r.o.n?pct(r.o.ab/r.o.n):'–')+'</b>abordados</span><span><b>'+(r.o.cap||'–')+'</b>captados</span>' +
         '<span><b>'+r.nAdv+'</b>assessores</span><span><b>'+m[0][0]+'</b>'+m[0][1]+'</span><span><b>'+m[1][0]+'</b>'+m[1][1]+'</span></div></button>';
@@ -621,7 +681,7 @@
       rows.forEach(function(r){
         html += '<tr class="click" data-a="'+esc(r.a)+'"><td><b>'+esc(advName(r.a))+'</b><div class="muted">'+esc(r.a)+'</div></td>'+(oneTeam?'':'<td class="muted">'+esc(advTeam(r.a))+'</td>') +
           B.advCols.map(function(c){ return '<td class="r num">'+c[1](r.g)+'</td>'; }).join("") +
-          '<td class="r num"><b>'+mi(r.o.v)+'</b></td>' +
+          '<td class="r num"><b>'+fv(r.o.v)+'</b></td>' +
           '<td>'+stackBar(r.o.by)+'</td><td class="r num">'+r.o.ab+'/'+r.o.n+'</td><td class="r num">'+(r.o.cap||'–')+'</td>' +
           '<td class="r"><span class="move'+(r.mv?'':' zero')+'">'+r.mv+'</span></td><td class="r num" style="color:'+(r.stale?'var(--critical)':'var(--ink-500)')+'">'+r.stale+'</td></tr>';
       });
@@ -646,6 +706,7 @@
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="sendBtn">Enviar ao assessor</button><button class="btn primary" id="pautaBtn">Pauta do 1:1</button></div></div>' +
       '<div class="card pauta" id="sendPanel"><div class="section-head"><b style="color:var(--ink-900)">Mensagem para '+esc(advName(a).split(" ")[0])+' · '+esc(B.tab)+'</b><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="copyMsgBtn">Copiar mensagem</button><button class="btn" id="copyTsvBtn">Copiar como planilha</button></span></div>' +
       '<span class="muted">Lista na faixa selecionada no topo, do maior para o menor. Dá para editar o texto antes de copiar. "Copiar como planilha" cola em colunas no Excel ou no e-mail.</span><textarea id="sendTxt"></textarea></div>' +
+      (B.advExtra ? B.advExtra() : '') +
       '<div class="card pauta" id="pauta"><div class="section-head"><b style="color:var(--ink-900)">Pauta do 1:1 · '+esc(B.tab)+'</b><button class="btn" id="copyBtn">Copiar</button></div><textarea id="pautaTxt" readonly></textarea></div>' +
       '<div class="card tablewrap"><table><thead><tr>'+B.head+'<th>Status</th><th>Último contato</th></tr></thead><tbody id="clientRows"></tbody></table></div>';
     document.getElementById("view").innerHTML = html;
@@ -680,6 +741,7 @@
       tb.appendChild(tr);
     });
     document.getElementById("backBtn").addEventListener("click", function(){ state.advisor=null; render(); });
+    if(B.advExtraBind) B.advExtraBind();
     document.getElementById("pautaBtn").addEventListener("click", function(){
       document.getElementById("pauta").classList.toggle("open");
       document.getElementById("pautaTxt").value = buildPauta(a);
@@ -710,7 +772,7 @@
     var L = [], first = advName(a).split(" ")[0];
     L.push("Oi, " + first + "! Segue " + B.msgIntro + ".");
     L.push("");
-    L.push("*" + list.length + " " + B.unit + " · " + mi(sum(list,B.val)) + " " + (B.msgTotal||"fora da XP") + "*");
+    L.push("*" + list.length + " " + B.unit + " · " + fv(sum(list,B.val)) + " " + (B.msgTotal||"fora da XP") + "*");
     B.msgGroups.forEach(function(g){
       var rows = list.filter(function(c){ return B.msgGroupOf(c)===g[0]; });
       if(!rows.length) return;
@@ -774,7 +836,7 @@
 
   /* ---------- init ---------- */
   var teams = {};
-  D.sniper.concat(D.opin, D.avenue).forEach(function(c){ teams[advTeam(c.a)] = 1; });
+  D.sniper.concat(D.opin, D.avenue, D.afastados).forEach(function(c){ teams[advTeam(c.a)] = 1; });
   var sel = document.getElementById("teamSel");
   sel.innerHTML = '<option value="all">Todas as equipes</option>' + Object.keys(teams).sort().map(function(e){ return '<option value="'+esc(e)+'">'+esc(teamLabel(e))+'</option>'; }).join("");
   function setTeam(e){ state.team = e; state.advisor = null; sel.value = e; try{ localStorage.setItem("sniper_team", e); }catch(x){} render(); }

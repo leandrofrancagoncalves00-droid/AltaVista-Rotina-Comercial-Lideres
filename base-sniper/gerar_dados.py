@@ -1,5 +1,6 @@
 # Gera data.js a partir de Base_Sniper_Alta_Vista.xlsx, Alta_Vista_Open_Investments_Analise.xlsx
 # e do CSV mais recente Avenue_contas_AAAA-MM-DD.csv (extraido do harness Louro, posicao_diaria da Avenue)
+# e de 'Clientes afastados 3.0.xlsx' (export da XP: cod. assessor + cod. conta; a equipe vem do assessor).
 # Uso (na pasta Claude): python rotina-comercial-site/base-sniper/gerar_dados.py .
 #
 # Equipe de cada assessor segue a Rotina Comercial:
@@ -8,7 +9,7 @@
 #  3. codigo da propria mesa proprietaria -> Mesa proprietaria;
 #  4. resto (gestores, codigos sem cadastro) -> FORA_ROTINA.
 # Nome do assessor vem do Equipes.xlsx.
-import openpyxl, json, sys, unicodedata, csv, glob, os
+import openpyxl, json, sys, unicodedata, csv, glob, os, re
 from collections import defaultdict
 
 base = sys.argv[1]
@@ -67,6 +68,14 @@ for r in csv.DictReader(open(av_file, encoding='utf-8')):
                    'mix': [round(float(r[k])) for k in ('fu', 'alt', 'rv', 'rf', 'caixa')], 'ab': r['abertura']})
     nomes_db[r['cod_assessor']] = r['assessor']
 
+# ---- Clientes afastados 3.0 ----
+afastados, vistos = [], set()
+for r in openpyxl.load_workbook(base + '/Clientes afastados 3.0.xlsx', data_only=True).worksheets[0].iter_rows(min_row=2, values_only=True):
+    a, c = str(r[3] or '').strip(), str(r[4] or '').strip()
+    if not re.match(r'^[A-Z]+\d+$', a) or not c.isdigit() or c in vistos: continue
+    vistos.add(c)
+    afastados.append({'c': c, 'a': a})
+
 FORA_ROTINA = 'Fora da Rotina Comercial'
 equipe_do_lider = {}
 for equipe, lider in lideres.items():
@@ -74,7 +83,7 @@ for equipe, lider in lideres.items():
 equipes_rotina = set(advisors_site.values())
 
 assessores = {}
-for a in {r['a'] for r in sniper} | {r['a'] for r in opin} | {r['a'] for r in avenue}:
+for a in {r['a'] for r in sniper} | {r['a'] for r in opin} | {r['a'] for r in avenue} | {r['a'] for r in afastados}:
     p = planilha.get(a, {'n': nomes_db.get(a, a), 'e': ''})
     nome = p['n'] or a
     e = advisors_site.get(norm(nome)) or equipe_do_lider.get(norm(nome))
@@ -82,6 +91,6 @@ for a in {r['a'] for r in sniper} | {r['a'] for r in opin} | {r['a'] for r in av
         e = p['e']
     assessores[a] = {'n': nome, 'e': e or FORA_ROTINA}
 
-data = {'refSniper': 'set/2026', 'refAvenue': ref_avenue, 'assessores': assessores, 'lideres': lideres, 'sniper': sniper, 'opin': opin, 'avenue': avenue}
+data = {'refSniper': 'set/2026', 'refAvenue': ref_avenue, 'assessores': assessores, 'lideres': lideres, 'sniper': sniper, 'opin': opin, 'avenue': avenue, 'afastados': afastados}
 open(site + '/base-sniper/data.js', 'w', encoding='utf-8').write('window.BASES_DATA = ' + json.dumps(data, ensure_ascii=False) + ';\n')
-print(len(sniper), 'sniper,', len(opin), 'opin,', len(avenue), 'avenue,', len(assessores), 'assessores')
+print(len(sniper), 'sniper,', len(opin), 'opin,', len(avenue), 'avenue,', len(afastados), 'afastados,', len(assessores), 'assessores')

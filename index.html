@@ -165,6 +165,9 @@
   .team-summary{font-size:12.5px;color:var(--on-bg-muted);}
   #leaderPlanoBlock{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
   #leaderPlanoBlock:empty{display:none;}
+  #leaderCarteiraWrap{margin-top:14px;}
+  #leaderCarteiraWrap[hidden]{display:none;}
+  .leader-carteira-head{font-family:var(--font-display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--on-bg-muted);margin:0 0 8px;}
   .leader-plano-alert{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:11px 14px;border-radius:var(--radius);background:var(--warning-soft);border:1px solid var(--warning);color:var(--warning);font-size:12.5px;font-weight:700;cursor:pointer;}
   .leader-plano-alert .lpa-icon{font-size:15px;flex:none;}
   .leader-plano-alert .lpa-text{flex:1;}
@@ -654,6 +657,7 @@
     <h2 class="title" id="teamTitle"></h2>
     <p class="team-summary" id="teamSummary"></p>
     <div id="leaderPlanoBlock"></div>
+    <div id="leaderCarteiraWrap" hidden><div class="leader-carteira-head" id="leaderCarteiraHead"></div><div id="leaderCarteiraBlock"></div></div>
     <div class="advisor-list" id="advisorList"></div>
   </section>
 
@@ -850,7 +854,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="base-sniper/data.js?v=2026-11-03"></script>
+<script src="base-sniper/data.js?v=2026-11-09"></script>
 <script src="planejamentos/data.js?v=2026-10-30"></script>
 <script>
 (function(){
@@ -1932,6 +1936,8 @@
       };
     }
 
+    renderLeaderCarteira(currentTeam);
+
     var advisors = ADVISORS.filter(function(a){ return a.equipe===currentTeam; })
       .sort(function(a,b){ return a.nome.localeCompare(b.nome,"pt-BR"); });
 
@@ -2274,12 +2280,13 @@
     var map = {}, S = window.BASES_DATA, F = window.FP_DATA;
     if(!S && !F) return map;
     function norm(s){ return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim(); }
-    function entry(n, cod){ var k = norm(n); return map[k] = map[k] || { cod: cod, sniper: [], opin: [], avenue: [], fp: [] }; }
+    function entry(n, cod){ var k = norm(n); return map[k] = map[k] || { cod: cod, sniper: [], opin: [], avenue: [], afastados: [], fp: [] }; }
     if(S){
       Object.keys(S.assessores).forEach(function(cod){ entry(S.assessores[cod].n, cod); });
       S.sniper.forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].sniper.push(c); });
       S.opin.forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].opin.push(c); });
       (S.avenue||[]).forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].avenue.push(c); });
+      (S.afastados||[]).forEach(function(c){ var a = S.assessores[c.a]; if(a) map[norm(a.n)].afastados.push(c); });
     }
     if(F){
       F.fp.forEach(function(c){ var a = F.assessores[c.a]; if(a){ var e = entry(a.n, c.a); e.fpCod = c.a; e.fp.push(c); } });
@@ -2288,11 +2295,23 @@
     return map;
   })();
   function sniperFor(nome){ return SNIPER_BY_NOME.__norm ? SNIPER_BY_NOME[SNIPER_BY_NOME.__norm(nome)] : null; }
-  function renderSniperBlock(nome){
-    var el = $("sniperBlock");
+  // Carteira pessoal do líder (ele não está no ADVISORS, então não tem página de assessor):
+  // mesmos cards da página do assessor, na página da equipe. Líder da equipe vem de BASES_DATA.lideres.
+  function renderLeaderCarteira(team){
+    var wrap = $("leaderCarteiraWrap"), S = window.BASES_DATA;
+    var lider = S && S.lideres ? S.lideres[team] : "";
+    if(!wrap) return;
+    if(!lider){ wrap.hidden = true; return; }
+    renderSniperBlock(lider, "leaderCarteiraBlock");
+    wrap.hidden = !$("leaderCarteiraBlock").innerHTML;
+    $("leaderCarteiraHead").textContent = "Carteira do líder · " + lider;
+  }
+
+  function renderSniperBlock(nome, elId){
+    var el = $(elId || "sniperBlock");
     if(!el) return;
     var sn = sniperFor(nome);
-    if(!sn || (!sn.sniper.length && !sn.opin.length && !sn.avenue.length && !sn.fp.length)){ el.innerHTML = ""; return; }
+    if(!sn || (!sn.sniper.length && !sn.opin.length && !sn.avenue.length && !sn.afastados.length && !sn.fp.length)){ el.innerHTML = ""; return; }
     var mi = function(v){ return "R$ " + (v/1e6).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) + " mi"; };
     var sum = function(l,f){ var t=0; l.forEach(function(c){ t+=f(c); }); return t; };
     var html = "";
@@ -2329,6 +2348,15 @@
         '</div>' +
         '<button type="button" class="btn primary sniper-open" data-base="avenue">Fazer o bate da Avenue</button></div>';
     }
+    if(sn.afastados.length){
+      html += '<div class="sniper-card">' +
+        '<div class="sn-title"><span class="eyebrow">Clientes afastados 3.0</span><b>Investback para o cliente voltar</b></div>' +
+        '<div class="sn-stats">' +
+          '<span class="sn-stat"><b>'+sn.afastados.length+'</b>contas afastadas</span>' +
+          '<span class="sn-stat"><b>R$ 900</b>ou 30 mil pontos a cada R$ 100 mil</span>' +
+        '</div>' +
+        '<button type="button" class="btn primary sniper-open" data-base="afastados">Fazer o bate dos afastados</button></div>';
+    }
     if(sn.fp.length){
       var fpFora = sn.fp.filter(function(c){ return c.e>0; });
       html += '<div class="sniper-card">' +
@@ -2344,7 +2372,7 @@
     Array.prototype.forEach.call(el.querySelectorAll(".sniper-open"), function(btn){
       btn.addEventListener("click", function(){
         var base = btn.getAttribute("data-base");
-        $("sniperModalTitle").textContent = ({opin:"Open Investments · ", avenue:"Avenue · ", fp:"Planejamentos · "}[base] || "Base Sniper · ") + nome;
+        $("sniperModalTitle").textContent = ({opin:"Open Investments · ", avenue:"Avenue · ", afastados:"Clientes afastados 3.0 · ", fp:"Planejamentos · "}[base] || "Base Sniper · ") + nome;
         $("sniperFrame").src = base==="fp" ? "planejamentos/index.html?embed=1&a=" + encodeURIComponent(sn.fpCod)
           : "base-sniper/index.html?embed=1&base=" + base + "&a=" + encodeURIComponent(sn.cod);
         $("sniperModal").hidden = false;
