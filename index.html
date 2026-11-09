@@ -167,7 +167,13 @@
   #leaderPlanoBlock:empty{display:none;}
   #leaderCarteiraWrap{margin-top:14px;}
   #leaderCarteiraWrap[hidden]{display:none;}
-  .leader-carteira-head{font-family:var(--font-display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--on-bg-muted);margin:0 0 8px;}
+  .leader-carteira-head{display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);box-shadow:var(--shadow);padding:11px 14px;font-family:inherit;color:var(--ink-900);font-size:13.5px;font-weight:600;}
+  .leader-carteira-head:hover{border-color:var(--accent);}
+  .leader-carteira-head .lc-sub{font-size:12px;font-weight:400;color:var(--ink-500);}
+  .leader-carteira-head .lc-chevron{margin-left:auto;color:var(--ink-500);transition:transform .12s;}
+  #leaderCarteiraWrap.open .lc-chevron{transform:rotate(90deg);}
+  #leaderCarteiraBlock{margin-top:10px;}
+  #leaderCarteiraWrap:not(.open) #leaderCarteiraBlock{display:none;}
   .leader-plano-alert{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:11px 14px;border-radius:var(--radius);background:var(--warning-soft);border:1px solid var(--warning);color:var(--warning);font-size:12.5px;font-weight:700;cursor:pointer;}
   .leader-plano-alert .lpa-icon{font-size:15px;flex:none;}
   .leader-plano-alert .lpa-text{flex:1;}
@@ -657,7 +663,7 @@
     <h2 class="title" id="teamTitle"></h2>
     <p class="team-summary" id="teamSummary"></p>
     <div id="leaderPlanoBlock"></div>
-    <div id="leaderCarteiraWrap" hidden><div class="leader-carteira-head" id="leaderCarteiraHead"></div><div id="leaderCarteiraBlock"></div></div>
+    <div id="leaderCarteiraWrap" hidden><button type="button" class="leader-carteira-head" id="leaderCarteiraHead"></button><div id="leaderCarteiraBlock"></div></div>
     <div class="advisor-list" id="advisorList"></div>
   </section>
 
@@ -2303,8 +2309,17 @@
     if(!wrap) return;
     if(!lider){ wrap.hidden = true; return; }
     renderSniperBlock(lider, "leaderCarteiraBlock");
-    wrap.hidden = !$("leaderCarteiraBlock").innerHTML;
-    $("leaderCarteiraHead").textContent = "Carteira do líder · " + lider;
+    var n = $("leaderCarteiraBlock").querySelectorAll(".sniper-card").length;
+    wrap.hidden = !n;
+    wrap.classList.remove("open");   // começa minimizado; abre quando o líder clica
+    $("leaderCarteiraHead").innerHTML = 'Minha carteira · ' + esc(lider) +
+      ' <span class="lc-sub">' + n + ' base' + (n===1?'':'s') + ' de captação · clique para abrir</span>' +
+      '<svg class="lc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>';
+    $("leaderCarteiraHead").onclick = function(){
+      var open = wrap.classList.toggle("open");
+      var sub = $("leaderCarteiraHead").querySelector(".lc-sub");
+      if(sub) sub.textContent = n + ' base' + (n===1?'':'s') + ' de captação · ' + (open ? 'clique para fechar' : 'clique para abrir');
+    };
   }
 
   function renderSniperBlock(nome, elId){
