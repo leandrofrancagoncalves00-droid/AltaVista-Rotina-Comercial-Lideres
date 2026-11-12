@@ -1042,7 +1042,9 @@
       var entry = store.weeks[wk] && store.weeks[wk][equipe] && store.weeks[wk][equipe][nome];
       var r11 = entry && entry.items && entry.items.reuniao11;
       if(!r11 || !r11.ata) continue;
-      if(!r11.status || (r11.statusAt && !r11.resultado)){
+      // Realizado fecha o combinado na hora (some da lista). Não realizado continua
+      // aparecendo até o líder registrar o motivo.
+      if(!r11.status || (r11.status==="not_done" && r11.statusAt && !r11.resultado)){
         found.push({ weekKey: wk, monday: new Date(d), data: r11 });
       }
     }
