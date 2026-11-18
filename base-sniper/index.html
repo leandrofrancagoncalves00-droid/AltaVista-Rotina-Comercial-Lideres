@@ -140,8 +140,9 @@
   body.embed .topbar,body.embed #backBtn{display:none;}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink-900);color:var(--surface);padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;}
   .toast.show{opacity:1;}
-  .basetabs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-  @media (max-width:1000px){.basetabs{grid-template-columns:repeat(2,1fr);}}
+  .basetabs{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+  @media (max-width:1100px){.basetabs{grid-template-columns:repeat(2,1fr);}}
+  .b-med{background:var(--accent-soft);color:var(--accent-ink);} .b-den{background:var(--purple-soft);color:var(--purple);}
   .simul{padding:14px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;}
   .simul label{font-size:12px;color:var(--ink-500);}
   .simul input{font-family:var(--font-mono);font-size:14px;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink-900);width:150px;text-align:right;}
@@ -200,7 +201,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="data.js?v=2026-11-09"></script>
+<script src="data.js?v=2026-11-18"></script>
 <script>
 (function(){
   var D = window.BASES_DATA;
@@ -440,6 +441,46 @@
       msgLine:function(c){ return "Conta XP " + c.c; },
       tsvHead:["Conta XP","Investback a cada R$ 100 mil","Pontos XP a cada R$ 100 mil"],
       tsvRow:function(c){ return [c.c, 900, 30000]; }
+    },
+    medicos: {
+      key:"medicos", tab:"Médicos e Dentistas · Palova", msgHead:function(list){ return "*" + list.length + " clientes para marcar reunião com a Palova*"; },
+      fmtVal:function(v){ return v.toLocaleString("pt-BR"); },
+      concept:{
+        title:"Conceito da base Médicos e Dentistas · Desbravadores",
+        hint:"o objetivo e como usar",
+        items:[
+          ["O que é", "Clientes <b>médicos e dentistas</b> da equipe Desbravadores JK, separados por assessor. São <b>{MDN}</b> clientes: {MDM} médicos e {MDD} dentistas."],
+          ["Objetivo", "Cada assessor <b>marca uma reunião com a Palova</b> para os seus clientes médicos e dentistas."],
+          ["Como usar", "Ao convidar o cliente, marque <b>Contatado</b>; com a data fechada, <b>Reunião agendada</b>; depois do encontro, <b>Reunião realizada</b>. Se o cliente não quiser, <b>Sem interesse</b>. O líder acompanha o funil da equipe toda semana."]
+        ]
+      },
+      tabSub: function(){ return D.medicos.length + " clientes · reunião com a Palova"; },
+      eyebrow:"Médicos e Dentistas · Desbravadores JK", title:"Reuniões com a Palova: clientes médicos e dentistas",
+      sub:"Clientes médicos e dentistas da Desbravadores JK, por assessor · objetivo: marcar uma reunião de cada cliente com a Palova",
+      rows:D.medicos, unit:"clientes", val:function(){ return 1; }, valLabel:"clientes para reunião com a Palova",
+      segs:[["all","Todos"],["M","Médicos"],["D","Dentistas"]], defSeg:"all",
+      inSeg:function(c,s){ return s==="all" || c.p===s; },
+      sortRows:function(x,y){ return (x.p===y.p ? 0 : (x.p==="M" ? -1 : 1)) || (Number(x.c) - Number(y.c)); },
+      scoreboard:function(list,a){
+        var ag = count(list,function(c){ return stName(c)==="Reunião agendada"; }), re = count(list,function(c){ return stName(c)==="Reunião realizada"; });
+        return [["Clientes", a.n, count(list,function(c){return c.p==="M";}) + " médicos · " + count(list,function(c){return c.p==="D";}) + " dentistas"],
+                ["Reuniões com a Palova", ag + re, ag + " agendadas · " + re + " realizadas"]];
+      },
+      teamMeta:function(g){ return [[count(g,function(c){return c.p==="M";})+" / "+count(g,function(c){return c.p==="D";}),"médicos / dentistas"],
+                                    [count(g,function(c){ var s = stName(c); return s==="Reunião agendada" || s==="Reunião realizada"; }),"reuniões"]]; },
+      advCols:[["Médicos",function(g){ return count(g,function(c){return c.p==="M";}); }],["Dentistas",function(g){ return count(g,function(c){return c.p==="D";}); }]],
+      valCol:"Clientes",
+      head:'<th>Profissão</th><th>Cliente</th>',
+      cells:function(c){ return '<td><span class="badge '+(c.p==="M"?'b-med':'b-den')+'">'+(c.p==="M"?'Médico':'Dentista')+'</span></td><td><b class="num">'+esc(c.c)+'</b></td>'; },
+      pautaHead:function(all){ return "Médicos e dentistas: " + all.length + " clientes (" + count(all,function(c){return c.p==="M";}) + " médicos, " + count(all,function(c){return c.p==="D";}) + " dentistas) · reunião com a Palova"; },
+      pautaLine:function(c){ return "cliente " + c.c + " · " + (c.p==="M" ? "médico" : "dentista"); },
+      pautaExtra:function(){ return []; },
+      msgIntro:"sua lista de clientes *médicos e dentistas* para marcarmos uma *reunião com a Palova*",
+      msgGroups:[["M","*Médicos*"],["D","*Dentistas*"]],
+      msgGroupOf:function(c){ return c.p; },
+      msgLine:function(c){ return "Cliente " + c.c; },
+      tsvHead:["Profissão","Cliente"],
+      tsvRow:function(c){ return [c.p==="M" ? "Médico" : "Dentista", c.c]; }
     }
   };
 
@@ -580,6 +621,7 @@
   function fv(v){ return (B.fmtVal || mi)(v); }
   function fillConcept(t){
     t = t.replace(/\{AFN\}/g, D.afastados.length.toLocaleString("pt-BR"));
+    t = t.replace(/\{MDN\}/g, D.medicos.length).replace(/\{MDM\}/g, count(D.medicos,function(c){return c.p==="M";})).replace(/\{MDD\}/g, count(D.medicos,function(c){return c.p==="D";}));
     t = t.replace(/\{(AVREF|AVN|AVT|AVA|AVB|AVC|AVD|AVCX)\}/g, function(_, k){ return AV_NUMS[k]; });
     t = t.replace(/\{(VOL|CONTAS|ASS|N1|PB|N3|V3|INST|CONC|MIX)\}/g, function(_, k){ return OPIN_NUMS[k]; });
     return t.replace(/\{(P1|P2)\}/g, function(_, p){
@@ -595,8 +637,8 @@
     cp.open = false;
     cp.innerHTML = '<summary>'+esc(B.concept.title)+' <span>· clique para ver '+esc(B.concept.hint)+'</span></summary><div class="concept-body">' +
       B.concept.items.map(function(it){ return '<div class="concept-item"><h4>'+it[0]+'</h4>'+fillConcept(it[1])+'</div>'; }).join("") + '</div>';
-    document.title = {sniper:"Base Sniper", opin:"Open Investments", avenue:"Avenue", afastados:"Clientes afastados 3.0"}[B.key] + " · Alta Vista";
-    document.getElementById("baseTabs").innerHTML = ["sniper","opin","avenue","afastados"].map(function(k){
+    document.title = {sniper:"Base Sniper", opin:"Open Investments", avenue:"Avenue", afastados:"Clientes afastados 3.0", medicos:"Médicos e Dentistas"}[B.key] + " · Alta Vista";
+    document.getElementById("baseTabs").innerHTML = ["sniper","opin","avenue","afastados","medicos"].map(function(k){
       var b = BASES[k];
       return '<button class="basetab'+(b===B?' sel':'')+'" data-k="'+k+'"><b>'+esc(b.tab)+'</b><span>'+esc(b.tabSub())+'</span></button>';
     }).join("");
@@ -772,7 +814,7 @@
     var L = [], first = advName(a).split(" ")[0];
     L.push("Oi, " + first + "! Segue " + B.msgIntro + ".");
     L.push("");
-    L.push("*" + list.length + " " + B.unit + " · " + fv(sum(list,B.val)) + " " + (B.msgTotal||"fora da XP") + "*");
+    L.push(B.msgHead ? B.msgHead(list) : "*" + list.length + " " + B.unit + " · " + fv(sum(list,B.val)) + " " + (B.msgTotal||"fora da XP") + "*");
     B.msgGroups.forEach(function(g){
       var rows = list.filter(function(c){ return B.msgGroupOf(c)===g[0]; });
       if(!rows.length) return;
@@ -836,7 +878,7 @@
 
   /* ---------- init ---------- */
   var teams = {};
-  D.sniper.concat(D.opin, D.avenue, D.afastados).forEach(function(c){ teams[advTeam(c.a)] = 1; });
+  D.sniper.concat(D.opin, D.avenue, D.afastados, D.medicos).forEach(function(c){ teams[advTeam(c.a)] = 1; });
   var sel = document.getElementById("teamSel");
   sel.innerHTML = '<option value="all">Todas as equipes</option>' + Object.keys(teams).sort().map(function(e){ return '<option value="'+esc(e)+'">'+esc(teamLabel(e))+'</option>'; }).join("");
   function setTeam(e){ state.team = e; state.advisor = null; sel.value = e; try{ localStorage.setItem("sniper_team", e); }catch(x){} render(); }

@@ -1,6 +1,7 @@
 # Gera data.js a partir de Base_Sniper_Alta_Vista.xlsx, Alta_Vista_Open_Investments_Analise.xlsx
 # e do CSV mais recente Avenue_contas_AAAA-MM-DD.csv (extraido do harness Louro, posicao_diaria da Avenue)
 # e de 'Clientes afastados 3.0.xlsx' (export da XP: cod. assessor + cod. conta; a equipe vem do assessor).
+# e de 'Medicos_Dentistas_Desbravadores.csv' (cod_cliente, cod_assessor, profissao: reunioes com a Palova).
 # Uso (na pasta Claude): python rotina-comercial-site/base-sniper/gerar_dados.py .
 #
 # Equipe de cada assessor segue a Rotina Comercial:
@@ -76,6 +77,10 @@ for r in openpyxl.load_workbook(base + '/Clientes afastados 3.0.xlsx', data_only
     vistos.add(c)
     afastados.append({'c': c, 'a': a})
 
+# ---- Medicos e dentistas da Desbravadores (reuniao com a Palova) ----
+medicos = [{'c': x['cod_cliente'], 'a': x['cod_assessor'], 'p': 'M' if x['profissao'].startswith('M') else 'D'}
+           for x in csv.DictReader(open(base + '/Medicos_Dentistas_Desbravadores.csv', encoding='utf-8'))]
+
 FORA_ROTINA = 'Fora da Rotina Comercial'
 equipe_do_lider = {}
 for equipe, lider in lideres.items():
@@ -83,7 +88,7 @@ for equipe, lider in lideres.items():
 equipes_rotina = set(advisors_site.values())
 
 assessores = {}
-for a in {r['a'] for r in sniper} | {r['a'] for r in opin} | {r['a'] for r in avenue} | {r['a'] for r in afastados}:
+for a in {r['a'] for r in sniper} | {r['a'] for r in opin} | {r['a'] for r in avenue} | {r['a'] for r in afastados} | {r['a'] for r in medicos}:
     p = planilha.get(a, {'n': nomes_db.get(a, a), 'e': ''})
     nome = p['n'] or a
     e = advisors_site.get(norm(nome)) or equipe_do_lider.get(norm(nome))
@@ -91,6 +96,6 @@ for a in {r['a'] for r in sniper} | {r['a'] for r in opin} | {r['a'] for r in av
         e = p['e']
     assessores[a] = {'n': nome, 'e': e or FORA_ROTINA}
 
-data = {'refSniper': 'set/2026', 'refAvenue': ref_avenue, 'assessores': assessores, 'lideres': lideres, 'sniper': sniper, 'opin': opin, 'avenue': avenue, 'afastados': afastados}
+data = {'refSniper': 'set/2026', 'refAvenue': ref_avenue, 'assessores': assessores, 'lideres': lideres, 'sniper': sniper, 'opin': opin, 'avenue': avenue, 'afastados': afastados, 'medicos': medicos}
 open(site + '/base-sniper/data.js', 'w', encoding='utf-8').write('window.BASES_DATA = ' + json.dumps(data, ensure_ascii=False) + ';\n')
-print(len(sniper), 'sniper,', len(opin), 'opin,', len(avenue), 'avenue,', len(afastados), 'afastados,', len(assessores), 'assessores')
+print(len(sniper), 'sniper,', len(opin), 'opin,', len(avenue), 'avenue,', len(afastados), 'afastados,', len(medicos), 'medicos,', len(assessores), 'assessores')
